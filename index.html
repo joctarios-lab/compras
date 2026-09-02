@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CESTA — Compras de Mercado</title>
+<meta name="description" content="O preço é bom? A resposta no corredor, com o seu próprio histórico — offline.">
+<!-- A cor da barra do sistema acompanha o tema. Sem os dois, um app instalado em
+     tema claro abre com a faixa preta do escuro. -->
+<meta name="theme-color" content="#070A12" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#F4F6FB" media="(prefers-color-scheme: light)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Figtree nos títulos e na marca; Inter nos valores, onde dígito de largura
+     fixa importa mais que personalidade. As mesmas do DOMI. -->
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css?v=1">
+<script>
+  /* TEMA ANTES DA PRIMEIRA PINTURA.
+
+     O tema escolhido mora no localStorage, e lê-lo depois que o app.js carrega
+     significaria pintar a tela clara e trocar para escura no quadro seguinte —
+     o "flash branco" que todo app de tema duplo tem quando essa decisão desce
+     para o fim da fila. Este bloco é minúsculo e síncrono de propósito: ele
+     precisa rodar antes de o body existir.
+
+     Sem escolha gravada, nada é marcado e o CSS segue o prefers-color-scheme. */
+  try {
+    var _t = localStorage.getItem('cesta.tema');
+    if (_t === 'dark' || _t === 'light') document.documentElement.dataset.tema = _t;
+  } catch (e) {}
+</script>
+</head>
+<body>
+
+<div id="app">
+
+  <header class="topbar">
+    <div class="topbar-marca">
+      <img src="icons/icon.svg" alt="">
+      <span>CESTA</span>
+    </div>
+    <div class="topbar-espaco"></div>
+    <button class="topbar-acao" id="btn-tema" title="Alternar tema" aria-label="Alternar tema">
+      <span data-ico="tema"></span>
+    </button>
+    <button class="topbar-acao" id="btn-ajustes" title="Ajustes" aria-label="Ajustes">
+      <span data-ico="ajustes"></span>
+    </button>
+  </header>
+
+  <main id="tela">
+    <!-- As telas são montadas por js/app.js. Nada de conteúdo estático aqui:
+         HTML de exemplo esquecido no shell vira dado fantasma na primeira
+         abertura, e ninguém entende de onde ele veio. -->
+  </main>
+
+  <nav class="dock" aria-label="Navegação principal">
+    <button class="dock-item" data-aba="lista" aria-current="page">
+      <span class="dock-ico" data-ico="lista"></span>Lista
+    </button>
+    <button class="dock-item" data-aba="mercado">
+      <span class="dock-ico" data-ico="carrinho"></span>Mercado
+    </button>
+    <button class="dock-item" data-aba="historico">
+      <span class="dock-ico" data-ico="historico"></span>Histórico
+    </button>
+  </nav>
+
+</div>
+
+<script src="js/config.js?v=1"></script>
+<script src="js/icons.js?v=1"></script>
+<script src="js/ui.js?v=1"></script>
+<script src="js/db.js?v=1"></script>
+<script src="js/app.js?v=1"></script>
+</body>
+</html>

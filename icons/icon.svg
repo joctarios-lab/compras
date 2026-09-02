@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="CESTA">
+  <title>CESTA</title>
+  <desc>A alça sobre a cesta. Mesma linguagem do ícone do DOMI — quadrado de
+        cantos largos, traço branco de pontas redondas — porque os dois apps são
+        da mesma casa: um cuida das contas, o outro da ida ao mercado.</desc>
+
+  <rect width="512" height="512" rx="128" fill="#2A52C9"/>
+
+  <!-- A alça: arco vazado, como a cúpula do DOMI. Vazado de propósito — o azul
+       aparece por dentro e o desenho lê como alça, não como morro. -->
+  <path d="M172 232 A84 84 0 0 1 340 232" fill="none" stroke="#FFFFFF"
+        stroke-width="40" stroke-linecap="round"/>
+
+  <!-- O corpo da cesta: trapézio de cantos arredondados, mais estreito embaixo.
+       É o que separa este ícone do DOMI à primeira vista, no tamanho de 48px em
+       que um ícone de tela inicial realmente é visto. -->
+  <path d="M112 252 h288 a24 24 0 0 1 23 30 l-34 130 a40 40 0 0 1 -39 30 h-188
+           a40 40 0 0 1 -39 -30 l-34 -130 a24 24 0 0 1 23 -30 z" fill="#FFFFFF"/>
+
+  <!-- As duas ripas: sulcos no corpo, em negativo. Dão a leitura de cesta e
+       impedem que o trapézio branco pareça uma sacola chapada. -->
+  <rect x="196" y="300" width="34" height="112" rx="17" fill="#2A52C9"/>
+  <rect x="282" y="300" width="34" height="112" rx="17" fill="#2A52C9"/>
+</svg>

@@ -1,0 +1,15 @@
+# FIM DE LINHA FIXO EM LF, para todo o codigo.
+#
+# No app de financas os arquivos divergiram — app.js em CRLF, sync.js em LF — e
+# tres sabotagens nao casaram o padrao sem motivo aparente, porque casar texto
+# com o fim de linha errado falha em SILENCIO. Declarar aqui evita a divergencia
+# nascer.
+* text=auto eol=lf
+
+# Binarios nao levam conversao nenhuma
+*.png binary
+*.jpg binary
+*.ico binary
+
+# O script do Windows precisa de CRLF para o PowerShell antigo
+*.ps1 text eol=crlf

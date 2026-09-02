@@ -1,0 +1,536 @@
+/* ============================================================================
+   CESTA — sistema visual
+
+   HERDADO DO DOMI (o app de finanças), de propósito: mesma escada de espaço,
+   mesmos raios, mesma gramática de tinta. São dois apps da mesma casa, e quem
+   usa os dois não deve precisar reaprender nada. O que muda aqui é o contexto —
+   corredor de mercado, uma mão, pressa — e isso aparece na ERGONOMIA (alvos
+   maiores, ações no rodapé), não numa identidade nova.
+
+   COMO O TEMA É DECIDIDO, em três camadas, nesta ordem:
+     1. :root                    → a paleta escura, sempre definida;
+     2. @media (light) + :not()  → o sistema pede claro e ninguém escolheu nada;
+     3. [data-tema="…"]          → a escolha explícita, que vence as duas acima.
+   Nenhuma cor tem sua ÚNICA definição dentro de um media query: sem isso, um
+   token esquecido fica sem valor em um dos temas e o elemento herda transparente.
+
+   AS TINTAS VÊM EM CONJUNTO. Cada cor semântica tem a cor cheia (--red), o fundo
+   tintado (--red-soft), a cor do texto sobre esse fundo (--red-ink), o contraste
+   para escrever SOBRE o preenchimento (--red-contraste) e a borda (--red-borda).
+   Nunca escreva rgba() solto numa regra: ele não acompanha a troca de tema e
+   vaza a cor do tema anterior.
+
+   A COR É DO DADO. Verde, âmbar e vermelho pertencem ao DIAGNÓSTICO DE PREÇO e
+   a mais nada. O cobalto é a marca e a ação — nunca significa "bom" nem "ruim".
+   Sem gradiente, halo ou sombra colorida decorativa.
+
+   LUZ DE MERCADO. O tema escuro é o padrão, como no DOMI. Mas o Modo Mercado é
+   usado sob luz fluorescente forte, onde o escuro lava: por isso os selos de
+   diagnóstico ganham lá borda e peso mais firmes (ver .diag no fim do arquivo).
+   É reforço de contraste dentro do tema herdado — não um quarto tema.
+   ============================================================================ */
+
+:root {
+  color-scheme: dark;
+
+  /* ---------- Superfícies: quatro planos, do fundo para a frente ---------- */
+  --ink: #070A12;          /* página */
+  --ink-2: #161C2B;        /* cartões */
+  --ink-3: #1F2634;        /* campos, menus e superfícies internas */
+  --ink-4: #161C2B;        /* faixas: header e barra inferior */
+  /* O plano de DESTAQUE avança; o EMBUTIDO recua dentro dele. É essa terceira
+     camada que dá relevo sem gastar tinta. */
+  --destaque: #1F2634;
+  --embutido: #161C2B;
+  --line: #262E3E;
+  --line-strong: #38425A;
+
+  --paper: #EDEFF4;
+  --paper-dim: #A2A9B8;
+  --paper-faint: #757D8E;
+
+  /* ---------- Cobalto: a marca e a ação ----------
+     No escuro o botão INVERTE: fundo em cobalto claro e texto escuro. Cobalto
+     médio com texto branco reprova em AA sobre fundo escuro. */
+  --gold: #8FA8FF;
+  --gold-ink: #8FA8FF;
+  --gold-contraste: #070A12;
+  --gold-soft: #1C2540;
+  --gold-borda: #2E3C63;
+  --gold-fraco: #4E6296;
+
+  /* ---------- As três tintas do diagnóstico ----------
+     verde = excelente · âmbar = na média · vermelho = caro.
+     Não use nenhuma delas para outra coisa. */
+  --green: #6FCB99;
+  --green-ink: #6FCB99;
+  --green-contraste: #06231A;
+  --green-soft: #16301F;
+  --green-borda: #2A5340;
+
+  --amber: #E3B15C;
+  --amber-ink: #E3B15C;
+  --amber-contraste: #1A1204;
+  --amber-soft: #2E2410;
+  --amber-borda: #55431C;
+
+  --red: #F08A78;
+  --red-ink: #F08A78;
+  --red-contraste: #2A0A05;
+  --red-soft: #33191A;
+  --red-borda: #5C2E2C;
+
+  /* Neutro do diagnóstico: "primeiro registro", quando NÃO HÁ base de comparação.
+     Tem de ser visivelmente diferente das três acima — dizer "na média" sem
+     média é a mentira que derruba a confiança no app inteiro. */
+  --slate: #9AA4BC;
+  --slate-ink: #9AA4BC;
+  --slate-contraste: #0B0F1A;
+  --slate-soft: #1B2130;
+  --slate-borda: #333D52;
+
+  /* Roxo: informação que não é diagnóstico — encolhimento de embalagem, nota
+     importada, aviso de cadência. Movimento, não julgamento. */
+  --blue: #B9A5FF;
+  --blue-ink: #B9A5FF;
+  --blue-contraste: #150A2E;
+  --blue-soft: #241C40;
+  --blue-borda: #3E3266;
+
+  --glass: rgba(22, 28, 43, .86);
+  --glass-blur: saturate(130%) blur(18px);
+
+  --shadow: 0 1px 2px rgba(0, 0, 0, .34);
+  --shadow-lg: 0 10px 34px rgba(0, 0, 0, .5), 0 2px 8px rgba(0, 0, 0, .34);
+
+  /* ---------- Forma: escada de raio, não raio único ---------- */
+  --radius-sm: 10px;      /* controles: chips, botões pequenos, campos */
+  --radius: 16px;         /* cartões e linhas de lista */
+  --radius-lg: 22px;      /* o que flutua: folhas, modais, a barra inferior */
+  --radius-pill: 999px;
+
+  /* ---------- Espaçamento: uma escada só, base 4 ---------- */
+  --e1: 4px;
+  --e2: 8px;
+  --e3: 12px;
+  --e4: 16px;
+  --e5: 24px;
+  --e6: 32px;
+
+  --font-body: 'Figtree', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-num: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+
+  --h-topbar: 54px;
+
+  /* GEOMETRIA DA BARRA INFERIOR, em tokens para as medidas não divergirem:
+       --dock-folga  distância da barra até a base da tela
+       --dock-alt    altura da ilha
+       --fab         diâmetro do botão (a borda entra nele: box-sizing) */
+  --dock-folga: 16px;
+  --dock-alt: 60px;
+  --fab: 56px;
+  --h-dock: calc(var(--dock-folga) + var(--dock-alt) + var(--fab) / 2 + env(safe-area-inset-bottom));
+
+  /* ALVO DE TOQUE. 48px no app; 56px no Modo Mercado, onde a pessoa mira com o
+     polegar, andando, segurando o carrinho com a outra mão. */
+  --toque: 48px;
+  --toque-mercado: 56px;
+
+  /* Altura coberta pelo teclado do celular. js/ui.js atualiza pelo
+     visualViewport; 0 quando não há teclado, para servir em calc() sem
+     condicional. É o que mantém o campo de preço acima do teclado no mercado —
+     o problema mais difícil da tela principal deste app. */
+  --teclado: 0px;
+
+  --ease-sheet: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-out: cubic-bezier(.22, 1, .36, 1);
+}
+
+/* CAMADA 2 — o sistema pede claro e ninguém escolheu tema no app */
+@media (prefers-color-scheme: light) {
+  :root:not([data-tema="dark"]) {
+    color-scheme: light;
+    --ink: #F4F6FB;
+    --ink-2: #FFFFFF;
+    --ink-3: #E9EDF7;
+    --ink-4: #FFFFFF;
+    --destaque: #FFFFFF;
+    --embutido: #F4F6FB;
+    --line: #DDE3F0;
+    --line-strong: #C3CBDD;
+
+    --paper: #131826;
+    --paper-dim: #5A6377;
+    --paper-faint: #838C9F;
+
+    --gold: #2A52C9;
+    --gold-ink: #2A52C9;
+    --gold-contraste: #FFFFFF;
+    --gold-soft: #E6EBFB;
+    --gold-borda: #C3D0F2;
+    --gold-fraco: #93A9E6;
+
+    --green: #1B7A4F;
+    --green-ink: #14603D;
+    --green-contraste: #FFFFFF;
+    --green-soft: #E2F4EA;
+    --green-borda: #B4E0C8;
+
+    --amber: #9A6B12;
+    --amber-ink: #7E560B;
+    --amber-contraste: #FFFFFF;
+    --amber-soft: #FBF0DA;
+    --amber-borda: #EBD6A8;
+
+    --red: #C3402A;
+    --red-ink: #A83320;
+    --red-contraste: #FFFFFF;
+    --red-soft: #FBE7E3;
+    --red-borda: #F0C4BB;
+
+    --slate: #5A6377;
+    --slate-ink: #4A5266;
+    --slate-contraste: #FFFFFF;
+    --slate-soft: #ECEFF6;
+    --slate-borda: #D2D8E6;
+
+    --blue: #5B3FD1;
+    --blue-ink: #4A31B8;
+    --blue-contraste: #FFFFFF;
+    --blue-soft: #EDE8FC;
+    --blue-borda: #D3C7F5;
+
+    --glass: rgba(255, 255, 255, .86);
+    --shadow: 0 1px 2px rgba(19, 24, 38, .08);
+    --shadow-lg: 0 10px 34px rgba(19, 24, 38, .14), 0 2px 8px rgba(19, 24, 38, .08);
+  }
+}
+
+/* CAMADA 3 — a escolha explícita vence as duas anteriores */
+:root[data-tema="light"] {
+  color-scheme: light;
+  --ink: #F4F6FB;
+  --ink-2: #FFFFFF;
+  --ink-3: #E9EDF7;
+  --ink-4: #FFFFFF;
+  --destaque: #FFFFFF;
+  --embutido: #F4F6FB;
+  --line: #DDE3F0;
+  --line-strong: #C3CBDD;
+
+  --paper: #131826;
+  --paper-dim: #5A6377;
+  --paper-faint: #838C9F;
+
+  --gold: #2A52C9;
+  --gold-ink: #2A52C9;
+  --gold-contraste: #FFFFFF;
+  --gold-soft: #E6EBFB;
+  --gold-borda: #C3D0F2;
+  --gold-fraco: #93A9E6;
+
+  --green: #1B7A4F;
+  --green-ink: #14603D;
+  --green-contraste: #FFFFFF;
+  --green-soft: #E2F4EA;
+  --green-borda: #B4E0C8;
+
+  --amber: #9A6B12;
+  --amber-ink: #7E560B;
+  --amber-contraste: #FFFFFF;
+  --amber-soft: #FBF0DA;
+  --amber-borda: #EBD6A8;
+
+  --red: #C3402A;
+  --red-ink: #A83320;
+  --red-contraste: #FFFFFF;
+  --red-soft: #FBE7E3;
+  --red-borda: #F0C4BB;
+
+  --slate: #5A6377;
+  --slate-ink: #4A5266;
+  --slate-contraste: #FFFFFF;
+  --slate-soft: #ECEFF6;
+  --slate-borda: #D2D8E6;
+
+  --blue: #5B3FD1;
+  --blue-ink: #4A31B8;
+  --blue-contraste: #FFFFFF;
+  --blue-soft: #EDE8FC;
+  --blue-borda: #D3C7F5;
+
+  --glass: rgba(255, 255, 255, .86);
+  --shadow: 0 1px 2px rgba(19, 24, 38, .08);
+  --shadow-lg: 0 10px 34px rgba(19, 24, 38, .14), 0 2px 8px rgba(19, 24, 38, .08);
+}
+
+/* ---------------------------------------------------------------- reset --- */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  /* O corredor não é lugar de selecionar texto sem querer ao tocar rápido. */
+  -webkit-user-select: none;
+  user-select: none;
+  overscroll-behavior-y: none;
+}
+
+/* Campos e áreas de leitura longa recuperam a seleção. */
+input, textarea, [data-selecionavel] { -webkit-user-select: text; user-select: text; }
+
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+input, select, textarea { font: inherit; color: inherit; }
+img, svg { max-width: 100%; display: block; }
+[hidden] { display: none !important; }
+
+/* O foco tem de ser VISÍVEL: no escuro, sob luz forte, o contorno padrão some. */
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; border-radius: 4px; }
+
+/* Números em tabular: coluna de preço que dança a cada dígito é ilegível. */
+.num, .valor { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+
+/* ----------------------------------------------------------------- app --- */
+
+#app {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  height: var(--h-topbar);
+  display: flex;
+  align-items: center;
+  gap: var(--e3);
+  padding: 0 var(--e4);
+  background: var(--glass);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-bottom: 1px solid var(--line);
+}
+
+.topbar-marca { display: flex; align-items: center; gap: var(--e2); font-weight: 800; letter-spacing: .2px; }
+.topbar-marca img { width: 26px; height: 26px; border-radius: 7px; }
+.topbar-espaco { flex: 1; }
+
+.topbar-acao {
+  width: var(--toque);
+  height: var(--toque);
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  color: var(--paper-dim);
+}
+.topbar-acao:hover { background: var(--ink-3); color: var(--paper); }
+
+main {
+  flex: 1;
+  padding: var(--e4);
+  padding-bottom: calc(var(--h-dock) + var(--e4));
+  max-width: 720px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* ------------------------------------------------------------ conteúdo --- */
+
+.card {
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: var(--e4);
+  box-shadow: var(--shadow);
+}
+
+.card + .card { margin-top: var(--e3); }
+
+.titulo { font-size: 20px; font-weight: 800; margin: 0 0 var(--e1); letter-spacing: -.2px; }
+.sub { color: var(--paper-dim); font-size: 13px; margin: 0; }
+.secao { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--paper-faint); margin: var(--e5) 0 var(--e2); }
+
+/* Estado vazio: diz o que fazer, não que está vazio. */
+.vazio { text-align: center; padding: var(--e6) var(--e4); color: var(--paper-dim); }
+.vazio b { display: block; color: var(--paper); font-size: 16px; margin-bottom: var(--e1); }
+
+/* ------------------------------------------------------------ controles --- */
+
+.btn {
+  min-height: var(--toque);
+  padding: 0 var(--e4);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--e2);
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  background: var(--ink-3);
+  border: 1px solid var(--line);
+  transition: background .14s var(--ease-out);
+}
+.btn:hover { background: var(--line); }
+.btn-principal { background: var(--gold); color: var(--gold-contraste); border-color: transparent; }
+.btn-principal:hover { filter: brightness(1.06); background: var(--gold); }
+.btn-largo { width: 100%; }
+.btn-grande { min-height: var(--toque-mercado); font-size: 16px; }
+
+.campo {
+  width: 100%;
+  min-height: var(--toque);
+  padding: 0 var(--e3);
+  background: var(--ink-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--paper);
+}
+.campo::placeholder { color: var(--paper-faint); }
+.campo:focus { border-color: var(--gold-borda); outline: none; }
+
+/* -------------------------------------------------------------- selos --- */
+
+.selo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.s-green { background: var(--green-soft); color: var(--green-ink); border-color: var(--green-borda); }
+.s-amber { background: var(--amber-soft); color: var(--amber-ink); border-color: var(--amber-borda); }
+.s-red   { background: var(--red-soft);   color: var(--red-ink);   border-color: var(--red-borda); }
+.s-slate { background: var(--slate-soft); color: var(--slate-ink); border-color: var(--slate-borda); }
+.s-blue  { background: var(--blue-soft);  color: var(--blue-ink);  border-color: var(--blue-borda); }
+
+/* O DIAGNÓSTICO DE PREÇO — o selo que justifica o app existir.
+   Ele é maior que um selo comum e a palavra vem SEMPRE junto do número: a cor
+   nunca informa sozinha (daltonismo, sol na tela, corredor mal iluminado).
+   No Modo Mercado a borda engrossa — é a mitigação de contraste do tema escuro
+   sob luz fluorescente, decidida no lugar de criar um quarto tema. */
+.diag {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--e2);
+  font-size: 14px;
+  font-weight: 800;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+}
+.diag .pct { font-family: var(--font-num); font-variant-numeric: tabular-nums; font-weight: 700; }
+.modo-mercado .diag { font-size: 16px; padding: 8px 14px; border-width: 2px; }
+
+/* ------------------------------------------------------- barra inferior --- */
+
+.dock {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(var(--dock-folga) + env(safe-area-inset-bottom));
+  z-index: 45;
+  height: var(--dock-alt);
+  width: min(560px, calc(100% - var(--e6)));
+  display: flex;
+  align-items: stretch;
+  background: var(--glass);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+
+.dock-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--paper-faint);
+  border-radius: var(--radius-lg);
+}
+.dock-item[aria-current="page"] { color: var(--gold-ink); }
+.dock-ico { width: 22px; height: 22px; }
+
+/* O teclado do celular esconde a barra: no mercado o campo de preço fica onde a
+   barra estava, e disputar esse espaço com ela é perder os dois. */
+body.teclado-aberto .dock { display: none; }
+
+/* ------------------------------------------------------------- folhas --- */
+
+.folha-fundo {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(0, 0, 0, .5);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.folha {
+  width: min(560px, 100%);
+  max-height: calc(100vh - var(--e6));
+  /* Apoia-se ACIMA do teclado. Sem isto, o botão de salvar fica embaixo dele
+     exatamente quando o campo está em foco — que é sempre. */
+  margin-bottom: var(--teclado);
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+  border-bottom: 0;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  padding: var(--e4);
+  padding-bottom: calc(var(--e4) + env(safe-area-inset-bottom));
+  box-shadow: var(--shadow-lg);
+  overflow-y: auto;
+  animation: subir .26s var(--ease-sheet);
+}
+
+@keyframes subir { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+.folha-alca { width: 40px; height: 4px; border-radius: var(--radius-pill); background: var(--line-strong); margin: 0 auto var(--e3); }
+
+/* -------------------------------------------------------------- aviso --- */
+
+.toast {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(var(--h-dock) + var(--e2));
+  z-index: 70;
+  max-width: calc(100% - var(--e6));
+  padding: var(--e3) var(--e4);
+  background: var(--ink-3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+  font-size: 14px;
+  font-weight: 600;
+  animation: subir .2s var(--ease-out);
+}
+
+/* --------------------------------------------------------- movimento --- */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}

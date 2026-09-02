@@ -1,0 +1,25 @@
+# Configuração local do Claude Code (permissões desta máquina)
+.claude/settings.local.json
+.claude/worktrees/
+
+# Credenciais reais do Supabase: o modelo fica versionado, o preenchido fora
+js/config.local.js
+.env
+.env.*
+!.env.exemplo
+
+# Relatórios de diagnóstico (podem conter dados de compra do usuário)
+diagnostico-*.txt
+
+# Dependências e artefatos
+node_modules/
+dist/
+*.log
+
+# Sistema operacional
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Backups exportados pelo app
+compras-backup-*.json
