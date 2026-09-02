@@ -272,6 +272,37 @@ const casos = [
    `                    for all using (true) with check (true)',`,
    'RLS por dono'],
 
+  // ---------------- as telas ----------------
+  ['a estimativa da lista conta item sem historico como zero', 'js/views/lista.js',
+   `    if (!ref.n || ref.mediana == null) return null;`,
+   `    if (!ref.n || ref.mediana == null) return 0;`,
+   'item sem historico nao vira zero na estimativa'],
+
+  ['o diagnostico perde a palavra e fica so na cor', 'js/views/mercado.js',
+   `        <span>\${emoji} \${UI.esc(d.rotulo)}</span>`,
+   `        <span>\${emoji}</span>`,
+   'com a PALAVRA junto da cor'],
+
+  ['o diagnostico esconde o melhor preco ja visto', 'js/views/mercado.js',
+   `    const dica = d.melhorPreco != null && d.selo === 'red'`,
+   `    const dica = false`,
+   'e o melhor preco ja visto, para poder decidir'],
+
+  ['a nota importada deixa de contar como gasto', 'js/views/historico.js',
+   `    return daCompra + daNota;`,
+   `    return daCompra;`,
+   'nota importada conta como gasto do mes'],
+
+  ['a mesma ida ao mercado passa a contar duas vezes', 'js/views/historico.js',
+   `      .filter(d => !compras.some(l => l.data_fechamento === d.data && l.store_id === d.store_id))`,
+   ``,
+   'nao dobra o gasto'],
+
+  ['o historico esconde que gasto nao e inflacao', 'js/views/historico.js',
+   `e isto não é inflação</b>`,
+   `variação`,
+   'deixa claro que gasto nao e inflacao'],
+
   // ---------------- shell ----------------
   ['um modulo fica fora do cache offline', 'sw.js',
    `  'js/precos.js?v=' + VERSAO,`,

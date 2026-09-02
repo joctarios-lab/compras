@@ -987,6 +987,162 @@ for (const t of Object.keys(SYNC_TABELAS)) {
 }
 
 
-  console.log(`\n${ok} passaram, ${fail} falharam`);
+
+
+/* ===================================== AS TELAS RODAM DE VERDADE ===
+
+   Ate aqui as views eram conferidas como ARQUIVO — existem, estao no shell,
+   estao no cache. Nada disso as EXECUTA. Um erro de runtime numa tela (uma
+   variavel com nome trocado, um campo que nao existe) quebraria o app inteiro
+   na primeira abertura, e nenhum teste diria nada.
+
+   Aqui elas sao montadas de verdade, com dados reais no banco, e o que se mede
+   e o HTML que sai. */
+
+console.log('\n=== As telas montam ===');
+
+eval(fs.readFileSync(BASE + 'js/views/lista.js', 'utf8') + '; global.ViewLista = ViewLista;');
+eval(fs.readFileSync(BASE + 'js/views/mercado.js', 'utf8') + '; global.Mercado = Mercado;');
+eval(fs.readFileSync(BASE + 'js/views/historico.js', 'utf8') + '; global.ViewHistorico = ViewHistorico;');
+
+DB.apagarTudo();
+
+/* 1. LISTA VAZIA. O estado vazio tem de dizer o PROXIMO PASSO — "sem dados" so
+   informa o que a pessoa ja esta vendo. */
+const listaVazia = ViewLista.render();
+check('a lista monta sem nenhum dado', listaVazia.length > 50, true);
+check('e o vazio convida a criar a lista', /Criar lista|Nenhuma lista/.test(listaVazia), true);
+
+/* 2. LISTA COM ITENS E ESTIMATIVA. */
+const lojaV = DB.upsert('stores', { nome: 'Mercado da Esquina' });
+const listaV = DB.novaLista({ nome: 'Semana', store_id: lojaV.id, orcamento: 300 });
+const itArrozV = DB.itemPorNome('Arroz', { unidade: 'kg', qtd_habitual: 5 });
+const itLeiteV = DB.itemPorNome('Leite', { unidade: 'l', qtd_habitual: 1 });
+DB.addNaLista(listaV.id, { item_id: itArrozV.id, qtd: 5, unidade: 'kg' });
+DB.addNaLista(listaV.id, { item_id: itLeiteV.id, qtd: 1, unidade: 'l' });
+
+const comItens = ViewLista.render();
+check('a lista mostra os itens', comItens.includes('Arroz') && comItens.includes('Leite'), true);
+check('e oferece ir ao mercado', comItens.includes('Estou no mercado'), true);
+check('e o Mais por Menos, que nao precisa de historico', comItens.includes('Mais por Menos'), true);
+/* Sem historico NAO ha estimativa — e a tela diz isso, em vez de mostrar R$ 0,00,
+   que seria um numero falso apresentado como verdadeiro. */
+check('sem historico, nao inventa estimativa', comItens.includes('Sem histórico ainda'), true);
+
+// Com historico, a estimativa aparece
+const prodArrozV = DB.upsert('products', { item_id: itArrozV.id, marca: 'T', embalagem_qtd: 5, embalagem_unidade: 'kg' });
+for (const d of [10, 40]) {
+  Precos.registrar(DB, { product_id: prodArrozV.id, item_id: itArrozV.id, store_id: lojaV.id,
+    data: diasAtras(d), preco_total: 25, qtd: 5, unidade: 'kg' });
+}
+const li = DB.itensDaLista(listaV.id).find(x => x.item_id === itArrozV.id);
+check('a estimativa do item sai da mediana', ViewLista.estimar(li), 25);
+check('e aparece na tela', ViewLista.render().includes('Com base no seu histórico'), true);
+/* Item sem referencia NAO entra como zero: somar zero faria a estimativa
+   parecer completa quando ela nao e. */
+const liLeite = DB.itensDaLista(listaV.id).find(x => x.item_id === itLeiteV.id);
+check('item sem historico nao vira zero na estimativa', ViewLista.estimar(liLeite), null);
+check('e a tela avisa quantos faltam', ViewLista.render().includes('referência'), true);
+
+/* 3. MODO MERCADO. */
+DB.upsert('lists', { id: listaV.id, status: 'em_curso' });
+Mercado.listaId = listaV.id;
+Mercado.focoId = null;
+const mercadoHtml = Mercado.render();
+check('o Modo Mercado monta', mercadoHtml.length > 100, true);
+check('mostra o total do carrinho', mercadoHtml.includes('No carrinho'), true);
+check('e a barra de orcamento', mercadoHtml.includes('orcamento') || mercadoHtml.includes('disponíveis'), true);
+check('com o item pendente', mercadoHtml.includes('Arroz'), true);
+check('e o botao de finalizar', mercadoHtml.includes('Finalizar compra'), true);
+
+/* O painel de preco so existe na linha em FOCO: abrir todos de uma vez encheria
+   a tela de campos e destruiria a leitura no corredor. */
+check('sem foco, nenhum campo de preco aberto', mercadoHtml.includes('campo-preco'), false);
+Mercado.focoId = li.id;
+const comFoco = Mercado.render();
+check('com foco, o campo de preco aparece', comFoco.includes('campo-preco'), true);
+check('e so um', (comFoco.match(/campo-preco/g) || []).length, 1);
+check('o teclado ja abre em modo decimal', comFoco.includes('inputmode="decimal"'), true);
+
+/* 4. O DIAGNOSTICO NA TELA. A cor NUNCA informa sozinha: palavra e numero
+   sempre junto do selo. */
+const diagCaro = Mercado.htmlDoDiagnostico(
+  Precos.avaliar(DB, { product_id: prodArrozV.id, item_id: itArrozV.id, preco: 30, qtd: 5, unidade: 'kg' }));
+check('o selo vermelho aparece', diagCaro.includes('s-red'), true);
+check('com a PALAVRA junto da cor', diagCaro.includes('Caro'), true);
+check('e a porcentagem', diagCaro.includes('20%'), true);
+check('e a base auditavel: a mediana', diagCaro.includes('mediana'), true);
+check('e quantos registros a sustentam', diagCaro.includes('registros'), true);
+/* Quando esta caro, a tela precisa dizer o que FAZER — um 🔴 sozinho deixa a
+   pessoa sem saida. */
+check('e o melhor preco ja visto, para poder decidir', diagCaro.includes('Melhor preço já visto'), true);
+
+const diagSemBase = Mercado.htmlDoDiagnostico(
+  Precos.avaliar(DB, { item_id: itLeiteV.id, preco: 5, qtd: 1, unidade: 'l' }));
+check('sem base, o selo e cinza', diagSemBase.includes('s-slate'), true);
+check('e diz primeiro registro', diagSemBase.includes('Primeiro registro'), true);
+check('nunca "na media"', diagSemBase.includes('Na média'), false);
+
+/* 5. HISTORICO. */
+const histVazio = (DB.apagarTudo(), ViewHistorico.render());
+check('o historico monta vazio', histVazio.includes('Ainda não há nada registrado'), true);
+check('e oferece importar nota, que e o atalho para ter historico',
+  histVazio.includes('Importar nota fiscal'), true);
+
+// Com dados dos dois meses, os cartoes aparecem
+const itH = DB.upsert('items', { nome: 'Cafe', unidade: 'kg' });
+const prH = DB.upsert('products', { item_id: itH.id, marca: 'C', embalagem_qtd: 0.5, embalagem_unidade: 'kg' });
+const mA = DB.mesDe(DB.hojeISO());
+const mP = ViewHistorico.mesAnterior(mA);
+Precos.registrar(DB, { product_id: prH.id, item_id: itH.id, data: mP + '-05', preco_total: 20, qtd: 500, unidade: 'g' });
+Precos.registrar(DB, { product_id: prH.id, item_id: itH.id, data: mA + '-05', preco_total: 22, qtd: 500, unidade: 'g' });
+/* PRECO OBSERVADO NAO E GASTO: ver o preco na gondola nao significa ter
+   comprado, e somar observacao como despesa inflaria o mes de quem so anda
+   consultando. O gasto vem da compra fechada ou da nota importada — por isso as
+   duas notas abaixo, sem as quais o cartao de gasto nao tem o que dizer. */
+DB.upsert('nfce_docs', { chave: 'h1', data: mP + '-05', total: 100, itens_importados: 1 });
+DB.upsert('nfce_docs', { chave: 'h2', data: mA + '-05', total: 130, itens_importados: 1 });
+check('preco observado sozinho NAO vira gasto',
+  (DB.remove('nfce_docs', DB.all('nfce_docs')[0].id), DB.remove('nfce_docs', DB.all('nfce_docs')[0].id),
+   ViewHistorico.gastoDoMes(mA)), 0);
+DB.upsert('nfce_docs', { chave: 'h3', data: mP + '-05', total: 100, itens_importados: 1 });
+DB.upsert('nfce_docs', { chave: 'h4', data: mA + '-05', total: 130, itens_importados: 1 });
+const histCheio = ViewHistorico.render();
+check('com dados, mostra a cesta comparavel', histCheio.includes('Sua cesta comparável'), true);
+/* OS DOIS NUMEROS TEM NOMES DIFERENTES na mesma tela: e a regra que impede o
+   defeito de "Disponivel" x "Saldo em conta" do DOMI. */
+check('e o total gasto, com outro nome', histCheio.includes('Você gastou'), true);
+check('e deixa claro que gasto nao e inflacao', histCheio.includes('não é inflação'), true);
+
+check('a virada de ano no mes anterior', ViewHistorico.mesAnterior('2027-01'), '2026-12');
+check('e o mes comum', ViewHistorico.mesAnterior('2026-09'), '2026-08');
+
+/* 6. O GASTO DO MES vem das DUAS origens: compra fechada no app e nota
+   importada. Contar so a primeira deixava esta tela vazia para quem importou
+   meses de nota e ainda nao fechou compra nenhuma — que e o caminho
+   recomendado para comecar a usar o app. Achado por teste de tela. */
+DB.apagarTudo();
+const mesG = DB.mesDe(DB.hojeISO());
+const lojaG = DB.upsert('stores', { nome: 'Loja G' });
+DB.upsert('nfce_docs', { chave: 'k1', store_id: lojaG.id, data: mesG + '-10', total: 250, itens_importados: 3 });
+check('nota importada conta como gasto do mes', ViewHistorico.gastoDoMes(mesG), 250);
+
+const listaG = DB.novaLista({ nome: 'C', store_id: lojaG.id });
+DB.upsert('lists', { id: listaG.id, status: 'fechada', data_fechamento: mesG + '-20', total_cupom: 100 });
+check('e a compra fechada soma junto', ViewHistorico.gastoDoMes(mesG), 350);
+
+/* A GUARDA CONTRA DOBRAR: fechar a compra no app e depois importar o cupom da
+   MESMA ida ao mercado nao pode contar duas vezes — um numero que dobra sozinho
+   destroi a confianca na tela inteira. */
+DB.upsert('nfce_docs', { chave: 'k2', store_id: lojaG.id, data: mesG + '-20', total: 100, itens_importados: 5 });
+check('a nota da mesma ida ao mercado nao dobra o gasto', ViewHistorico.gastoDoMes(mesG), 350);
+check('mas outra loja no mesmo dia conta normalmente',
+  (DB.upsert('nfce_docs', { chave: 'k3', store_id: DB.upsert('stores', { nome: 'Outra' }).id,
+     data: mesG + '-20', total: 60, itens_importados: 1 }), ViewHistorico.gastoDoMes(mesG)), 410);
+
+
+
+  console.log(`
+${ok} passaram, ${fail} falharam`);
   process.exit(fail ? 1 : 0);
 })();

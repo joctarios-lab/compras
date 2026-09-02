@@ -20,13 +20,29 @@ const ViewHistorico = {
     return `${nomes[m - 1]} de ${a}`;
   },
 
+  /* O gasto do mês soma DUAS origens: as compras fechadas no app e as notas
+     fiscais importadas. Contar só as primeiras deixava esta tela vazia para
+     quem importou meses de nota e ainda não fechou nenhuma compra pelo app —
+     que é exatamente o caminho recomendado para começar a usar o CESTA.
+
+     A GUARDA CONTRA CONTAR DUAS VEZES: se existe uma compra fechada na mesma
+     loja e no mesmo dia da nota, elas são a mesma ida ao mercado, e só a compra
+     conta. Sem isso, quem fecha a compra no app e depois importa o cupom veria
+     o gasto do mês dobrar — e um número que dobra sozinho destrói a confiança
+     na tela inteira. */
   gastoDoMes(mes) {
-    return DB.listasFechadas()
-      .filter(l => String(l.data_fechamento).slice(0, 7) === mes)
-      .reduce((s, l) => {
-        const t = DB.totalDoCarrinho(l.id, () => null);
-        return s + (l.total_cupom || t.firme);
-      }, 0);
+    const compras = DB.listasFechadas().filter(l => String(l.data_fechamento).slice(0, 7) === mes);
+    const daCompra = compras.reduce((s, l) => {
+      const t = DB.totalDoCarrinho(l.id, () => null);
+      return s + (l.total_cupom || t.firme);
+    }, 0);
+
+    const daNota = DB.all('nfce_docs')
+      .filter(d => String(d.data).slice(0, 7) === mes && isFinite(d.total) && d.total > 0)
+      .filter(d => !compras.some(l => l.data_fechamento === d.data && l.store_id === d.store_id))
+      .reduce((s, d) => s + Number(d.total), 0);
+
+    return daCompra + daNota;
   },
 
   render() {

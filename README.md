@@ -37,11 +37,17 @@ offline.**
 
 ## Estado
 
-**F0 entregue** — a fundação: shell, sistema visual nos dois temas, camada de
-dados com envelope de sincronização, service worker offline e a suíte de testes.
+**Completo e testado** — as fases F0 a F9 do plano estão entregues: lista, Modo
+Mercado com diagnóstico ao vivo, Mais por Menos, importação de NFC-e, histórico
+com cesta comparável, foto do selo, código de barras, OCR opcional e
+sincronização. O roteiro está em [`docs/PROMPT-INICIAL.md`](docs/PROMPT-INICIAL.md),
+seção 10.
 
-Próxima: **F1** — lista, Modo Mercado e total do carrinho. O roteiro completo das
-fases está em [`docs/PROMPT-INICIAL.md`](docs/PROMPT-INICIAL.md), seção 10.
+**466 asserções**, verdes em 9 datas de calendário, com **51 sabotagens** provando
+que elas pegam regressão.
+
+O que falta não é código: é **usar no mercado de verdade**. As três coisas que só
+o uso responde estão anotadas no fim de [`docs/RETOMADA.md`](docs/RETOMADA.md).
 
 ## Como rodar localmente
 
@@ -61,6 +67,7 @@ início"** (no iPhone, pelo Safari).
 ```bash
 node tests/smoke.js     # a suíte, na âncora de tempo
 node tests/tempo.js     # a mesma suíte em 9 datas de calendário
+node tests/sabotagem.js # quebra o código de propósito e prova que a suíte pega
 ```
 
 A suíte roda o app **sem navegador** e com o **relógio congelado**. O motivo está
@@ -76,17 +83,29 @@ nunca mais olhar o calendário. **Verde num dia só não é verde.**
 
 ```
 index.html                 shell: topbar, conteúdo, barra de 3 abas
-css/styles.css             sistema visual: 3 camadas de tema, tokens, componentes
+css/styles.css             sistema visual: 3 camadas de tema, tokens, telas
 js/config.js               credenciais do Supabase — VAZIO de propósito (repo público)
 js/icons.js                ícones SVG inline (offline, sem CDN)
 js/ui.js                   moeda, máscara, folhas, avisos e a altura do teclado
-js/db.js                   dados locais e o envelope de sincronização
+js/db.js                   dados locais, envelope de sincronização, catálogo, carrinho
+js/precos.js               o motor: unidade canônica, mediana, diagnóstico, cesta
+js/nfce.js                 leitura de NFC-e — XML, HTML e CSV numa estrutura só
+js/importar.js             dedupe, casamento assistido e o vínculo aprendido
+js/fotos.js                IndexedDB, compressão e faxina das fotos órfãs
+js/leitura.js              código de barras e OCR do selo (os dois opcionais)
+js/sync.js                 push/pull incremental pelo carimbo do servidor
+js/views/*.js              as telas: lista, mercado, histórico, importar, ajustes…
 js/app.js                  boot, abas e registro do service worker
 sw.js                      service worker (app shell offline-first)
 manifest.webmanifest       identidade do app instalado
-tests/                     a suíte e o rodízio de datas
+supabase/schema.sql        tabelas, carimbo do servidor e RLS por dono
+tests/                     a suíte, o rodízio de datas e as sabotagens
 docs/                      o plano, a pesquisa de mercado e a retomada
 ```
+
+Teto de **1.500 linhas por arquivo**: no app de finanças que deu origem a este, o
+`app.js` chegou a 607 KB por não ter tido essa regra desde o começo, e mexer nele
+ficou caro.
 
 ## Modelo de dados
 
