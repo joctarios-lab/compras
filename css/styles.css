@@ -534,3 +534,154 @@ body.teclado-aberto .dock { display: none; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+/* ==========================================================================
+   TELAS — Lista, Modo Mercado, Histórico
+
+   A ergonomia daqui para baixo é a do CORREDOR: alvo grande, ação no rodapé,
+   nada que exija mira fina. É o que separa este app do DOMI, que é usado
+   sentado.
+   ========================================================================== */
+
+/* ---------------------------------------------------- linha de resumo --- */
+
+.linha-resumo { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--e3); margin-top: var(--e3); }
+.linha-resumo .direita { text-align: right; }
+.rotulo { display: block; font-size: 12px; color: var(--paper-faint); font-weight: 600; }
+.valor { font-family: var(--font-num); font-variant-numeric: tabular-nums; font-weight: 700; }
+.valor.grande { font-size: 28px; letter-spacing: -.5px; display: block; }
+
+/* ------------------------------------------------------ adicionar item --- */
+
+.add-linha { display: flex; gap: var(--e2); }
+.add-linha .campo { flex: 1; }
+.add-btn { width: var(--toque); padding: 0; flex: 0 0 auto; }
+.add-btn span { width: 20px; height: 20px; display: block; }
+
+.sugestoes { display: flex; flex-direction: column; gap: 2px; margin-top: var(--e2); }
+.sugestao {
+  text-align: left;
+  min-height: var(--toque);
+  padding: var(--e2) var(--e3);
+  border-radius: var(--radius-sm);
+  background: var(--ink-3);
+  display: flex; align-items: center; justify-content: space-between; gap: var(--e2);
+  font-weight: 600;
+}
+.sugestao:hover { background: var(--line); }
+
+/* ----------------------------------------------------- linhas de item --- */
+
+.lista-itens, .lista-mercado { padding: var(--e2); }
+
+.item-linha {
+  display: flex; align-items: center; gap: var(--e3);
+  min-height: var(--toque);
+  padding: var(--e2) var(--e2);
+  border-radius: var(--radius-sm);
+}
+.item-linha + .item-linha { border-top: 1px solid var(--line); border-radius: 0; }
+.item-corpo { flex: 1; min-width: 0; }
+.item-corpo b { display: block; font-weight: 700; }
+.item-corpo .sub { font-size: 12px; }
+.item-linha.comprado .item-corpo b { text-decoration: line-through; color: var(--paper-faint); }
+
+.item-marca {
+  width: 28px; height: 28px; flex: 0 0 auto;
+  border: 2px solid var(--line-strong);
+  border-radius: var(--radius-pill);
+  display: grid; place-items: center;
+  color: var(--green-contraste);
+}
+.item-linha.comprado .item-marca { background: var(--green); border-color: var(--green); }
+.item-marca span { width: 16px; height: 16px; }
+
+.item-remover { width: 32px; height: 32px; flex: 0 0 auto; color: var(--paper-faint); font-size: 22px; line-height: 1; border-radius: var(--radius-pill); }
+.item-remover:hover { background: var(--red-soft); color: var(--red-ink); }
+
+/* ======================================================= MODO MERCADO === */
+
+/* No Modo Mercado o alvo cresce e a navegação some do caminho: a pessoa está
+   andando, com uma mão no carrinho. */
+.modo-mercado .item-linha,
+.modo-mercado .mercado-toque { min-height: var(--toque-mercado); }
+
+.mercado-topo {
+  display: flex; align-items: flex-end; justify-content: space-between; gap: var(--e3);
+  padding: var(--e3) var(--e4);
+  background: var(--destaque);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  /* Gruda no topo: o total do carrinho é a única informação que precisa estar
+     à vista o tempo todo. */
+  position: sticky; top: var(--h-topbar); z-index: 30;
+}
+.mercado-total .valor.grande { font-size: 32px; }
+.mercado-total .sub { font-size: 12px; }
+.mercado-contagem { text-align: right; }
+.mercado-contagem b { font-family: var(--font-num); font-size: 20px; font-weight: 800; }
+
+.orcamento { margin-top: var(--e3); display: flex; flex-direction: column; gap: var(--e2); }
+.orcamento-trilho { height: 8px; background: var(--ink-3); border-radius: var(--radius-pill); overflow: hidden; }
+.orcamento-barra { height: 100%; border-radius: var(--radius-pill); transition: width .2s var(--ease-out); }
+.orcamento-barra.s-green { background: var(--green); }
+.orcamento-barra.s-amber { background: var(--amber); }
+.orcamento-barra.s-red { background: var(--red); }
+
+.mercado-linha { border-radius: var(--radius-sm); }
+.mercado-linha + .mercado-linha { border-top: 1px solid var(--line); }
+.mercado-linha.aberta { background: var(--embutido); border-top-color: transparent; }
+
+.mercado-toque {
+  width: 100%;
+  display: flex; align-items: center; gap: var(--e3);
+  padding: var(--e2) var(--e2);
+  text-align: left;
+}
+.mercado-nome { flex: 1; min-width: 0; }
+.mercado-nome b { display: block; font-weight: 700; }
+.mercado-seta { width: 20px; height: 20px; color: var(--paper-faint); flex: 0 0 auto; }
+
+.mercado-linha.feita { display: flex; align-items: center; justify-content: space-between; gap: var(--e3); padding: var(--e2); }
+.feitos { opacity: .75; }
+.btn-desfazer { font-size: 11px; color: var(--gold-ink); font-weight: 700; display: block; }
+
+/* ---------------------------------------------------- painel de preço --- */
+
+.preco-painel { padding: var(--e3) var(--e2) var(--e3); display: flex; flex-direction: column; gap: var(--e3); }
+.preco-campos { display: flex; gap: var(--e2); }
+.preco-campo { flex: 1; display: flex; flex-direction: column; gap: var(--e1); }
+.preco-campo.estreito { flex: 0 0 84px; }
+.campo-preco { font-family: var(--font-num); font-size: 22px; font-weight: 800; min-height: var(--toque-mercado); }
+.preco-botoes { display: flex; gap: var(--e2); }
+.preco-botoes .btn { flex: 1; }
+.preco-botoes .btn-principal { flex: 2; }
+
+/* O diagnóstico e a sua nota. A nota carrega a BASE — mediana, número de
+   registros, escopo —, e é o que permite auditar o veredito. */
+.diag-area { min-height: 52px; }
+.diag-nota { margin: var(--e2) 0 0; font-size: 12px; color: var(--paper-dim); line-height: 1.4; }
+.diag-nota b { color: var(--paper); }
+
+.mercado-acoes { display: flex; flex-direction: column; gap: var(--e2); margin-top: var(--e4); }
+
+/* ------------------------------------------------------ Mais por Menos --- */
+
+.mpm { display: flex; gap: var(--e3); }
+.mpm-lado { flex: 1; min-width: 0; }
+.mpm-resposta { margin-top: var(--e4); min-height: 40px; }
+
+/* ---------------------------------------------------------- histórico --- */
+
+.aviso-encolhimento {
+  padding: var(--e3);
+  background: var(--blue-soft);
+  border: 1px solid var(--blue-borda);
+  border-radius: var(--radius-sm);
+}
+.aviso-encolhimento + .aviso-encolhimento { margin-top: var(--e2); }
+.aviso-encolhimento b { color: var(--blue-ink); }
+
+.lojas { display: flex; flex-direction: column; gap: var(--e2); }
+
+.destaque-compra { background: var(--destaque); }

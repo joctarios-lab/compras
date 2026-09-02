@@ -19,12 +19,27 @@ Leia primeiro, nesta ordem:
   este arquivo              ← o estado atual e as decisões já tomadas
 
 ## Estado atual
-- **F0 entregue.** Versão 1 (sw.js VERSAO + as tags ?v= do index.html andam
+- **F0 a F9 entregues.** Versão 2 (sw.js VERSAO + as tags ?v= do index.html andam
   JUNTAS a cada entrega — há teste travando isso).
-- 165 testes em tests/smoke.js, todos passando: `node tests/smoke.js`
+- 426 testes em tests/smoke.js, todos passando: `node tests/smoke.js`
 - A suíte em 9 datas de calendário: `node tests/tempo.js` — 9/9 verdes
-- 16/16 sabotagens pegas na última rodada
-- Próxima fase: **F1** — Lista + Modo Mercado + total do carrinho + Mais por Menos
+- **45/45 sabotagens pegas**: `node tests/sabotagem.js` — agora VERSIONADO, em vez
+  de viver num script temporário que se perde entre sessões, como no DOMI.
+- O que falta não é código: é **usar no mercado de verdade**. Ver "O que só o uso
+  vai dizer", no fim deste arquivo.
+
+## O que cada fase entregou
+| | |
+|---|---|
+| F1 | Lista com catálogo por frequência, Modo Mercado, total do carrinho, orçamento, Mais por Menos |
+| F2 | `js/precos.js`: unidade canônica, mediana em 6 meses, diagnóstico, encolhimento de embalagem |
+| F3 | `js/nfce.js` + `js/importar.js`: XML/HTML/CSV → canônico, dedupe por chave, casamento assistido, vínculo aprendido |
+| F4 | Fechamento, conferidor de caixa, histórico, cesta comparável, o que mais subiu, cadência |
+| F5 | `js/fotos.js`: IndexedDB, compressão, faxina de órfãs |
+| F6 | `js/leitura.js`: BarcodeDetector com limitação declarada, QR da nota |
+| F7 | OCR opcional do selo, desligado por padrão, chave do usuário |
+| F8 | `js/sync.js` + `supabase/schema.sql`: push/pull por `server_at`, RLS por dono |
+| F9 | Onde a cesta sai mais barata (cesta fechada entre lojas) |
 
 ## Decisões já tomadas (não reabrir sem conversa)
 - **O nome é CESTA**, e o `id` do manifest é `/compras/?app=cesta`. Trocar o id
@@ -41,23 +56,31 @@ Leia primeiro, nesta ordem:
 - **NFC-e: o formato se decide na F3**, contra uma nota real do usuário. O
   parser se escreve contra o arquivo de verdade, não contra a especificação.
 
-## O que já está construído (F0)
+## O que está construído
 ```
-index.html                 shell: topbar, main, dock de 3 abas; tema antes da 1ª pintura
-css/styles.css             o sistema visual: 3 camadas de tema, tokens, componentes
+index.html                 shell: topbar, conteúdo, dock de 3 abas; tema antes da 1ª pintura
+css/styles.css             o sistema visual: 3 camadas de tema, tokens, telas
 js/config.js               vazio de propósito (repo público)
 js/icons.js                ícones SVG inline — sem CDN, porque não há rede no mercado
 js/ui.js                   moeda, máscara, folhas, toast, --teclado, wakeLock
-js/db.js                   localStorage, envelope de sync, 9 stores, backup
-js/app.js                  boot, troca de aba, tema, registro do service worker
+js/db.js                   localStorage, envelope de sync, 9 stores, catálogo, carrinho
+js/precos.js               O MOTOR: unidade canônica, mediana, diagnóstico, cesta, cadência
+js/nfce.js                 leitura de NFC-e: XML, HTML e CSV → uma estrutura só
+js/importar.js             dedupe, casamento assistido e o vínculo aprendido
+js/fotos.js                IndexedDB, compressão, faxina de fotos órfãs
+js/leitura.js              código de barras (com a limitação do iOS declarada) e OCR
+js/sync.js                 push/pull incremental por server_at
+js/views/*.js              lista, mercado, ferramentas, histórico, importar, ajustes, sync, câmera
+js/app.js                  boot, troca de aba, entrada no Modo Mercado
 sw.js                      app shell offline-first
 manifest.webmanifest       id fixo, ícones, standalone
-icons/                     icon.svg + os 3 PNGs (gerar-icones.ps1 os refaz)
-tests/smoke.js             a suíte, com o relógio congelado
+supabase/schema.sql        tabelas, server_at e RLS por dono
+tests/smoke.js             a suíte (426), com o relógio congelado
 tests/tempo.js             a suíte em 9 datas de calendário
+tests/sabotagem.js         as 45 quebras propositais que provam a suíte
 ```
 
-## O que a F0 já trava com teste (não quebre sem perceber)
+## O que já está travado com teste (não quebre sem perceber)
 - O envelope de sync existe em TODA store, desde o primeiro registro.
 - Apagar é marcar apagado (soft delete); remover a linha faria o registro
   ressuscitar no primeiro pull da F8.
@@ -82,14 +105,22 @@ tests/tempo.js             a suíte em 9 datas de calendário
 - **NUNCA escreva data absoluta em teste.** Escreva a relação ("faz 60 dias", "o
   último dia deste mês"). Antes de dar por bom, rode `node tests/tempo.js` —
   verde num dia só não é verde.
-- Depois de corrigir, **SABOTE o código e confirme que o teste reprova.** O
-  script vive em `$CLAUDE_JOB_DIR/tmp/sabota-*.js`; restaure sempre num
-  `finally` e confirme a restauração relendo o arquivo.
-- **Sabotagem que passa é aviso, não alívio.** Na rodada da F0, a única que
-  passou era teste vazio: nenhuma entrada do `esc()` tinha um `&`, então trocar
-  split/join por replace não mudava nada. Investigue toda sabotagem não pega.
+- Depois de corrigir, **SABOTE o código e confirme que o teste reprova**:
+  `node tests/sabotagem.js`. Acrescente um caso para cada regra nova.
+- **Sabotagem que passa é aviso, não alívio.** Já aconteceu sete vezes aqui, e
+  as sete eram TESTE VAZIO — o teste existia, rodava, e não exercitava a regra:
+    · o `esc()` sem nenhum `&` na entrada (F0);
+    · a cesta comparável testada só pelo lado que o laço nunca percorre;
+    · a recusa de unidade testada na tela, não na porta de entrada;
+    · o casamento por nome testado numa linha de confiança "nenhuma";
+    · o pull sem teste nenhum — o que existia olhava o schema;
+    · o RLS conferido por substring que aparecia noutro lugar do arquivo.
+  Investigue TODA sabotagem não pega, sem exceção.
 - **Teste tem de REPROVAR, não morrer.** Um `bruto.deleted` sem guarda derrubava
-  a suíte na linha 150 e os cem testes seguintes nunca rodavam.
+  a suíte na linha 150 e os cem testes seguintes nunca rodavam. O mesmo modo de
+  falhar atingiu o próprio `tests/sabotagem.js`: um buraco no array de casos
+  lançava, e o `process.exit` do `finally` engolia o erro — ele anunciava
+  "16/46 pegas" sem ninguém notar que 30 casos jamais rodaram.
 - Comentários e mensagens de commit em português, explicando o PORQUÊ.
 - Confirme o push consultando o servidor (`git ls-remote`), não só o git status.
 - Módulos pequenos: **teto de 1.500 linhas por arquivo**. As telas vão para
@@ -125,3 +156,29 @@ tests/tempo.js             a suíte em 9 datas de calendário
 ## O que eu quero fazer agora
 [escreva aqui]
 ```
+
+---
+
+## O que só o uso vai dizer
+
+O código está completo e testado, mas três coisas não se resolvem por teste — só
+por uma ida ao mercado com o app na mão. Estão anotadas para não se perderem:
+
+1. **O selo sob luz fluorescente.** O Modo Mercado herda o tema escuro, decisão
+   do usuário contra a recomendação de forçar o claro lá. A mitigação foi
+   reforçar contraste (`.modo-mercado .diag`: 16px, borda de 2px). Se o selo
+   lavar no corredor, a conversa se reabre — e a saída pronta é o tema claro só
+   nesse modo.
+2. **O parser de HTML da NFC-e.** Ele foi escrito contra o formato COMUM dos
+   portais, não contra uma nota real do usuário. A primeira nota de verdade vai
+   apontar o que falta — é esperado, e é por isso que o CSV existe como saída.
+3. **A fricção real do painel de preço.** Três campos (preço, quantidade,
+   unidade) é o mínimo teórico. Se na prática a quantidade quase nunca muda,
+   ela deve virar um toque secundário e sair do caminho.
+
+## Sabotagens a reescrever quando o código andar
+
+`tests/sabotagem.js` casa trechos literais do código. Quando um trecho mudar, o
+caso aparece como **ERRO — sabotagem a reescrever**, e isso NÃO é defeito do app:
+é a sabotagem envelhecendo. Reescreva-a apontando para o novo trecho, nunca
+apague o caso.

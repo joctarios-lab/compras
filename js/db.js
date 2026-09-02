@@ -158,6 +158,98 @@ const DB = {
     return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
   },
 
+  /* -------------------------------------------------- catálogo (F1) --- */
+
+  /* Busca no catálogo pessoal, ordenada por FREQUÊNCIA de compra. O que a
+     pessoa compra toda semana tem de estar no topo da primeira letra digitada —
+     ordenar por nome deixaria "abacaxi" na frente de "arroz" para sempre. */
+  buscarItens(termo, limite = 8) {
+    const t = String(termo || '').trim().toLowerCase();
+    const usos = {};
+    for (const o of this.all('price_obs')) if (o.item_id) usos[o.item_id] = (usos[o.item_id] || 0) + 1;
+    return this.all('items')
+      .filter(i => !t || String(i.nome).toLowerCase().includes(t))
+      .sort((a, b) => (usos[b.id] || 0) - (usos[a.id] || 0) || String(a.nome).localeCompare(b.nome))
+      .slice(0, limite);
+  },
+
+  /* Acha o item pelo nome ou cria. O nome é a identidade do item no catálogo:
+     "Arroz" e "arroz" são a mesma coisa, e deixar os dois nascerem partiria o
+     histórico do produto em dois pela metade — sem ninguém perceber. */
+  itemPorNome(nome, extra = {}) {
+    const limpo = String(nome || '').trim();
+    if (!limpo) return null;
+    const achado = this.all('items').find(i => String(i.nome).toLowerCase() === limpo.toLowerCase());
+    if (achado) return achado;
+    return this.upsert('items', { nome: limpo, categoria: extra.categoria || 'Outros', unidade: extra.unidade || 'un', qtd_habitual: extra.qtd_habitual || 1 });
+  },
+
+  /* ----------------------------------------------------- listas (F1) --- */
+
+  novaLista({ nome, store_id, orcamento } = {}) {
+    return this.upsert('lists', {
+      nome: nome || 'Compra de ' + this.hojeISO().split('-').reverse().slice(0, 2).join('/'),
+      status: 'planejada',
+      store_id: store_id || null,
+      orcamento: orcamento == null ? null : Number(orcamento),
+      data_abertura: this.hojeISO(),
+      data_fechamento: null,
+      total_cupom: null,
+    });
+  },
+
+  /* A compra EM CURSO é uma só. Duas listas em curso ao mesmo tempo fariam o
+     preço registrado cair na compra errada, e isso é invisível até o mês virar. */
+  listaEmCurso() { return this.all('lists').find(l => l.status === 'em_curso') || null; },
+
+  listasPlanejadas() { return this.all('lists').filter(l => l.status === 'planejada'); },
+
+  listasFechadas() {
+    return this.all('lists').filter(l => l.status === 'fechada')
+      .sort((a, b) => String(b.data_fechamento).localeCompare(String(a.data_fechamento)));
+  },
+
+  itensDaLista(list_id) {
+    return this.all('list_items').filter(li => li.list_id === list_id);
+  },
+
+  addNaLista(list_id, { item_id, product_id, qtd, unidade }) {
+    const item = this.get('items', item_id);
+    return this.upsert('list_items', {
+      list_id,
+      item_id,
+      product_id: product_id || null,
+      qtd: qtd == null ? (item && item.qtd_habitual) || 1 : Number(qtd),
+      unidade: unidade || (item && item.unidade) || 'un',
+      comprado: false,
+      nao_tinha: false,
+      preco_total: null,
+      obs_id: null,
+    });
+  },
+
+  /* O TOTAL DO CARRINHO. Soma o que já foi precificado e ESTIMA o que falta
+     pela mediana de cada item — separados, sempre: misturar o que já custa com
+     o que talvez custe num número só faria a pessoa confiar numa estimativa
+     como se fosse o valor do caixa. */
+  totalDoCarrinho(list_id, estimarItem) {
+    const itens = this.itensDaLista(list_id);
+    let firme = 0, estimado = 0, comprados = 0, aEstimar = 0;
+    for (const li of itens) {
+      if (li.nao_tinha) continue;
+      if (li.comprado && isFinite(li.preco_total)) { firme += Number(li.preco_total); comprados++; continue; }
+      if (li.comprado) { comprados++; continue; }
+      const e = estimarItem ? estimarItem(li) : null;
+      if (isFinite(e) && e > 0) { estimado += e; aEstimar++; }
+    }
+    return {
+      firme, estimado, total: firme + estimado,
+      comprados, aEstimar,
+      itens: itens.filter(li => !li.nao_tinha).length,
+      pendentes: itens.filter(li => !li.comprado && !li.nao_tinha).length,
+    };
+  },
+
   /* --------------------------------------------------------- backup --- */
 
   exportJSON() { return JSON.stringify(this.data, null, 2); },

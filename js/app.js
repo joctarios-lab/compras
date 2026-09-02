@@ -31,55 +31,91 @@ function temaAtual() {
 
 /* ----------------------------------------------------------------- abas --- */
 
-const VIEWS = {
-  /* As telas de verdade chegam na F1. Até lá cada aba se anuncia pelo que vai
-     fazer — um estado vazio que diz o PRÓXIMO PASSO vale mais que um "sem
-     dados", que só informa o que a pessoa já vê. */
-  lista: () => `
-    <h1 class="titulo">Sua lista</h1>
-    <p class="sub">Monte a lista antes de sair de casa.</p>
-    <div class="card" style="margin-top:var(--e4)">
-      <div class="vazio">
-        <b>Nenhuma lista ainda</b>
-        Comece pela lista da próxima compra: dá para despejar tudo de uma vez,
-        sem tirar a mão do teclado.
-      </div>
-    </div>`,
-
-  mercado: () => `
-    <h1 class="titulo">Modo Mercado</h1>
-    <p class="sub">O preço é bom? A resposta no corredor.</p>
-    <div class="card" style="margin-top:var(--e4)">
-      <div class="vazio">
-        <b>Você não está em uma compra</b>
-        Abra uma lista e toque em “Estou no mercado” para começar.
-      </div>
-    </div>`,
-
-  historico: () => `
-    <h1 class="titulo">Histórico</h1>
-    <p class="sub">O que subiu, o que caiu e quanto a sua cesta variou.</p>
-    <div class="card" style="margin-top:var(--e4)">
-      <div class="vazio">
-        <b>Ainda não há compras registradas</b>
-        Depois da primeira ida ao mercado, esta tela mostra a evolução de cada
-        produto — e quais foram os que mais pesaram.
-      </div>
-    </div>`,
-};
-
 function irPara(aba) {
-  if (!VIEWS[aba]) aba = 'lista';
+  const abas = ['lista', 'mercado', 'historico'];
+  if (!abas.includes(aba)) aba = 'lista';
+
+  /* Sair do Modo Mercado por outra aba tem de DESLIGAR o modo: senão a classe
+     no body sobrevive, o alvo de toque continua grande na tela errada e o
+     wakeLock segue segurando a tela acesa com o app no bolso. */
+  if (state.aba === 'mercado' && aba !== 'mercado') Mercado.fechar();
+
   state.aba = aba;
   const tela = document.getElementById('tela');
-  tela.innerHTML = VIEWS[aba]();
+  const recarregar = () => irPara(aba);
+
+  if (aba === 'lista') {
+    tela.innerHTML = ViewLista.render();
+    ViewLista.ligar(tela, recarregar);
+  } else if (aba === 'mercado') {
+    const lista = DB.listaEmCurso();
+    if (!lista) {
+      tela.innerHTML = `<h1 class="titulo">Modo Mercado</h1>
+        <p class="sub">O preço é bom? A resposta no corredor.</p>
+        <div class="card"><div class="vazio">
+          <b>Você não está em uma compra</b>
+          Monte a lista e toque em “Estou no mercado” para começar.
+        </div>
+        <button class="btn btn-principal btn-largo btn-grande" id="ir-lista">Ir para a lista</button></div>`;
+      const b = tela.querySelector('#ir-lista');
+      if (b) b.addEventListener('click', () => irPara('lista'));
+    } else {
+      Mercado.listaId = lista.id;
+      document.body.classList.add('modo-mercado');
+      tela.innerHTML = Mercado.render();
+      Mercado.ligar(tela, recarregar);
+    }
+  } else {
+    tela.innerHTML = ViewHistorico.render();
+    ViewHistorico.ligar(tela);
+  }
+
   pintarIcones(tela);
   for (const b of document.querySelectorAll('.dock-item')) {
     if (b.dataset.aba === aba) b.setAttribute('aria-current', 'page');
     else b.removeAttribute('aria-current');
   }
-  // Trocar de aba com a página rolada deixaria a nova tela começando no meio.
   window.scrollTo(0, 0);
+}
+
+/* Entrar no Modo Mercado a partir da lista: escolhe a loja antes, porque preço
+   sem loja é um número que não se pode explicar depois. */
+function abrirMercado() {
+  let lista = DB.listaEmCurso() || DB.listasPlanejadas()[0];
+  if (!lista) { UI.toast('Monte a lista primeiro'); return; }
+  if (lista.store_id) { entrarNoMercado(lista); return; }
+
+  const lojas = DB.all('stores');
+  const fechar = UI.folha(`
+    <h2 class="titulo">Onde você está?</h2>
+    <p class="sub">O preço só significa alguma coisa junto com o lugar.</p>
+    ${lojas.length ? `<div class="lojas">${lojas.map(l =>
+      `<button class="btn btn-largo btn-grande loja-op" data-loja="${l.id}">${UI.esc(l.nome)}</button>`).join('')}</div>` : ''}
+    <input class="campo" id="nova-loja" placeholder="Nome do mercado" autocomplete="off"
+           enterkeyhint="done" style="margin-top:var(--e3)">
+    <button class="btn btn-principal btn-largo btn-grande" id="ok-loja" style="margin-top:var(--e2)">Começar</button>`);
+
+  const começar = idLoja => {
+    DB.upsert('lists', { id: lista.id, store_id: idLoja });
+    fechar();
+    entrarNoMercado(DB.get('lists', lista.id));
+  };
+  for (const b of document.querySelectorAll('.loja-op')) {
+    b.addEventListener('click', () => começar(b.dataset.loja));
+  }
+  const campo = document.querySelector('#nova-loja');
+  const criar = () => {
+    const nome = String(campo.value || '').trim();
+    if (!nome) { UI.toast('Diga o nome do mercado'); return; }
+    começar(DB.upsert('stores', { nome }).id);
+  };
+  document.querySelector('#ok-loja').addEventListener('click', criar);
+  campo.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); criar(); } });
+}
+
+async function entrarNoMercado(lista) {
+  await Mercado.abrir(lista);
+  irPara('mercado');
 }
 
 /* ----------------------------------------------------------------- boot --- */
@@ -100,10 +136,7 @@ function boot() {
   });
 
   const btnAjustes = document.getElementById('btn-ajustes');
-  if (btnAjustes) btnAjustes.addEventListener('click', () => {
-    UI.folha(`<h2 class="titulo">Ajustes</h2>
-      <p class="sub">A tela de ajustes chega junto com a primeira versão da lista.</p>`);
-  });
+  if (btnAjustes) btnAjustes.addEventListener('click', abrirAjustes);
 
   /* Gravação que falha é o pior desfecho no meio de uma compra: a pessoa
      continua registrando preços que não estão sendo guardados. Fala alto. */
@@ -112,7 +145,9 @@ function boot() {
   };
 
   pintarIcones(document);
-  irPara('lista');
+  /* Abre onde a pessoa parou: quem está no meio de uma compra volta ao corredor,
+     não à tela de montar lista. */
+  irPara(DB.listaEmCurso() ? 'mercado' : 'lista');
 
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
