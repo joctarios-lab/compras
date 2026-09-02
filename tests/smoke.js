@@ -820,6 +820,48 @@ check('o schema cria o carimbo do servidor', schema.includes('server_at'), true)
 check('com gatilho em toda escrita', schema.includes('trg_server_at'), true);
 check('e RLS por dono', schema.includes('auth.uid()'), true);
 
+/* A ORDEM DAS DECLARACOES NO SCHEMA.
+
+   Numa base NOVA, o bloco que acrescenta server_at nao pode vir antes dos
+   create table: o `alter table if exists` passa em silencio, mas o
+   `create index` da linha seguinte aborta com "relation does not exist" e
+   derruba o script inteiro — nenhuma tabela e criada, e o unico sinal e o erro
+   no painel do Supabase.
+
+   Foi exatamente assim que o schema estava, e so apareceu quando o verificador
+   consultou um projeto de verdade e achou zero tabelas. */
+/* SEM OS COMENTARIOS. Um teste que procura um literal casa com o comentario que
+   FALA sobre o literal — e passa (ou reprova) sem olhar para o SQL de verdade.
+   Aconteceu aqui: o comentario que explica o defeito do 'create index' fez o
+   teste de idempotencia reprovar. */
+const sql = schema.split(/\r?\n/).filter(l => !l.trim().startsWith('--')).join('\n');
+const posPrimeiraTabela = sql.search(/create table if not exists/);
+const posIndice = sql.search(/create index if not exists/);
+const posTrigger = sql.search(/create trigger trg_server_at/);
+const posAlter = sql.search(/add column if not exists server_at/);
+check('as tabelas sao criadas antes dos indices', posPrimeiraTabela < posIndice, true);
+check('e antes dos gatilhos', posPrimeiraTabela < posTrigger, true);
+check('e antes de acrescentar o carimbo do servidor', posPrimeiraTabela < posAlter, true);
+check('o RLS vem por ultimo', sql.search(/create policy/) > posPrimeiraTabela, true);
+
+/* O schema tem de ser IDEMPOTENTE: rodar de novo e o jeito certo de aplicar uma
+   atualizacao, e um `create table` sem guarda apagaria essa possibilidade. */
+const criacoes = sql.match(/create table[^(]*/gi) || [];
+check('toda criacao de tabela e idempotente',
+  criacoes.every(c => /if not exists/i.test(c)), true);
+check('e todo indice tambem',
+  (sql.match(/create (unique )?index[^(]*/gi) || []).every(c => /if not exists/i.test(c)), true);
+/* Gatilho nao aceita "if not exists": o jeito idempotente e derrubar antes. */
+check('o gatilho e derrubado antes de recriado', sql.includes('drop trigger if exists'), true);
+check('e a politica de RLS tambem', sql.includes('drop policy if exists'), true);
+
+/* O verificador de banco existe e cobre as mesmas tabelas que o app envia: se
+   ele conferir menos, uma tabela pode faltar no banco sem ninguem notar. */
+const verificador = fs.readFileSync(BASE + 'supabase/verificar.js', 'utf8');
+for (const tabela of Object.keys(SYNC_TABELAS)) {
+  check(`o verificador confere a tabela ${tabela}`, verificador.includes(tabela + ':'), true);
+}
+
 /* ======================================================= LEITURA === */
 
 console.log('\n=== Camera, codigo de barras e OCR ===');

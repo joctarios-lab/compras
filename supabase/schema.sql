@@ -1,7 +1,17 @@
 -- CESTA — banco e segurança para a sincronização opcional.
 --
--- Rode uma vez no SQL Editor do seu projeto Supabase. É IDEMPOTENTE: pode rodar
--- de novo depois de uma atualização do app, sem perder nada.
+-- ESTE SCHEMA VAI NUM PROJETO SUPABASE PRÓPRIO, separado do app de finanças.
+-- As oito tabelas daqui não colidem com as vinte e uma do DOMI (foi conferido),
+-- mas separar mantém as duas bases independentes: apagar, restaurar ou migrar
+-- uma nunca põe a outra em risco, e as chaves de API são distintas.
+--
+-- Rode uma vez no SQL Editor do projeto. É IDEMPOTENTE: pode rodar de novo
+-- depois de uma atualização do app, sem perder nada.
+--
+-- Depois de rodar, confira com:  node supabase/verificar.js
+-- Ele diz se alguma tabela ficou de fora e se o RLS está mesmo ligado — rodar o
+-- SQL e supor que deu certo é o jeito fácil de descobrir semanas depois que
+-- algo nunca sincronizou.
 --
 -- O ESCOPO É PESSOAL (auth.uid()), não familiar: um histórico de preços é de
 -- quem o construiu, e compartilhá-lo por padrão mandaria o consumo de alguém
@@ -17,24 +27,7 @@ begin
   return new;
 end $$;
 
-do $$
-declare
-  t text;
-  tabelas text[] := array['stores','items','products','lists','list_items',
-                          'price_obs','nfce_docs','aliases'];
-begin
-  foreach t in array tabelas loop
-    -- coluna de carimbo do servidor + índice, em toda tabela sincronizada
-    execute format('alter table if exists public.%I
-                    add column if not exists server_at timestamptz not null default now()', t);
-    execute format('create index if not exists %I on public.%I (user_id, server_at)',
-                   'idx_' || t || '_user_server', t);
-    -- o gatilho que mantém o carimbo em toda escrita
-    execute format('drop trigger if exists trg_server_at on public.%I', t);
-    execute format('create trigger trg_server_at before insert or update on public.%I
-                    for each row execute function public.marcar_server_at()', t);
-  end loop;
-end $$;
+
 
 -- ---------------------------------------------------------------- tabelas ---
 
@@ -153,6 +146,30 @@ create table if not exists public.aliases (
   updated_at timestamptz not null default now(),
   deleted boolean not null default false
 );
+
+-- ------------------------------------------------- carimbo do servidor ---
+-- DEPOIS das tabelas, e nao antes: numa base nova o `alter table if exists`
+-- passa em silencio, mas o `create index` da linha seguinte aborta com
+-- "relation does not exist" e derruba o script inteiro — nenhuma tabela seria
+-- criada, e o unico sinal seria o erro no painel.
+do $$
+declare
+  t text;
+  tabelas text[] := array['stores','items','products','lists','list_items',
+                          'price_obs','nfce_docs','aliases'];
+begin
+  foreach t in array tabelas loop
+    -- coluna de carimbo do servidor + índice, em toda tabela sincronizada
+    execute format('alter table if exists public.%I
+                    add column if not exists server_at timestamptz not null default now()', t);
+    execute format('create index if not exists %I on public.%I (user_id, server_at)',
+                   'idx_' || t || '_user_server', t);
+    -- o gatilho que mantém o carimbo em toda escrita
+    execute format('drop trigger if exists trg_server_at on public.%I', t);
+    execute format('create trigger trg_server_at before insert or update on public.%I
+                    for each row execute function public.marcar_server_at()', t);
+  end loop;
+end $$;
 
 -- ------------------------------------------------------------------- RLS ---
 -- Cada pessoa só enxerga e escreve as próprias linhas. Sem isto, a chave anon
