@@ -65,12 +65,12 @@ function irPara(aba) {
     if (!lista) {
       tela.innerHTML = `<h1 class="titulo">Modo Mercado</h1>
         <p class="sub">É aqui que o app responde se o preço está bom.</p>
-        <div class="card"><div class="vazio">
+        <div class="card"><div class="ui-empty">
           <b>Você não está numa compra</b>
           Monte a lista e toque em “Estou no mercado”. A partir daí é só ir
           digitando os preços das etiquetas.
         </div>
-        <button class="btn btn-principal btn-largo btn-grande" id="ir-lista">Ir para a lista</button></div>`;
+        <button class="btn" id="ir-lista">Ir para a lista</button></div>`;
       const b = tela.querySelector('#ir-lista');
       if (b) b.addEventListener('click', () => irPara('lista'));
     } else {
@@ -102,11 +102,11 @@ function abrirMercado(listaId) {
     <p class="sub">O preço só significa alguma coisa junto com o lugar — é o que
       permite o app dizer depois onde sua cesta sai mais barata.</p>
     ${lojas.length ? `<div class="lojas">${lojas.map(l =>
-      `<button class="btn btn-largo btn-grande loja-op" data-loja="${l.id}">${UI.esc(l.nome)}</button>`).join('')}</div>
-      <p class="secao">Ou um novo</p>` : ''}
-    <input class="campo" id="nova-loja" placeholder="Nome do mercado" autocomplete="off"
+      `<button class="btn btn-vazado loja-op" data-loja="${l.id}">${UI.esc(l.nome)}</button>`).join('')}</div>
+      <p class="section-title">Ou um novo</p>` : ''}
+    <input  id="nova-loja" placeholder="Nome do mercado" autocomplete="off"
            enterkeyhint="done" style="margin-top:var(--e2)">
-    <button class="btn btn-principal btn-largo btn-grande" id="ok-loja" style="margin-top:var(--e2)">
+    <button class="btn" id="ok-loja" style="margin-top:var(--e2)">
       Começar a comprar
     </button>`);
 
@@ -182,7 +182,7 @@ function abrirApp() {
   };
 
   /* A PRIMEIRA VEZ É A APRESENTAÇÃO. Sem isto, quem abre encontra um campo
-     vazio e três abas, sem saber o que o app faz nem por onde começar — e
+     ui-empty e três abas, sem saber o que o app faz nem por onde começar — e
      fecha. Foi o que aconteceu no primeiro teste real. */
   if (!Onboarding.jaFez()) {
     Onboarding.abrir();

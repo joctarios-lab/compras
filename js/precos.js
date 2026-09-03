@@ -13,7 +13,7 @@
 const Precos = {
 
   /* O LIMIAR VIVE AQUI E SÓ AQUI. Duas cópias divergem no dia em que uma for
-     ajustada, e aí o selo da lista discorda do selo do mercado. */
+     ajustada, e aí o badge da lista discorda do badge do mercado. */
   LIMIAR: 0.07,
   JANELA_MESES: 6,
 

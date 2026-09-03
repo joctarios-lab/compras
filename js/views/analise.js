@@ -36,7 +36,7 @@ const ViewAnalise = {
       : (DB.listaEmCurso() || DB.listasPlanejadas()[0] || {}).id;
 
     if (!listaId) {
-      return `<div class="card"><div class="vazio">
+      return `<div class="card"><div class="ui-empty">
         <b>Monte uma lista primeiro</b>
         A comparação é da SUA lista: o app soma o preço de cada item em cada
         mercado onde você já comprou.
@@ -47,7 +47,7 @@ const ViewAnalise = {
 
     if (r.motivo) {
       return `<div class="card">
-        <div class="vazio">
+        <div class="ui-empty">
           <b>Ainda não dá para comparar</b>
           ${r.motivo === 'menos de dois mercados'
             ? 'É preciso ter registrado preços em pelo menos dois mercados diferentes.'
@@ -59,7 +59,7 @@ const ViewAnalise = {
     const melhor = r.lojas[0];
     return `
       <div class="card">
-        <p class="secao" style="margin-top:0">A sua lista, em cada mercado</p>
+        <p class="section-title" style="margin-top:0">A sua lista, em cada mercado</p>
         <p class="sub">Comparando os <b>${r.cobertos} itens</b> que você já comprou
           em todos eles — a mesma cesta nos dois lugares.</p>
         <div class="lista-itens" style="margin-top:var(--e3)">
@@ -82,7 +82,7 @@ const ViewAnalise = {
   telaDinheiro() {
     const d = Decisoes.ondeVaiODinheiro(DB, { meses: 3 });
     if (!d.itens.length) {
-      return `<div class="card"><div class="vazio">
+      return `<div class="card"><div class="ui-empty">
         <b>Sem gastos registrados ainda</b>
         Depois de algumas compras, esta tela mostra os poucos produtos que fazem
         a maior parte da conta.
@@ -91,7 +91,7 @@ const ViewAnalise = {
 
     return `
       <div class="card">
-        <p class="secao" style="margin-top:0">Os últimos 3 meses</p>
+        <p class="section-title" style="margin-top:0">Os últimos 3 meses</p>
         <div class="linha-resumo" style="margin-top:0">
           <div><span class="rotulo">Total</span><b class="valor grande">${UI.fmt(d.total)}</b></div>
           <div class="direita"><span class="rotulo">Produtos</span><b class="valor">${d.itens.length}</b></div>
@@ -102,7 +102,7 @@ const ViewAnalise = {
       </div>
 
       <div class="card">
-        <p class="secao" style="margin-top:0">Por corredor</p>
+        <p class="section-title" style="margin-top:0">Por corredor</p>
         <div class="lista-itens">
           ${d.porCategoria.slice(0, 6).map(c => `<div class="item-linha">
             <span class="item-emoji">${c.corredor.icone}</span>
@@ -119,10 +119,10 @@ const ViewAnalise = {
       </div>
 
       <div class="card">
-        <p class="secao" style="margin-top:0">Onde o dinheiro se concentra</p>
+        <p class="section-title" style="margin-top:0">Onde o dinheiro se concentra</p>
         <div class="lista-itens">
           ${d.itens.slice(0, 12).map(l => `<div class="item-linha">
-            <span class="selo ${l.classe === 'A' ? 's-red' : l.classe === 'B' ? 's-amber' : 's-slate'}">${l.classe}</span>
+            <span class="badge ${l.classe === 'A' ? 'b-red' : l.classe === 'B' ? 'b-amber' : 'b-slate'}">${l.classe}</span>
             <div class="item-corpo">
               <b>${UI.esc(l.item.nome)}</b>
               <span class="sub">${l.vezes} ${l.vezes === 1 ? 'compra' : 'compras'} · ${Math.round(l.pct * 100)}% da conta</span>
@@ -144,15 +144,15 @@ const ViewAnalise = {
 
     return `
       <div class="card">
-        <p class="secao" style="margin-top:0">Preços-alvo</p>
+        <p class="section-title" style="margin-top:0">Preços-alvo</p>
         <p class="sub">Diga quanto você aceita pagar. No mercado, o app avisa
           quando o preço bater o alvo — em vez de você ter de lembrar de conferir.</p>
-        <button class="btn btn-principal btn-largo btn-grande" data-acao="novo-alvo" style="margin-top:var(--e3)">
+        <button class="btn" data-acao="novo-alvo" style="margin-top:var(--e3)">
           Definir um preço-alvo
         </button>
       </div>
 
-      ${batidos.length ? `<p class="secao">Batendo agora</p>
+      ${batidos.length ? `<p class="section-title">Batendo agora</p>
         <div class="card lista-itens">
           ${batidos.map(b => {
             const item = b.alvo.item_id ? DB.get('items', b.alvo.item_id) : null;
@@ -163,12 +163,12 @@ const ViewAnalise = {
                 <span class="sub">${UI.fmtBase(b.melhor, b.unidade)}${loja ? ' em ' + UI.esc(loja.nome) : ''}
                   · alvo ${UI.fmtBase(b.alvo.valor, b.alvo.unidade)}</span>
               </div>
-              <span class="selo s-green">🟢 bateu</span>
+              <span class="badge b-green">🟢 bateu</span>
             </div>`;
           }).join('')}
         </div>` : ''}
 
-      ${alvos.length ? `<p class="secao">Todos os alvos</p>
+      ${alvos.length ? `<p class="section-title">Todos os alvos</p>
         <div class="card lista-itens">
           ${alvos.map(a => {
             const item = a.item_id ? DB.get('items', a.item_id) : null;
@@ -178,7 +178,7 @@ const ViewAnalise = {
                 <span class="sub">avisar abaixo de ${UI.fmtBase(a.valor, a.unidade)}</span>
               </div>
               <div class="direita">
-                ${idsBatidos.has(a.id) ? '<span class="selo s-green">batendo</span>' : ''}
+                ${idsBatidos.has(a.id) ? '<span class="badge b-green">batendo</span>' : ''}
                 <button class="btn-mini" data-acao="apagar-alvo" data-alvo="${a.id}">remover</button>
               </div>
             </div>`;

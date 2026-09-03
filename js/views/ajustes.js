@@ -10,14 +10,14 @@ function abrirAjustes() {
   const fechar = UI.folha(`
     <h2 class="titulo">Ajustes</h2>
 
-    <p class="secao">Orçamento padrão</p>
-    <input class="campo campo-preco" id="cfg-orcamento" inputmode="decimal"
+    <p class="section-title">Orçamento padrão</p>
+    <input class="campo-preco" id="cfg-orcamento" inputmode="decimal"
            placeholder="R$ 0,00" value="${cfg.orcamento_padrao ? UI.fmt(cfg.orcamento_padrao) : ''}">
     <p class="sub">Vira o limite de cada compra nova, e o app avisa quando o
       carrinho chega perto. Em branco, ele não cobra nada.</p>
 
-    <p class="secao">Compartilhar</p>
-    <button class="btn btn-largo" id="cfg-familia">
+    <p class="section-title">Compartilhar</p>
+    <button class="btn btn-vazado" id="cfg-familia">
       <span data-ico="compartilhar"></span>
       ${Sync.temFamilia() ? UI.esc(Sync.cfg.family_nome || 'Minha casa') : 'Compartilhar a lista'}
     </button>
@@ -25,8 +25,8 @@ function abrirAjustes() {
       ? 'Quem está na casa vê a mesma lista e o mesmo histórico.'
       : 'Divida a lista com quem faz as compras com você.'}</p>
 
-    <p class="secao">Segurança</p>
-    <button class="btn btn-largo" id="cfg-seguranca">
+    <p class="section-title">Segurança</p>
+    <button class="btn btn-vazado" id="cfg-seguranca">
       <span data-ico="digital"></span>
       ${Auth.ligado() ? 'PIN ativo — gerenciar' : 'Proteger com PIN'}
     </button>
@@ -34,40 +34,40 @@ function abrirAjustes() {
       ? 'Seus dados estão criptografados neste aparelho.'
       : 'Criptografa o histórico no aparelho. Sem o PIN, ninguém lê nada.'}</p>
 
-    <p class="secao">Seus dados</p>
+    <p class="section-title">Seus dados</p>
     <div class="linha-resumo" style="margin-top:0">
       <div><span class="rotulo">Preços</span><b class="valor">${obs}</b></div>
       <div><span class="rotulo">Produtos</span><b class="valor">${itens}</b></div>
       <div class="direita"><span class="rotulo">Mercados</span><b class="valor">${lojas}</b></div>
     </div>
 
-    <button class="btn btn-largo" id="cfg-importar" style="margin-top:var(--e3)">
+    <button class="btn btn-vazado" id="cfg-importar" style="margin-top:var(--e3)">
       Importar nota fiscal (NFC-e)
     </button>
-    <button class="btn btn-largo" id="cfg-backup" style="margin-top:var(--e2)">
+    <button class="btn btn-vazado" id="cfg-backup" style="margin-top:var(--e2)">
       Baixar backup
     </button>
-    <label class="btn btn-largo" style="margin-top:var(--e2)">
+    <label class="btn btn-vazado" style="margin-top:var(--e2)">
       Restaurar backup
       <input type="file" id="cfg-restaurar" accept=".json" hidden>
     </label>
 
-    <p class="secao">Sincronização</p>
+    <p class="section-title">Sincronização</p>
     <p class="sub">${Sync.logado()
       ? `Conectado · ${Sync.pendentes()} ${Sync.pendentes() === 1 ? 'registro não enviado' : 'registros não enviados'}`
       : 'O app funciona inteiro sem conta e sem internet. A sincronização é opcional.'}</p>
-    <button class="btn btn-largo" id="cfg-sync" style="margin-top:var(--e2)">
+    <button class="btn btn-vazado" id="cfg-sync" style="margin-top:var(--e2)">
       ${Sync.logado() ? 'Gerenciar sincronização' : 'Configurar sincronização'}
     </button>
 
-    <p class="secao">Sobre</p>
-    <button class="btn btn-largo" id="cfg-ajuda">Ajuda e apresentação</button>
+    <p class="section-title">Sobre</p>
+    <button class="btn btn-vazado" id="cfg-ajuda">Ajuda e apresentação</button>
 
-    <button class="btn btn-largo" id="cfg-apagar" style="margin-top:var(--e5); color:var(--red-ink)">
+    <button class="btn btn-vazado" id="cfg-apagar" style="margin-top:var(--e5); color:var(--red-ink)">
       Apagar tudo deste aparelho
     </button>`);
 
-  pintarIcones(document.querySelector('.folha'));
+  pintarIcones(document.querySelector('.sheet'));
 
   const campo = document.querySelector('#cfg-orcamento');
   const mascara = UI.mascaraMoeda(campo);
@@ -120,8 +120,8 @@ function abrirAjustes() {
         deste aparelho. <b>Não há como desfazer.</b> Se ainda não baixou um
         backup, feche isto e baixe primeiro.</p>
       ${Sync.temFamilia() ? '<p class="sub">O que está na nuvem continua com as outras pessoas da casa.</p>' : ''}
-      <button class="btn btn-largo btn-grande" id="ap-nao" style="margin-top:var(--e4)">Cancelar</button>
-      <button class="btn btn-largo" id="ap-sim" style="margin-top:var(--e2); color:var(--red-ink)">
+      <button class="btn btn-vazado" id="ap-nao" style="margin-top:var(--e4)">Cancelar</button>
+      <button class="btn btn-vazado" id="ap-sim" style="margin-top:var(--e2); color:var(--red-ink)">
         Sim, apagar tudo
       </button>`);
     document.querySelector('#ap-nao').addEventListener('click', f2);
@@ -147,25 +147,25 @@ function abrirSeguranca() {
       abrir o navegador — a menos que esteja criptografado.</p>
 
     ${ligado ? `
-      <div class="diag s-green" style="margin-top:var(--e3)">
+      <div class="diag b-green" style="margin-top:var(--e3)">
         <span>🟢 Dados criptografados neste aparelho</span>
       </div>
 
-      <p class="secao">Digital</p>
+      <p class="section-title">Digital</p>
       <p class="sub">${Auth.bioAtiva()
         ? 'Ativa. Você entra com a digital, e o PIN continua funcionando como saída.'
         : 'Entre com a digital em vez de digitar o PIN toda vez.'}</p>
-      <button class="btn btn-largo" id="sg-bio" style="margin-top:var(--e2)">
+      <button class="btn btn-vazado" id="sg-bio" style="margin-top:var(--e2)">
         ${Auth.bioAtiva() ? 'Desativar digital' : 'Ativar digital'}
       </button>
 
-      <p class="secao">PIN</p>
-      <button class="btn btn-largo" id="sg-trocar">Trocar o PIN</button>
-      <button class="btn btn-largo" id="sg-desligar" style="margin-top:var(--e2); color:var(--red-ink)">
+      <p class="section-title">PIN</p>
+      <button class="btn btn-vazado" id="sg-trocar">Trocar o PIN</button>
+      <button class="btn btn-vazado" id="sg-desligar" style="margin-top:var(--e2); color:var(--red-ink)">
         Desligar a proteção
       </button>
     ` : `
-      <p class="secao">Como funciona</p>
+      <p class="section-title">Como funciona</p>
       <div class="passos">
         <p><b>O PIN não é uma senha guardada.</b> Ele gera a chave que abre os
           dados. Não existe "PIN correto" em lugar nenhum do aparelho — o errado
@@ -176,7 +176,7 @@ function abrirSeguranca() {
         <p><b>A digital vem depois</b>, se o aparelho tiver leitor: ela guarda a
           mesma chave, e o PIN fica como saída.</p>
       </div>
-      <button class="btn btn-principal btn-largo btn-grande" id="sg-ligar" style="margin-top:var(--e3)">
+      <button class="btn" id="sg-ligar" style="margin-top:var(--e3)">
         Criar PIN
       </button>
     `}

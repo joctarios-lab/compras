@@ -1,4 +1,4 @@
-/* CESTA — leitura de código de barras (F6) e do selo de preço (F7).
+/* CESTA — leitura de código de barras (F6) e do badge de preço (F7).
 
    AS DUAS SÃO CONVENIÊNCIA, NUNCA DEPENDÊNCIA. Digitar o preço sempre funciona,
    em qualquer aparelho, offline. Tudo aqui é um atalho para quem o aparelho
@@ -56,9 +56,9 @@ const Leitura = {
     if (stream) for (const t of stream.getTracks()) t.stop();
   },
 
-  /* ------------------------------------------------- o selo (F7/OCR) --- */
+  /* ------------------------------------------------- o badge (F7/OCR) --- */
 
-  /* O OCR do selo é OPCIONAL E DESLIGADO POR PADRÃO, e usa a chave do próprio
+  /* O OCR do badge é OPCIONAL E DESLIGADO POR PADRÃO, e usa a chave do próprio
      usuário — o mesmo padrão do assistente do app de finanças. Duas razões:
 
        1. Não embutir megabytes de modelo no shell offline de TODO MUNDO por um
@@ -95,7 +95,7 @@ const Leitura = {
     });
   },
 
-  /* Manda a foto do selo e pede de volta preço, quantidade e unidade.
+  /* Manda a foto do badge e pede de volta preço, quantidade e unidade.
      Devolve SEMPRE uma proposta a confirmar, nunca um dado gravado. */
   async lerSelo(blob) {
     if (!this.ocrLigado()) return { erro: 'ocr_desligado' };

@@ -27,7 +27,7 @@ const ViewLista = {
         <div class="card destaque-compra">
           <p class="sub">Compra em andamento</p>
           <h2 class="titulo">${UI.esc(emCurso.nome)}</h2>
-          <button class="btn btn-principal btn-largo btn-grande" data-acao="ir-mercado" style="margin-top:var(--e3)">
+          <button class="btn" data-acao="ir-mercado" style="margin-top:var(--e3)">
             Voltar ao Modo Mercado
           </button>
         </div>
@@ -38,12 +38,12 @@ const ViewLista = {
     if (!lista) {
       return `${this.cabecalho()}
         <div class="card">
-          <div class="vazio">
+          <div class="ui-empty">
             <b>Nenhuma lista ainda</b>
             Monte a lista da próxima compra. Dá para despejar tudo de uma vez,
             sem tirar a mão do teclado.
           </div>
-          <button class="btn btn-principal btn-largo btn-grande" data-acao="nova-lista">Criar lista</button>
+          <button class="btn" data-acao="nova-lista">Criar lista</button>
         </div>`;
     }
 
@@ -76,9 +76,9 @@ const ViewLista = {
     return `
       <div class="card">
         <div class="add-linha">
-          <input class="campo" id="add-item" placeholder="O que falta? Ex.: arroz" autocomplete="off"
+          <input  id="add-item" placeholder="O que falta? Ex.: arroz" autocomplete="off"
                  enterkeyhint="done" aria-label="Adicionar item">
-          <button class="btn btn-principal add-btn" data-acao="add" aria-label="Adicionar">
+          <button class="btn add-btn" data-acao="add" aria-label="Adicionar">
             <span data-ico="mais"></span>
           </button>
         </div>
@@ -87,18 +87,18 @@ const ViewLista = {
       </div>
 
       ${itens.length ? `<div class="card lista-itens">${itens.map(li => this.linha(li)).join('')}</div>` : `
-        <div class="card"><div class="vazio">
+        <div class="card"><div class="ui-empty">
           <b>Lista vazia</b>
           Digite o primeiro item acima. O campo continua em foco — dá para
           despejar a lista inteira de uma vez.
         </div></div>`}
 
       ${itens.length ? `
-        <button class="btn btn-principal btn-largo btn-grande" data-acao="ir-mercado" style="margin-top:var(--e4)">
+        <button class="btn" data-acao="ir-mercado" style="margin-top:var(--e4)">
           Estou no mercado
         </button>` : ''}
 
-      <button class="btn btn-largo" data-acao="mais-por-menos" style="margin-top:var(--e3)">
+      <button class="btn btn-vazado" data-acao="mais-por-menos" style="margin-top:var(--e3)">
         <span data-ico="balanca"></span> Mais por Menos
       </button>`;
   },

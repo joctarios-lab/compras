@@ -12,19 +12,19 @@
 function abrirMaisPorMenos() {
   const lado = (id, titulo) => `
     <div class="mpm-lado">
-      <p class="secao" style="margin-top:0">${titulo}</p>
+      <p class="section-title" style="margin-top:0">${titulo}</p>
       <label class="preco-campo">
         <span class="rotulo">Preço</span>
-        <input class="campo campo-preco" id="mpm-preco-${id}" inputmode="decimal" placeholder="R$ 0,00">
+        <input class="campo-preco" id="mpm-preco-${id}" inputmode="decimal" placeholder="R$ 0,00">
       </label>
       <div class="preco-campos" style="margin-top:var(--e2)">
         <label class="preco-campo">
           <span class="rotulo">Tamanho</span>
-          <input class="campo" id="mpm-qtd-${id}" inputmode="decimal" placeholder="500">
+          <input  id="mpm-qtd-${id}" inputmode="decimal" placeholder="500">
         </label>
         <label class="preco-campo estreito">
           <span class="rotulo">Un.</span>
-          <select class="campo" id="mpm-un-${id}">
+          <select  id="mpm-un-${id}">
             ${['ml', 'l', 'g', 'kg', 'un'].map(u => `<option value="${u}">${u}</option>`).join('')}
           </select>
         </label>
@@ -59,13 +59,13 @@ function abrirMaisPorMenos() {
     }
     const r = Precos.maisPorMenos(a, b);
     if (r.erro) {
-      resposta.innerHTML = `<div class="diag s-slate"><span>${r.erro === 'unidades diferentes'
+      resposta.innerHTML = `<div class="diag b-slate"><span>${r.erro === 'unidades diferentes'
         ? 'Compare coisas na mesma medida (peso com peso, volume com volume).'
         : 'Unidade desconhecida.'}</span></div>`;
       return;
     }
     if (r.empate) {
-      resposta.innerHTML = `<div class="diag s-amber"><span>🟡 Dá no mesmo</span></div>
+      resposta.innerHTML = `<div class="diag b-amber"><span>🟡 Dá no mesmo</span></div>
         <p class="diag-nota">As duas saem a ${UI.fmtBase(r.a.valor, r.unidade)}.</p>`;
       return;
     }
@@ -73,7 +73,7 @@ function abrirMaisPorMenos() {
     const ganho = r.melhor === 'a' ? r.a : r.b;
     const perde = r.melhor === 'a' ? r.b : r.a;
     resposta.innerHTML = `
-      <div class="diag s-green"><span>🟢 Opção ${vencedor} compensa</span>
+      <div class="diag b-green"><span>🟢 Opção ${vencedor} compensa</span>
         <span class="pct">${Math.round(r.economiaPct * 100)}% mais barata</span></div>
       <p class="diag-nota">${UI.fmtBase(ganho.valor, r.unidade)} contra ${UI.fmtBase(perde.valor, r.unidade)} —
         diferença de ${UI.fmtBase(r.diferenca, r.unidade)}.</p>`;
@@ -113,19 +113,19 @@ function abrirFechamento(listaId) {
 
     <label class="preco-campo" style="margin-top:var(--e4)">
       <span class="rotulo">Total do cupom (opcional)</span>
-      <input class="campo campo-preco" id="fech-cupom" inputmode="decimal" placeholder="R$ 0,00">
+      <input class="campo-preco" id="fech-cupom" inputmode="decimal" placeholder="R$ 0,00">
     </label>
     <p class="sub">Confere se o caixa cobrou o que a gôndola prometia.</p>
 
     <div id="fech-conferencia" role="status" aria-live="polite" style="margin-top:var(--e3)"></div>
 
-    ${naoTinha.length ? `<p class="secao">Não tinha nesta loja</p>
+    ${naoTinha.length ? `<p class="section-title">Não tinha nesta loja</p>
       <p class="sub">${naoTinha.map(li => UI.esc((DB.get('items', li.item_id) || {}).nome || '')).join(', ')}</p>` : ''}
 
-    <button class="btn btn-principal btn-largo btn-grande" id="fech-ok" style="margin-top:var(--e4)">
+    <button class="btn" id="fech-ok" style="margin-top:var(--e4)">
       Encerrar compra
     </button>
-    <button class="btn btn-largo" id="fech-voltar" style="margin-top:var(--e2)">Continuar comprando</button>`);
+    <button class="btn btn-vazado" id="fech-voltar" style="margin-top:var(--e2)">Continuar comprando</button>`);
 
   const campo = document.querySelector('#fech-cupom');
   const mascara = UI.mascaraMoeda(campo);
@@ -142,12 +142,12 @@ function abrirFechamento(listaId) {
        Acusar isso como divergência faria o conferidor gritar em toda compra — e
        um alarme que sempre toca é um alarme desligado. */
     if (Math.abs(dif) < 0.02) {
-      area.innerHTML = `<div class="diag s-green"><span>🟢 Bateu certinho</span></div>
+      area.innerHTML = `<div class="diag b-green"><span>🟢 Bateu certinho</span></div>
         <p class="diag-nota">O caixa cobrou o que a gôndola prometia.</p>`;
       return;
     }
     const acima = dif > 0;
-    area.innerHTML = `<div class="diag ${acima ? 's-red' : 's-amber'}">
+    area.innerHTML = `<div class="diag ${acima ? 'b-red' : 'b-amber'}">
         <span>${acima ? '🔴 O caixa cobrou mais' : '🟡 O caixa cobrou menos'}</span>
         <span class="pct">${UI.fmt(Math.abs(dif))}</span>
       </div>

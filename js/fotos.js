@@ -34,7 +34,7 @@ const Fotos = {
 
   /* COMPRIME ANTES DE GRAVAR. Uma foto de celular moderno tem 3–8 MB; guardar
      isso a cada preço encheria o aparelho em uma compra. 1280px e qualidade
-     0,6 mantêm o texto do selo perfeitamente legível — que é a única coisa que
+     0,6 mantêm o texto do badge perfeitamente legível — que é a única coisa que
      a foto precisa entregar. */
   async comprimir(arquivo, { maxLado = 1280, qualidade = 0.6 } = {}) {
     const bitmap = await createImageBitmap(arquivo);

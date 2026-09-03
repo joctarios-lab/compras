@@ -28,14 +28,14 @@ const Bloqueio = {
     const el = this.el();
     el.hidden = false;
     el.innerHTML = `
-      <div class="lock-caixa">
-        <img src="icons/icon.svg" alt="" class="lock-logo">
+      <div class="lock-card">
+        <img src="icons/icon.svg" alt="" class="lock-ico">
         <h1>CESTA</h1>
-        <p class="lock-texto">Confirme sua digital para entrar.</p>
-        <button type="button" class="lock-bio" id="lk-bio" aria-label="Usar a digital">
+        <p class="lock-txt">Confirme sua digital para entrar.</p>
+        <button type="button" class="bio-alvo" id="lk-bio" aria-label="Usar a digital">
           <span data-ico="digital"></span>
         </button>
-        <p class="lock-erro" id="lk-erro" role="alert"></p>
+        <p class="lock-err" id="lk-erro" role="alert"></p>
         <button class="btn-texto" id="lk-pin">Usar o PIN</button>
       </div>`;
     pintarIcones(el);
@@ -104,19 +104,19 @@ const Bloqueio = {
     let pin = '';
 
     el.innerHTML = `
-      <div class="lock-caixa">
-        <img src="icons/icon.svg" alt="" class="lock-logo">
+      <div class="lock-card">
+        <img src="icons/icon.svg" alt="" class="lock-ico">
         <h1>${UI.esc(titulo)}</h1>
-        <p class="lock-texto">${texto}</p>
-        <div class="lock-bolinhas" id="lk-bolas" aria-label="PIN"></div>
-        <p class="lock-erro" id="lk-erro" role="alert"></p>
-        <div class="lock-teclas">
-          ${[1,2,3,4,5,6,7,8,9].map(n => `<button class="lock-tecla" data-n="${n}">${n}</button>`).join('')}
-          <button class="lock-tecla vazia" disabled></button>
-          <button class="lock-tecla" data-n="0">0</button>
-          <button class="lock-tecla" data-apaga aria-label="Apagar">⌫</button>
+        <p class="lock-txt">${texto}</p>
+        <div class="pin-dots" id="lk-bolas" aria-label="PIN"></div>
+        <p class="lock-err" id="lk-erro" role="alert"></p>
+        <div class="pin-pad">
+          ${[1,2,3,4,5,6,7,8,9].map(n => `<button class="pin-key" data-n="${n}">${n}</button>`).join('')}
+          <button class="pin-key pin-vazia" disabled></button>
+          <button class="pin-key" data-n="0">0</button>
+          <button class="pin-key" data-apaga aria-label="Apagar">⌫</button>
         </div>
-        <button class="btn btn-principal btn-largo btn-grande" id="lk-ok" disabled>Entrar</button>
+        <button class="btn pin-ok" id="lk-ok" disabled>Entrar</button>
         ${rodape}
       </div>`;
 
@@ -137,7 +137,7 @@ const Bloqueio = {
       if (!deu) { pin = ''; pintar(); }
     };
 
-    for (const t of el.querySelectorAll('.lock-tecla')) {
+    for (const t of el.querySelectorAll('.pin-key')) {
       t.addEventListener('click', () => {
         erro.textContent = '';
         if (t.dataset.apaga !== undefined) pin = pin.slice(0, -1);

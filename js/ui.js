@@ -53,7 +53,7 @@ const UI = {
 
   /* O TECLADO DO CELULAR NÃO ENCOLHE A PÁGINA — ele cobre o rodapé. Medir por
      innerHeight não enxerga isso; o visualViewport, sim. A altura coberta vira
-     a variável --teclado, e daí a folha se apoia acima dele.
+     a variável --teclado, e daí a sheet se apoia acima dele.
 
      É o problema mais difícil da tela principal deste app: o campo de preço vive
      no rodapé, na zona do polegar, exatamente onde o teclado sobe. */
@@ -75,13 +75,13 @@ const UI = {
   /* ---------------------------------------------------------- folhas --- */
 
   /* Folha que sobe de baixo. Devolve uma função que a fecha.
-     No Modo Mercado NÃO se usa folha para registrar preço — lá a entrada é
+     No Modo Mercado NÃO se usa sheet para registrar preço — lá a entrada é
      direta, sem diálogo. Folha é para o que acontece fora do corredor. */
   folha(html, { aoFechar } = {}) {
     const fundo = document.createElement('div');
     fundo.className = 'folha-fundo';
-    fundo.innerHTML = `<div class="folha" role="dialog" aria-modal="true">
-      <div class="folha-alca"></div>${html}</div>`;
+    fundo.innerHTML = `<div class="sheet" role="dialog" aria-modal="true">
+      <div class="sheet-handle"></div>${html}</div>`;
     const fechar = () => {
       if (!fundo.parentNode) return;
       fundo.remove();

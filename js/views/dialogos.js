@@ -35,7 +35,7 @@ function abrirNovoPlano() {
     <p class="sub">Com data e orçamento, o app monta a lista sozinho e avisa
       quando estiver chegando.</p>
 
-    <p class="secao">Que tipo de compra?</p>
+    <p class="section-title">Que tipo de compra?</p>
     <div class="ciclos">
       ${Object.entries(CICLOS).filter(([id]) => id !== 'evento').map(([id, c], i) => `
         <button class="ciclo-card ${i === 0 ? 'ativo' : ''}" data-ciclo="${id}">
@@ -44,20 +44,20 @@ function abrirNovoPlano() {
         </button>`).join('')}
     </div>
 
-    <p class="secao">Quando</p>
-    <input class="campo" id="np-data" type="date" value="${sugerirData('mensal')}">
+    <p class="section-title">Quando</p>
+    <input  id="np-data" type="date" value="${sugerirData('mensal')}">
 
-    <p class="secao">Onde <span class="sub">(opcional)</span></p>
-    <select class="campo" id="np-loja">
+    <p class="section-title">Onde <span class="sub">(opcional)</span></p>
+    <select  id="np-loja">
       <option value="">Decido na hora</option>
       ${lojas.map(l => `<option value="${l.id}">${UI.esc(l.nome)}</option>`).join('')}
     </select>
 
-    <p class="secao">Quanto pretende gastar <span class="sub">(opcional)</span></p>
-    <input class="campo campo-preco" id="np-orc" inputmode="decimal" placeholder="R$ 0,00">
+    <p class="section-title">Quanto pretende gastar <span class="sub">(opcional)</span></p>
+    <input class="campo-preco" id="np-orc" inputmode="decimal" placeholder="R$ 0,00">
     <p class="sub">Serve para o app avisar antes de estourar, não para cobrar você.</p>
 
-    <button class="btn btn-principal btn-largo btn-grande" id="np-ok" style="margin-top:var(--e4)">
+    <button class="btn" id="np-ok" style="margin-top:var(--e4)">
       Marcar e montar a lista
     </button>`);
 
@@ -123,16 +123,16 @@ function abrirRevisaoDeSugestoes(planoId) {
             <b>${Catalogo.corredor(s.item.categoria).icone} ${UI.esc(s.item.nome)}</b>
             <span class="sub">${UI.esc(s.texto)}</span>
           </div>
-          <span class="selo ${s.motivo === 'acabando' ? 's-amber' : s.motivo === 'recorrente' ? 's-blue' : 's-slate'}">
+          <span class="badge ${s.motivo === 'acabando' ? 'b-amber' : s.motivo === 'recorrente' ? 'b-blue' : 'b-slate'}">
             ${s.motivo === 'acabando' ? 'acabando' : s.motivo === 'recorrente' ? 'sempre entra' : 'no seu ritmo'}
           </span>
         </label>`).join('')}
     </div>
 
-    <button class="btn btn-principal btn-largo btn-grande" id="sg-ok" style="margin-top:var(--e4)">
+    <button class="btn" id="sg-ok" style="margin-top:var(--e4)">
       Pôr os marcados na lista
     </button>
-    <button class="btn btn-largo" id="sg-pular" style="margin-top:var(--e2)">Agora não</button>`);
+    <button class="btn btn-vazado" id="sg-pular" style="margin-top:var(--e2)">Agora não</button>`);
 
   const conta = () => { document.querySelector('#sg-conta').textContent = marcados.size; };
 
@@ -174,16 +174,16 @@ function abrirPlano(planoId) {
     <p class="sub">${ViewPlanejar.dataBR(plano.data)} · ${itens.length} ${itens.length === 1 ? 'item' : 'itens'}
       ${custo.previsto ? '· ≈ ' + UI.fmt(custo.previsto) : ''}</p>
 
-    <button class="btn btn-principal btn-largo btn-grande" id="pl-sugestoes">
+    <button class="btn" id="pl-sugestoes">
       Ver sugestões do app
     </button>
-    <button class="btn btn-largo btn-grande" id="pl-lista" style="margin-top:var(--e2)">
+    <button class="btn btn-vazado" id="pl-lista" style="margin-top:var(--e2)">
       Abrir a lista
     </button>
-    <button class="btn btn-largo btn-grande" id="pl-mercado" style="margin-top:var(--e2)">
+    <button class="btn btn-vazado" id="pl-mercado" style="margin-top:var(--e2)">
       Estou no mercado
     </button>
-    <button class="btn btn-largo" id="pl-apagar" style="margin-top:var(--e5); color:var(--red-ink)">
+    <button class="btn btn-vazado" id="pl-apagar" style="margin-top:var(--e5); color:var(--red-ink)">
       Desmarcar esta compra
     </button>`);
 
@@ -239,8 +239,8 @@ function repetirCompra(listaId) {
     <h2 class="titulo">Repetir esta compra</h2>
     <p class="sub">Cria uma compra nova com os ${itens.length} itens que você
       levou em ${ViewPlanejar.dataBR(antiga.data_fechamento)}.</p>
-    <input class="campo" id="rp-data" type="date" value="${DB.hojeISO()}" style="margin-top:var(--e3)">
-    <button class="btn btn-principal btn-largo btn-grande" id="rp-ok" style="margin-top:var(--e3)">
+    <input  id="rp-data" type="date" value="${DB.hojeISO()}" style="margin-top:var(--e3)">
+    <button class="btn" id="rp-ok" style="margin-top:var(--e3)">
       Criar a compra
     </button>`);
 
@@ -282,7 +282,7 @@ function abrirEscolhaDePrato(data) {
         </button>`;
       }).join('')}
     </div>
-    <button class="btn btn-largo" id="cd-limpar" style="margin-top:var(--e3)">Deixar esse dia livre</button>`);
+    <button class="btn btn-vazado" id="cd-limpar" style="margin-top:var(--e3)">Deixar esse dia livre</button>`);
 
   for (const b of document.querySelectorAll('[data-receita]')) {
     b.addEventListener('click', () => {
@@ -337,11 +337,11 @@ function abrirEvento(tipo) {
     <div class="preco-campos" style="margin-top:var(--e3)">
       <label class="preco-campo">
         <span class="rotulo">Pessoas</span>
-        <input class="campo" id="ev-pessoas" inputmode="numeric" value="10">
+        <input  id="ev-pessoas" inputmode="numeric" value="10">
       </label>
       <label class="preco-campo">
         <span class="rotulo">Quando</span>
-        <input class="campo" id="ev-data" type="date" value="${DB.hojeISO()}">
+        <input  id="ev-data" type="date" value="${DB.hojeISO()}">
       </label>
     </div>
 
@@ -349,7 +349,7 @@ function abrirEvento(tipo) {
 
     ${def.nota ? `<p class="sub">${def.nota}</p>` : ''}
 
-    <button class="btn btn-principal btn-largo btn-grande" id="ev-ok" style="margin-top:var(--e3)">
+    <button class="btn" id="ev-ok" style="margin-top:var(--e3)">
       Criar a lista
     </button>`);
 
@@ -410,16 +410,16 @@ function abrirNovoAlvo() {
     <h2 class="titulo">Definir preço-alvo</h2>
     <p class="sub">O app avisa quando o preço bater o valor que você aceita pagar.</p>
 
-    <p class="secao">Produto</p>
-    <select class="campo" id="al-item">
+    <p class="section-title">Produto</p>
+    <select  id="al-item">
       ${itens.map(x => `<option value="${x.item.id}">${UI.esc(x.item.nome)} — hoje ${UI.fmtBase(x.ref.mediana, x.ref.unidade)}</option>`).join('')}
     </select>
 
-    <p class="secao">Avisar abaixo de</p>
-    <input class="campo campo-preco" id="al-valor" inputmode="decimal" placeholder="R$ 0,00">
+    <p class="section-title">Avisar abaixo de</p>
+    <input class="campo-preco" id="al-valor" inputmode="decimal" placeholder="R$ 0,00">
     <p class="sub" id="al-dica"></p>
 
-    <button class="btn btn-principal btn-largo btn-grande" id="al-ok" style="margin-top:var(--e3)">
+    <button class="btn" id="al-ok" style="margin-top:var(--e3)">
       Criar alvo
     </button>`);
 
@@ -461,11 +461,11 @@ function abrirOrcamentoDoMes() {
     <p class="sub">Quanto a casa pretende gastar com mercado neste mês. É o que
       permite ao app avisar <b>antes</b> de estourar, em vez de você descobrir no
       extrato.</p>
-    <input class="campo campo-preco" id="or-valor" inputmode="decimal"
+    <input class="campo-preco" id="or-valor" inputmode="decimal"
            placeholder="R$ 0,00" value="${atual ? UI.fmt(atual) : ''}" style="margin-top:var(--e3)">
     <p class="sub">É diferente do orçamento de cada compra: este é o do mês inteiro,
       somando o rancho, as reposições e as idas rápidas.</p>
-    <button class="btn btn-principal btn-largo btn-grande" id="or-ok" style="margin-top:var(--e3)">Salvar</button>`);
+    <button class="btn" id="or-ok" style="margin-top:var(--e3)">Salvar</button>`);
 
   const campo = document.querySelector('#or-valor');
   const mascara = UI.mascaraMoeda(campo);
@@ -491,32 +491,32 @@ function abrirCompraRapida() {
     <p class="sub">Registrar sem lista e sem plano. O preço entra no histórico
       igual, e o item entra na despensa.</p>
 
-    <input class="campo" id="cr-item" placeholder="O que você comprou?" autocomplete="off" style="margin-top:var(--e3)">
+    <input  id="cr-item" placeholder="O que você comprou?" autocomplete="off" style="margin-top:var(--e3)">
     <div class="preco-campos" style="margin-top:var(--e2)">
       <label class="preco-campo">
         <span class="rotulo">Preço</span>
-        <input class="campo campo-preco" id="cr-preco" inputmode="decimal" placeholder="R$ 0,00">
+        <input class="campo-preco" id="cr-preco" inputmode="decimal" placeholder="R$ 0,00">
       </label>
       <label class="preco-campo estreito">
         <span class="rotulo">Qtd</span>
-        <input class="campo" id="cr-qtd" inputmode="decimal" value="1">
+        <input  id="cr-qtd" inputmode="decimal" value="1">
       </label>
       <label class="preco-campo estreito">
         <span class="rotulo">Un.</span>
-        <select class="campo" id="cr-un">
+        <select  id="cr-un">
           ${['un', 'kg', 'g', 'l', 'ml'].map(u => `<option value="${u}">${u}</option>`).join('')}
         </select>
       </label>
     </div>
 
-    <select class="campo" id="cr-loja" style="margin-top:var(--e2)">
+    <select  id="cr-loja" style="margin-top:var(--e2)">
       <option value="">Onde? (opcional)</option>
       ${lojas.map(l => `<option value="${l.id}">${UI.esc(l.nome)}</option>`).join('')}
     </select>
 
     <div id="cr-diag" style="margin-top:var(--e3)"></div>
 
-    <button class="btn btn-principal btn-largo btn-grande" id="cr-ok" style="margin-top:var(--e3)">
+    <button class="btn" id="cr-ok" style="margin-top:var(--e3)">
       Registrar
     </button>`);
 
@@ -535,7 +535,7 @@ function abrirCompraRapida() {
     const preco = UI.lerMoeda(campoPreco);
     if (!nome || !preco) { diag.innerHTML = ''; return; }
     const existente = DB.all('items').find(i => i.nome.toLowerCase() === nome.toLowerCase());
-    if (!existente) { diag.innerHTML = '<div class="diag s-slate"><span>⚪ Produto novo</span></div>'; return; }
+    if (!existente) { diag.innerHTML = '<div class="diag b-slate"><span>⚪ Produto novo</span></div>'; return; }
     const d = Precos.avaliar(DB, {
       item_id: existente.id, preco,
       qtd: Number(String(campoQtd.value).replace(',', '.')) || 1,

@@ -31,19 +31,19 @@ const ViewPlanejar = {
     const fechados = DB.listasFechadas().slice(0, 5);
 
     return `
-      <button class="btn btn-principal btn-largo btn-grande" data-acao="novo-plano">
+      <button class="btn" data-acao="novo-plano">
         <span data-ico="mais"></span> Marcar uma compra
       </button>
 
-      ${planos.length ? `<p class="secao">Marcadas</p>
+      ${planos.length ? `<p class="section-title">Marcadas</p>
         <div class="card">${planos.map(p => this.linhaPlano(p)).join('')}</div>`
-      : `<div class="card" style="margin-top:var(--e3)"><div class="vazio">
+      : `<div class="card" style="margin-top:var(--e3)"><div class="ui-empty">
           <b>Nenhuma compra marcada</b>
           Marcar o dia do rancho é o que faz o app montar a lista sozinho, com o
           que deve faltar até lá.
         </div></div>`}
 
-      <p class="secao">Modelos</p>
+      <p class="section-title">Modelos</p>
       <p class="sub">Um ciclo vira modelo depois da primeira compra: o app passa
         a sugerir o que costuma entrar nele.</p>
       <div class="ciclos">
@@ -57,7 +57,7 @@ const ViewPlanejar = {
         }).join('')}
       </div>
 
-      ${fechados.length ? `<p class="secao">Compras anteriores</p>
+      ${fechados.length ? `<p class="section-title">Compras anteriores</p>
         <div class="card">${fechados.map(l => {
           const t = DB.totalDoCarrinho(l.id, () => null);
           const loja = l.store_id ? DB.get('stores', l.store_id) : null;
@@ -87,7 +87,7 @@ const ViewPlanejar = {
         <span class="sub">${this.dataBR(p.data)} · ${itens} ${itens === 1 ? 'item' : 'itens'}${
           custo.previsto ? ' · ≈ ' + UI.fmt(custo.previsto) : ''}</span>
       </div>
-      <span class="selo ${atrasado ? 's-red' : dias <= 2 ? 's-amber' : 's-slate'}">
+      <span class="badge ${atrasado ? 'b-red' : dias <= 2 ? 'b-amber' : 'b-slate'}">
         ${atrasado ? 'atrasada' : dias === 0 ? 'hoje' : dias === 1 ? 'amanhã' : `${dias}d`}
       </span>
     </button>`;
@@ -134,7 +134,7 @@ const ViewPlanejar = {
       </div>
 
       ${lista.length ? `
-        <p class="secao">O que a semana pede</p>
+        <p class="section-title">O que a semana pede</p>
         <div class="card">
           <div class="linha-resumo" style="margin-top:0">
             <div><span class="rotulo">Falta comprar</span><b class="valor grande">${faltando.length}</b></div>
@@ -150,7 +150,7 @@ const ViewPlanejar = {
               </div>
             </div>`).join('')}
           </div>
-          ${faltando.length ? `<button class="btn btn-principal btn-largo btn-grande" data-acao="cardapio-lista" style="margin-top:var(--e3)">
+          ${faltando.length ? `<button class="btn" data-acao="cardapio-lista" style="margin-top:var(--e3)">
             Pôr os ${faltando.length} que faltam na lista
           </button>` : ''}
         </div>` : ''}`;

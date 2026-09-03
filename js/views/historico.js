@@ -52,12 +52,12 @@ const ViewHistorico = {
     if (!compras.length && !obs.length) {
       return `${dentro ? '' : `<h1 class="titulo">Histórico</h1>`}
         <p class="sub">O que subiu, o que caiu e quanto a sua cesta variou.</p>
-        <div class="card"><div class="vazio">
+        <div class="card"><div class="ui-empty">
           <b>Ainda não há nada registrado</b>
           Depois da primeira compra — ou da primeira nota fiscal importada —
           esta tela mostra a evolução de cada produto.
         </div>
-        <button class="btn btn-principal btn-largo btn-grande" data-acao="importar">
+        <button class="btn" data-acao="importar">
           Importar nota fiscal
         </button></div>`;
     }
@@ -76,10 +76,10 @@ const ViewHistorico = {
       ${this.cartaoCadencia()}
       ${this.cartaoCompras(compras)}
 
-      <button class="btn btn-largo" data-acao="importar" style="margin-top:var(--e4)">
+      <button class="btn btn-vazado" data-acao="importar" style="margin-top:var(--e4)">
         Importar nota fiscal (NFC-e)
       </button>
-      <button class="btn btn-largo" data-acao="entre-lojas" style="margin-top:var(--e2)">
+      <button class="btn btn-vazado" data-acao="entre-lojas" style="margin-top:var(--e2)">
         Onde minha cesta sai mais barata
       </button>`;
   },
@@ -91,23 +91,23 @@ const ViewHistorico = {
     const c = Precos.cestaComparavel(DB, mesBase, mesAtual);
     if (!c.n) {
       return `<div class="card">
-        <p class="secao" style="margin-top:0">Sua cesta comparável</p>
-        <div class="vazio" style="padding:var(--e4) 0">
+        <p class="section-title" style="margin-top:0">Sua cesta comparável</p>
+        <div class="ui-empty" style="padding:var(--e4) 0">
           <b>Ainda não dá para comparar</b>
           É preciso ter comprado os mesmos produtos em dois meses diferentes.
           Importar notas antigas resolve isso de uma vez.
         </div></div>`;
     }
     const sobe = c.indice > 0;
-    const selo = Math.abs(c.indice) < 0.02 ? 's-slate' : sobe ? 's-red' : 's-green';
+    const selo = Math.abs(c.indice) < 0.02 ? 'b-slate' : sobe ? 'b-red' : 'b-green';
     return `<div class="card">
-      <p class="secao" style="margin-top:0">Sua cesta comparável</p>
+      <p class="section-title" style="margin-top:0">Sua cesta comparável</p>
       <div class="linha-resumo">
         <div>
           <b class="valor grande">${sobe ? '+' : '−'}${Math.abs(c.indice * 100).toFixed(1)}%</b>
           <span class="sub">${this.nomeDoMes(mesBase)} → ${this.nomeDoMes(mesAtual)}</span>
         </div>
-        <span class="selo ${selo}">${c.n} ${c.n === 1 ? 'produto' : 'produtos'} nos dois meses</span>
+        <span class="badge ${selo}">${c.n} ${c.n === 1 ? 'produto' : 'produtos'} nos dois meses</span>
       </div>
       <p class="sub">Mede só o que existe nos dois períodos — é a sua inflação de
         verdade, sem contar que você comprou coisas diferentes.</p>
@@ -119,7 +119,7 @@ const ViewHistorico = {
     if (!a && !b) return '';
     const var_ = a > 0 ? (b - a) / a : null;
     return `<div class="card">
-      <p class="secao" style="margin-top:0">Você gastou</p>
+      <p class="section-title" style="margin-top:0">Você gastou</p>
       <div class="linha-resumo">
         <div><span class="rotulo">${this.nomeDoMes(mesAtual)}</span><b class="valor grande">${UI.fmt(b)}</b></div>
         <div class="direita"><span class="rotulo">${this.nomeDoMes(mesBase)}</span><b class="valor">${UI.fmt(a)}</b></div>
@@ -133,7 +133,7 @@ const ViewHistorico = {
     const lista = Precos.maisSubiram(DB, mesBase, mesAtual, { limite: 5 });
     if (!lista.length) return '';
     return `<div class="card">
-      <p class="secao" style="margin-top:0">O que mais subiu</p>
+      <p class="section-title" style="margin-top:0">O que mais subiu</p>
       ${lista.map(p => {
         const prod = DB.get('products', p.product_id);
         const item = prod ? DB.get('items', prod.item_id) : null;
@@ -143,7 +143,7 @@ const ViewHistorico = {
             <b>${UI.esc(nome || '—')}</b>
             <span class="sub">${UI.fmt(p.de)} → ${UI.fmt(p.para)}</span>
           </div>
-          <span class="selo ${p.variacao > 0 ? 's-red' : 's-green'}">
+          <span class="badge ${p.variacao > 0 ? 'b-red' : 'b-green'}">
             ${p.variacao > 0 ? '+' : '−'}${Math.abs(p.variacao * 100).toFixed(0)}%
           </span>
         </div>`;
@@ -162,7 +162,7 @@ const ViewHistorico = {
     }
     if (!achados.length) return '';
     return `<div class="card">
-      <p class="secao" style="margin-top:0">A embalagem encolheu</p>
+      <p class="section-title" style="margin-top:0">A embalagem encolheu</p>
       ${achados.slice(0, 4).map(({ produto, e }) => {
         const item = DB.get('items', produto.item_id);
         const nome = `${item ? item.nome : ''} ${produto.marca || ''}`.trim();
@@ -197,13 +197,13 @@ const ViewHistorico = {
     if (!avisos.length) return '';
     avisos.sort((a, b) => b.c.diasDesde - a.c.diasDesde);
     return `<div class="card">
-      <p class="secao" style="margin-top:0">Provavelmente está acabando</p>
+      <p class="section-title" style="margin-top:0">Provavelmente está acabando</p>
       ${avisos.slice(0, 6).map(({ item, c }) => `<div class="item-linha">
         <div class="item-corpo">
           <b>${UI.esc(item.nome)}</b>
           <span class="sub">Você costuma comprar a cada ${c.intervalo} dias · faz ${c.diasDesde}</span>
         </div>
-        <span class="selo ${c.atrasado ? 's-amber' : 's-blue'}">${c.atrasado ? 'bem atrasado' : 'perto'}</span>
+        <span class="badge ${c.atrasado ? 'b-amber' : 'b-blue'}">${c.atrasado ? 'bem atrasado' : 'perto'}</span>
       </div>`).join('')}
       <p class="sub">Sai do seu próprio ritmo de compra — não há estoque a manter.</p>
     </div>`;
@@ -212,7 +212,7 @@ const ViewHistorico = {
   cartaoCompras(compras) {
     if (!compras.length) return '';
     return `<div class="card">
-      <p class="secao" style="margin-top:0">Compras</p>
+      <p class="section-title" style="margin-top:0">Compras</p>
       ${compras.slice(0, 8).map(l => {
         const t = DB.totalDoCarrinho(l.id, () => null);
         const loja = l.store_id ? DB.get('stores', l.store_id) : null;

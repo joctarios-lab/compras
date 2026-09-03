@@ -1,7 +1,7 @@
 /* CESTA — a primeira vez.
 
    O APP TEM DE SE APRESENTAR. Sem isto, quem abre pela primeira vez encontra um
-   campo de texto vazio e três abas, sem saber o que o app faz, para que serve,
+   campo de texto ui-empty e três abas, sem saber o que o app faz, para que serve,
    nem por onde começar — e fecha. Foi exatamente o que aconteceu no primeiro
    teste real, e é o defeito mais caro que um app pode ter: ele não chega a ser
    usado errado, ele não chega a ser usado.
@@ -22,6 +22,34 @@ const Onboarding = {
 
   jaFez() {
     try { return localStorage.getItem(this.CHAVE) === 'ok'; } catch (_) { return false; }
+  },
+
+  /* A PERGUNTA QUE IMPORTA: este aparelho está configurado?
+
+     Não basta o flag: ele sobrevive a uma versão anterior do app, a um "apagar
+     tudo" e a um backup restaurado — e quando sobrevive, o app abre mudo, sem
+     identidade e sem segurança. Foi exatamente o que aconteceu no uso real.
+
+     Configurado é: a apresentação foi vista E existe alguma coisa aqui. Um app
+     sem identidade e sem um único dado não está configurado, diga o flag o que
+     disser. */
+  precisaConfigurar() {
+    if (!this.jaFez()) return true;
+
+    const temIdentidade = !!((Sync.cfg && Sync.cfg.nome) || (DB.cfg() && DB.cfg().familia_nome));
+    const temDados = DB.all('items').length > 0
+      || DB.all('price_obs').length > 0
+      || DB.all('plans').length > 0
+      || DB.all('lists').length > 0;
+    const escolheuLocal = (() => {
+      try { return localStorage.getItem('cesta.nuvem') === 'local'; } catch (_) { return false; }
+    })();
+
+    /* Quem escolheu "só neste aparelho" e ainda não pôs nada não precisa refazer
+       a apresentação inteira — mas quem não tem NEM identidade NEM dado nunca
+       chegou a configurar coisa alguma. */
+    if (temIdentidade || temDados) return false;
+    return !escolheuLocal;
   },
 
   marcarFeito() {
@@ -49,7 +77,7 @@ const Onboarding = {
     if (concluiu) {
       this.marcarFeito();
       /* A PRIMEIRA COMPRA JÁ NASCE MARCADA quando a pessoa disse o dia. É o que
-         faz a página HOJE abrir com algo a dizer em vez de um convite vazio —
+         faz a página HOJE abrir com algo a dizer em vez de um convite ui-empty —
          ninguém deve terminar a apresentação e encontrar um app sem nada. */
       const cfg = DB.cfg() || {};
       if (!DB.planosAbertos().length && cfg.dia_da_compra_grande) {
@@ -115,7 +143,7 @@ const Onboarding = {
           <div class="ob-linha-ex">
             <div><b>Arroz 5 kg</b><span class="sub">Você digita: R$ 24,90</span></div>
           </div>
-          <div class="diag s-green">
+          <div class="diag b-green">
             <span>🟢 Excelente</span><span class="pct">−12%</span>
           </div>
           <p class="diag-nota">R$ 4,98/kg · mediana R$ 5,66/kg (6 meses, 4 registros)</p>
@@ -127,7 +155,7 @@ const Onboarding = {
         </p>
 
         ${this.pontos()}
-        <button class="btn btn-principal btn-largo btn-grande" data-ob="avancar">Como funciona</button>
+        <button class="btn" data-ob="avancar">Como funciona</button>
         <button class="btn-texto" data-ob="pular">Já entendi, quero usar</button>
       </div>`;
     },
@@ -172,7 +200,7 @@ const Onboarding = {
         </p>
 
         ${this.pontos()}
-        <button class="btn btn-principal btn-largo btn-grande" data-ob="avancar">Começar minha lista</button>
+        <button class="btn" data-ob="avancar">Começar minha lista</button>
         <button class="btn-texto" data-ob="voltar">Voltar</button>
       </div>`;
     },
@@ -188,16 +216,16 @@ const Onboarding = {
         <h1 class="ob-titulo">Como te chamamos?</h1>
         <p class="ob-texto">O app fala com você, e fica melhor sabendo o seu nome.</p>
 
-        <input class="campo" id="ob-nome" placeholder="Seu nome" autocomplete="given-name"
+        <input  id="ob-nome" placeholder="Seu nome" autocomplete="given-name"
                value="${UI.esc((Sync.cfg && Sync.cfg.nome) || '')}">
-        <input class="campo" id="ob-casa" placeholder="Nome da casa (ex.: Casa da Ana)"
+        <input  id="ob-casa" placeholder="Nome da casa (ex.: Casa da Ana)"
                autocomplete="off" style="margin-top:var(--e2)"
                value="${UI.esc(cfg.familia_nome || '')}">
         <p class="ob-texto pequeno">O nome da casa aparece quando você dividir a
           lista com outra pessoa. Dá para mudar depois.</p>
 
         ${this.pontos()}
-        <button class="btn btn-principal btn-largo btn-grande" data-ob="avancar">Continuar</button>
+        <button class="btn" data-ob="avancar">Continuar</button>
         <button class="btn-texto" data-ob="voltar">Voltar</button>
       </div>`;
     },
@@ -253,10 +281,8 @@ const Onboarding = {
             esquecer o PIN significa perder o histórico deste aparelho.</p>
         </div>
 
-        <button class="btn btn-principal btn-largo btn-grande" data-ob="pin">Criar um PIN</button>
-        <button class="btn btn-largo btn-grande" data-ob="avancar" style="margin-top:var(--e2)">
-          Agora não
-        </button>
+        <button class="btn" data-ob="pin">Proteger com PIN</button>
+        <button class="btn-texto" data-ob="sem-pin">Deixar sem proteção por enquanto</button>
         ${this.pontos()}
         <button class="btn-texto" data-ob="voltar">Voltar</button>
       </div>`;
@@ -278,7 +304,7 @@ const Onboarding = {
 
         <div class="ob-sugestoes">
           ${grupos.map(g => `
-            <p class="secao">${g.icone} ${g.nome}</p>
+            <p class="section-title">${g.icone} ${g.nome}</p>
             <div class="ob-chips">
               ${g.itens.map(i => `
                 <button class="chip" data-item="${UI.esc(i.nome)}"
@@ -290,7 +316,7 @@ const Onboarding = {
         ${this.pontos()}
         <div class="ob-rodape">
           <span class="ob-conta" id="ob-conta">nenhum item escolhido</span>
-          <button class="btn btn-principal btn-largo btn-grande" data-ob="avancar">Continuar</button>
+          <button class="btn" data-ob="avancar">Continuar</button>
           <button class="btn-texto" data-ob="voltar">Voltar</button>
         </div>
       </div>`;
@@ -309,21 +335,21 @@ const Onboarding = {
         <p class="ob-texto">Duas respostas rápidas, e o app já consegue se
           organizar com você.</p>
 
-        <p class="secao">Que dia costuma ser a compra grande?</p>
-        <select class="campo" id="ob-dia">
+        <p class="section-title">Que dia costuma ser a compra grande?</p>
+        <select  id="ob-dia">
           <option value="">Não tenho dia fixo</option>
           ${Array.from({ length: 28 }, (_, i) => i + 1).map(d =>
             `<option value="${d}" ${cfg.dia_da_compra_grande == d ? 'selected' : ''}>dia ${d}</option>`).join('')}
         </select>
 
-        <p class="secao">Quanto costuma gastar por mês com mercado?</p>
-        <input class="campo campo-preco" id="ob-gasto" inputmode="decimal"
+        <p class="section-title">Quanto costuma gastar por mês com mercado?</p>
+        <input class="campo-preco" id="ob-gasto" inputmode="decimal"
                placeholder="R$ 0,00" value="${cfg.gasto_mensal_esperado ? UI.fmt(cfg.gasto_mensal_esperado) : ''}">
         <p class="ob-texto pequeno">Serve para o app avisar <b>antes</b> de
           estourar, não para cobrar você. Pode ser um chute — dá para mudar depois.</p>
 
         ${this.pontos()}
-        <button class="btn btn-principal btn-largo btn-grande" data-ob="avancar">Continuar</button>
+        <button class="btn" data-ob="avancar">Continuar</button>
         <button class="btn-texto" data-ob="voltar">Voltar</button>
       </div>`;
     },
@@ -340,7 +366,7 @@ const Onboarding = {
         <p class="ob-texto">
           O app compara com as <b>suas</b> compras anteriores. No começo ele
           ainda não tem nenhuma — então mostra
-          <span class="selo s-slate">⚪ primeiro registro</span> em vez de
+          <span class="badge b-slate">⚪ primeiro registro</span> em vez de
           inventar um veredito.
         </p>
 
@@ -357,10 +383,10 @@ const Onboarding = {
         </p>
 
         ${this.pontos()}
-        <button class="btn btn-principal btn-largo btn-grande" data-ob="importar">
+        <button class="btn" data-ob="importar">
           Importar uma nota agora
         </button>
-        <button class="btn btn-largo btn-grande" data-ob="avancar">Deixar para depois</button>
+        <button class="btn btn-vazado" data-ob="avancar">Deixar para depois</button>
       </div>`;
     },
 
@@ -389,7 +415,7 @@ const Onboarding = {
         </p>
 
         ${this.pontos()}
-        <button class="btn btn-principal btn-largo btn-grande" data-ob="avancar">Ver minha lista</button>
+        <button class="btn" data-ob="avancar">Ver minha lista</button>
       </div>`;
     },
   ],
@@ -416,6 +442,14 @@ const Onboarding = {
              pessoa desistir no meio, ela cai num app funcionando, não num vazio. */
           irPara('hoje');
           abrirSync();
+        }
+        else if (acao === 'sem-pin') {
+          /* Recusar é legítimo, e fica REGISTRADO: um app que repete a mesma
+             pergunta a cada abertura ensina a pessoa a ignorar avisos — e aí o
+             aviso que importa morre junto. */
+          this.guardarRespostas();
+          try { localStorage.setItem('cesta.semPin', '1'); } catch (_) {}
+          this.avancar();
         }
         else if (acao === 'pin') {
           this.guardarRespostas();
@@ -513,14 +547,14 @@ function abrirAjuda() {
 
       <details>
         <summary>O que significam as cores?</summary>
-        <p><span class="selo s-green">🟢 Excelente</span> pelo menos 7% mais
+        <p><span class="badge b-green">🟢 Excelente</span> pelo menos 7% mais
           barato que o normal para você.</p>
-        <p><span class="selo s-amber">🟡 Na média</span> perto do que costuma
+        <p><span class="badge b-amber">🟡 Na média</span> perto do que costuma
           custar.</p>
-        <p><span class="selo s-red">🔴 Caro</span> pelo menos 7% acima do
+        <p><span class="badge b-red">🔴 Caro</span> pelo menos 7% acima do
           normal. O app mostra junto o melhor preço que você já viu, para
           decidir se leva ou espera.</p>
-        <p><span class="selo s-slate">⚪ Primeiro registro</span> ainda não há
+        <p><span class="badge b-slate">⚪ Primeiro registro</span> ainda não há
           com o que comparar. O app <b>não inventa</b> um veredito.</p>
       </details>
 
@@ -570,12 +604,12 @@ function abrirAjuda() {
       </details>
     </div>
 
-    <button class="btn btn-largo btn-grande" id="ajuda-tour" style="margin-top:var(--e4)">
+    <button class="btn btn-vazado" id="ajuda-tour" style="margin-top:var(--e4)">
       Ver a apresentação de novo
     </button>`);
 
   document.querySelector('#ajuda-tour').addEventListener('click', () => {
-    document.querySelector('.folha-fundo').remove();
+    document.querySelector('.sheet-backdrop').remove();
     Onboarding.refazer();
   });
 }

@@ -71,36 +71,37 @@ const casos = [
    `      .replace('&', '&amp;')`,
    'escapa html'],
 
-  ['um token de cor so existe no tema claro', 'css/styles.css',
+  ['um token de cor so existe no tema claro', 'css/cesta.css',
    `  --slate: #9AA4BC;
   --slate-ink: #9AA4BC;`,
    `  --slate: #9AA4BC;`,
    '--slate-ink definido no escuro'],
 
-  ['o cinza do primeiro registro vira a cor do "na media"', 'css/styles.css',
+  ['o cinza do primeiro registro vira a cor do "na media"', 'css/cesta.css',
    `  --slate: #9AA4BC;`,
    `  --slate: #E3B15C;`,
    'nao e a mesma cor do "na media"'],
 
-  ['a folha deixa de se apoiar acima do teclado', 'css/styles.css',
-   `  margin-bottom: var(--teclado);`,
-   `  margin-bottom: 0;`,
+  ['a folha deixa de se apoiar acima do teclado', 'css/domi.css',
+   `  position: fixed; left: 0; right: 0; bottom: var(--teclado); z-index: 33;`,
+   `  position: fixed; left: 0; right: 0; bottom: 0; z-index: 33;`,
    'a folha se apoia acima dele'],
 
-  ['o alvo do mercado encolhe para o tamanho do app', 'css/styles.css',
+  ['o alvo do mercado encolhe para o tamanho do app', 'css/cesta.css',
    `  --toque-mercado: 56px;`,
    `  --toque-mercado: 48px;`,
    'o do mercado e maior ainda'],
 
-  ['volta o gradiente decorativo', 'css/styles.css',
-   `.card {
-  background: var(--ink-2);`,
-   `.card {
-  background: linear-gradient(180deg, #161C2B, #1F2634);`,
-   'nenhum gradiente'],
+  ['volta o gradiente decorativo na camada do CESTA', 'css/cesta.css',
+   `.diag {
+  display: inline-flex;`,
+   `.diag {
+  background: linear-gradient(180deg, #161C2B, #1F2634);
+  display: inline-flex;`,
+   'a camada do CESTA nao introduz gradiente'],
 
   ['a versao do sw anda sozinha, sem as tags do index', 'sw.js',
-   `const VERSAO = '4';`,
+   `const VERSAO = '5';`,
    `const VERSAO = '9';`,
    'TODAS batem com a versao do sw.js'],
 
@@ -503,6 +504,11 @@ try {
     }
     const [nome, arq, de, para, esperado] = caso;
     const caminho = RAIZ + arq;
+    if (!fs.existsSync(caminho)) {
+      obsoletos.push(nome + ' (arquivo ' + arq + ' nao existe mais)');
+      console.log(` ERRO   | ${nome} — ${arq} nao existe`);
+      continue;
+    }
     if (original[caminho] === undefined) original[caminho] = fs.readFileSync(caminho, 'utf8');
     const src = original[caminho];
 

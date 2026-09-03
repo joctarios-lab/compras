@@ -43,7 +43,7 @@ const Mercado = {
 
   render() {
     const lista = DB.get('lists', this.listaId);
-    if (!lista) return '<div class="vazio"><b>Compra não encontrada</b></div>';
+    if (!lista) return '<div class="ui-empty"><b>Compra não encontrada</b></div>';
 
     const itens = DB.itensDaLista(lista.id);
     /* A ORDEM É A DO MERCADO: hortifrúti na entrada, limpeza no fundo. É o
@@ -74,22 +74,22 @@ const Mercado = {
 
       ${pendentes.length ? `<div class="card lista-mercado">
         ${this.comCorredores(pendentes)}
-      </div>` : `<div class="card"><div class="vazio">
+      </div>` : `<div class="card"><div class="ui-empty">
         <b>Tudo pego</b>
         Toque em “Finalizar compra” para conferir o total no caixa.
       </div></div>`}
 
       <div class="mercado-acoes">
-        <button class="btn btn-largo btn-grande" data-acao="add-aqui">
+        <button class="btn btn-vazado" data-acao="add-aqui">
           <span data-ico="mais"></span> Item que não estava na lista
         </button>
-        <button class="btn btn-largo" data-acao="mais-por-menos">
+        <button class="btn btn-vazado" data-acao="mais-por-menos">
           <span data-ico="balanca"></span> Mais por Menos
         </button>
-        <button class="btn btn-principal btn-largo btn-grande" data-acao="finalizar">Finalizar compra</button>
+        <button class="btn" data-acao="finalizar">Finalizar compra</button>
       </div>
 
-      ${feitos.length ? `<p class="secao">Já no carrinho</p>
+      ${feitos.length ? `<p class="section-title">Já no carrinho</p>
         <div class="card lista-mercado feitos">${feitos.map(li => this.linhaFeita(li)).join('')}</div>` : ''}
 
       ${loja ? `<p class="sub" style="margin-top:var(--e4)">Comprando em ${UI.esc(loja.nome)}</p>` : ''}`;
@@ -102,14 +102,14 @@ const Mercado = {
     const usado = t.total / lista.orcamento;
     const estourou = t.total > lista.orcamento;
     const perto = !estourou && usado >= 0.85;
-    const selo = estourou ? 's-red' : perto ? 's-amber' : 's-green';
+    const selo = estourou ? 'b-red' : perto ? 'b-amber' : 'b-green';
     const texto = estourou
       ? `Passou ${UI.fmt(t.total - lista.orcamento)} do orçamento`
       : perto ? `Faltam ${UI.fmt(lista.orcamento - t.total)} para o limite`
               : `${UI.fmt(lista.orcamento - t.total)} disponíveis`;
     return `<div class="orcamento">
       <div class="orcamento-trilho"><div class="orcamento-barra ${selo}" style="width:${Math.min(100, usado * 100).toFixed(1)}%"></div></div>
-      <span class="selo ${selo}">${texto}</span>
+      <span class="badge ${selo}">${texto}</span>
     </div>`;
   },
 
@@ -150,17 +150,17 @@ const Mercado = {
       <div class="preco-campos">
         <label class="preco-campo">
           <span class="rotulo">Preço pago</span>
-          <input class="campo campo-preco" id="preco-${li.id}" inputmode="decimal"
+          <input class="campo-preco" id="preco-${li.id}" inputmode="decimal"
                  enterkeyhint="done" placeholder="R$ 0,00" aria-label="Preço de ${UI.esc(nome)}">
         </label>
         <label class="preco-campo estreito">
           <span class="rotulo">Qtd</span>
-          <input class="campo campo-qtd" id="qtd-${li.id}" inputmode="decimal"
+          <input class="campo-qtd" id="qtd-${li.id}" inputmode="decimal"
                  value="${li.qtd}" aria-label="Quantidade">
         </label>
         <label class="preco-campo estreito">
           <span class="rotulo">Un.</span>
-          <select class="campo campo-un" id="un-${li.id}" aria-label="Unidade">
+          <select class="campo-un" id="un-${li.id}" aria-label="Unidade">
             ${['un', 'kg', 'g', 'l', 'ml'].map(u =>
               `<option value="${u}" ${u === String(li.unidade).toLowerCase() ? 'selected' : ''}>${u}</option>`).join('')}
           </select>
@@ -172,8 +172,8 @@ const Mercado = {
       </div>
 
       <div class="preco-botoes">
-        <button class="btn" data-acao="nao-tinha" data-li="${li.id}">Não tinha</button>
-        <button class="btn btn-principal btn-grande" data-acao="confirmar" data-li="${li.id}">
+        <button class="btn btn-vazado" data-acao="nao-tinha" data-li="${li.id}">Não tinha</button>
+        <button class="btn btn-grande" data-acao="confirmar" data-li="${li.id}">
           <span data-ico="ok"></span> No carrinho
         </button>
       </div>
@@ -183,17 +183,17 @@ const Mercado = {
   /* O DIAGNÓSTICO. Sempre com a base à vista: quem não pode auditar o número
      não confia nele na segunda vez que ele o surpreender. */
   htmlDoDiagnostico(d) {
-    if (!d) return `<div class="diag s-slate"><span>Digite o preço</span></div>`;
+    if (!d) return `<div class="diag b-slate"><span>Digite o preço</span></div>`;
 
     if (!d.base) {
-      return `<div class="diag s-slate">
+      return `<div class="diag b-slate">
           <span>⚪ ${UI.esc(d.rotulo)}</span>
           ${d.precoBase ? `<span class="pct">${UI.fmtBase(d.precoBase, d.unidade)}</span>` : ''}
         </div>
         ${d.explicacao ? `<p class="diag-nota">${UI.esc(d.explicacao)}</p>` : ''}`;
     }
 
-    const emoji = d.selo === 'green' ? '🟢' : d.selo === 'red' ? '🔴' : '🟡';
+    const emoji = d.badge === 'green' ? '🟢' : d.selo === 'red' ? '🔴' : '🟡';
     const sinal = d.acima ? '+' : '−';
     const confianca = d.confianca === 'boa' ? '' :
       d.confianca === 'media' ? ' · pouco histórico' : ' · só 1 registro antes';
@@ -205,7 +205,7 @@ const Mercado = {
           loja ? ' em ' + UI.esc(loja.nome) : ''}${d.melhorData ? ', em ' + this.dataCurta(d.melhorData) : ''}.</p>`
       : '';
 
-    return `<div class="diag s-${d.selo}">
+    return `<div class="diag b-${d.selo}">
         <span>${emoji} ${UI.esc(d.rotulo)}</span>
         <span class="pct">${sinal}${d.pct}%</span>
       </div>
@@ -352,9 +352,9 @@ const Mercado = {
     const fechar = UI.folha(`
       <h2 class="titulo">Item fora da lista</h2>
       <p class="sub">Entra na compra e no seu catálogo.</p>
-      <input class="campo" id="novo-aqui" placeholder="Ex.: azeite" enterkeyhint="done"
+      <input  id="novo-aqui" placeholder="Ex.: azeite" enterkeyhint="done"
              autocomplete="off" style="margin-top:var(--e3)">
-      <button class="btn btn-principal btn-largo btn-grande" id="ok-aqui" style="margin-top:var(--e3)">Adicionar</button>`);
+      <button class="btn" id="ok-aqui" style="margin-top:var(--e3)">Adicionar</button>`);
     const campo = document.querySelector('#novo-aqui');
     const confirmar = () => {
       const nome = String(campo.value || '').trim();

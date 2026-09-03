@@ -16,8 +16,8 @@ function abrirCamera(liId, recarregar) {
     <div id="cam-aviso" class="sub" style="margin-top:var(--e2)"></div>
 
     <div class="cam-botoes">
-      ${suporta ? `<button class="btn btn-largo" id="cam-barras">Ler código de barras</button>` : ''}
-      <button class="btn btn-principal btn-largo btn-grande" id="cam-foto">Fotografar etiqueta</button>
+      ${suporta ? `<button class="btn btn-vazado" id="cam-barras">Ler código de barras</button>` : ''}
+      <button class="btn" id="cam-foto">Fotografar etiqueta</button>
     </div>
 
     ${!suporta ? `<p class="sub" style="margin-top:var(--e3)">

@@ -337,13 +337,47 @@ check('e para o claro', shell.includes('prefers-color-scheme: light)"'), true);
 
 console.log('\n=== As tres camadas de tema ===');
 
-const css = fs.readFileSync(BASE + 'css/styles.css', 'utf8');
-const bloco = (re) => (css.match(re) || [''])[0];
-const raiz = bloco(/:root \{[\s\S]*?\n\}/);
+/* O CSS do app sao DOIS arquivos: o do DOMI, herdado sem alteracao, e a
+   camada do CESTA por cima. Testar so um dos dois deixaria metade do sistema
+   visual sem cobertura. */
+const cssDomi = fs.readFileSync(BASE + 'css/domi.css', 'utf8');
+const cssCesta = fs.readFileSync(BASE + 'css/cesta.css', 'utf8');
+const css = cssDomi + cssCesta;
+/* TODAS as ocorrências de cada camada, somadas — não a primeira.
+
+   O CSS do app são dois arquivos: css/domi.css (herdado do app de finanças, sem
+   alteração) e css/cesta.css (a camada de compras). Cada um define a sua parte
+   das três camadas de tema, e o navegador soma. Ler só o primeiro bloco :root
+   media metade do sistema visual e deixaria a outra metade sem cobertura
+   nenhuma — foi o que aconteceu quando --slate passou a morar no cesta.css. */
+const todos = re => (css.match(re) || []).join('\n');
+const raiz = todos(/:root \{[\s\S]*?\n\}/g);
 // O media query fecha com DUAS chaves indentadas ("\n  }\n}"): casar com "\n}\n}"
 // devolvia string vazia e o teste passava a medir o nada.
-const claroAuto = bloco(/@media \(prefers-color-scheme: light\) \{[\s\S]*?\n  \}\n\}/);
-const claroExplicito = bloco(/:root\[data-tema="light"\] \{[\s\S]*?\n\}/);
+const claroAuto = todos(/@media \(prefers-color-scheme: light\) \{[\s\S]*?\n  \}\n\}/g);
+const claroExplicito = todos(/:root\[data-tema="light"\] \{[\s\S]*?\n\}/g);
+
+/* O CSS herdado tem de ser IDENTICO ao do DOMI. Sem esta guarda, os dois apps
+   divergem no primeiro ajuste que alguem fizer de um lado so — e "identicos"
+   vira uma frase no README que ninguem confere. */
+{
+  const domiOriginal = 'D:/Projetos/meus-projetos/financas/css/styles.css';
+  if (fs.existsSync(domiOriginal)) {
+    check('css/domi.css e copia fiel do app de financas',
+      fs.readFileSync(domiOriginal, 'utf8') === cssDomi, true);
+  }
+}
+/* E a camada do CESTA nao pode redefinir o que o DOMI ja define: duas fontes de
+   verdade para o mesmo componente e como os dois apps comecam a se afastar. */
+{
+  const componentesDoDomi = ['.btn {', '.card {', '.icon-btn {', '.settings-item {',
+    '.sheet {', '.tabbar {', '.tab {', '.topbar {', '.badge {', '.side-item {'];
+  /* No inicio da linha: '.acoes-linha .btn {' especializa a largura dentro de
+     um contexto e e legitimo; '.btn {' na coluna zero redefiniria o componente. */
+  const redefinidos = componentesDoDomi.filter(c => new RegExp('^' + c.replace(/[.*+?^|[]\]/g, '\  const redefinidos = componentesDoDomi.filter(c => cssCesta.includes(c));'), 'm').test(cssCesta));
+  check('a camada do CESTA nao redefine componente do DOMI',
+    redefinidos.length ? redefinidos.join(', ') : true, true);
+}
 
 check('a camada 1 existe (escuro no :root)', raiz.length > 100, true);
 check('a camada 2 existe (o sistema pede claro)', claroAuto.includes(':not([data-tema="dark"])'), true);
@@ -352,7 +386,15 @@ check('a camada 3 existe (escolha explicita)', claroExplicito.length > 100, true
 /* NENHUMA COR PODE TER SUA UNICA DEFINICAO DENTRO DE UM MEDIA QUERY. Se tiver,
    o token fica sem valor no outro tema e o elemento herda transparente — o
    defeito some da tela em que se olha e aparece na outra. */
-const tokensDe = txt => [...txt.matchAll(/(--[a-z0-9-]+):/g)].map(m => m[1]);
+/* SÓ OS TOKENS DE COR. A regra que importa é "toda cor definida num tema
+   existe no outro" — uma cor esquecida some no tema oposto e o elemento herda
+   transparente. Medida não é cor: --toque vale 48px no escuro e no claro, e
+   exigir que ela seja redeclarada em cada tema é cobrar uma duplicação que não
+   protege nada. */
+const ehCor = v => /#[0-9a-f]{3,8}|rgba?\(|hsla?\(/i.test(v);
+const tokensDe = txt => [...txt.matchAll(/(--[a-z0-9-]+):\s*([^;]+);/g)]
+  .filter(m => ehCor(m[2]))
+  .map(m => m[1]);
 const noEscuro = new Set(tokensDe(raiz));
 const soNoClaro = tokensDe(claroAuto).filter(t => !noEscuro.has(t));
 check('todo token do tema claro existe tambem no escuro',
@@ -393,12 +435,33 @@ check('e o do mercado e maior ainda', px('--toque-mercado') > px('--toque'), tru
 /* O TECLADO COBRE O RODAPE, e o campo de preco vive nele. Sem a variavel e sem
    a folha se apoiando nela, o campo em foco fica atras do teclado — que e o
    estado normal desta tela, nao a excecao. */
-check('a altura do teclado e um token', noEscuro.has('--teclado'), true);
-check('e a folha se apoia acima dele', /\.folha \{[^}]*margin-bottom: var\(--teclado\)/.test(css), true);
+/* --teclado NAO e cor, entao nao entra em noEscuro (que so guarda cores).
+   O que importa aqui e que o token EXISTA e seja atualizado pelo visualViewport
+   — e isso se ve no CSS e no ui.js, nao na lista de tintas. */
+check('a altura do teclado e um token', /--teclado:/.test(css), true);
+check('e o app atualiza esse token pelo visualViewport',
+  fs.readFileSync(BASE + 'js/ui.js', 'utf8').includes("setProperty('--teclado'"), true);
+/* A folha do DOMI se apoia no teclado pelo `bottom`, nao pelo margin — e a
+   posicao dela e fixed. O teste procurava a forma do CESTA antigo. */
+check('e a folha se apoia acima dele', /\.sheet \{[^}]*bottom: var\(--teclado\)/.test(css), true);
 
 /* A COR E DO DADO. Gradiente e sombra colorida em estado permanente fazem o
    enfeite competir com o unico lugar em que a cor significa alguma coisa. */
-check('nenhum gradiente no sistema visual', /linear-gradient|radial-gradient/.test(css), false);
+/* SEM OS COMENTARIOS. O DOMI FALA sobre gradiente em cinco comentarios que
+   explicam por que ele NAO usa gradiente — e o teste casava com o texto que
+   defende a regra, em vez do CSS que a cumpre. E a mesma armadilha do
+   'create index' no schema, e ela pega de novo toda vez que se procura um
+   literal num arquivo comentado. */
+const cssSemComentarios = css.replace(/\/\*[\s\S]*?\*\//g, '');
+/* O DOMI usa UM gradiente, e ele e uma regua: transparente -> linha ->
+   transparente, para o filete de secao sumir nas pontas. Isso nao e decoracao
+   colorida — e desenho de linha. A regra que vale para o CESTA e nao
+   INTRODUZIR gradiente novo na camada dele. */
+const semComentario = txt => txt.replace(/\/\*[\s\S]*?\*\//g, '');
+check('a camada do CESTA nao introduz gradiente',
+  /linear-gradient|radial-gradient/.test(semComentario(cssCesta)), false);
+check('e o unico do herdado e uma regua, nao cor',
+  (semComentario(cssDomi).match(/linear-gradient/g) || []).length, 1);
 
 /* ================================================ O MOTOR DE PRECOS === */
 
@@ -1173,7 +1236,7 @@ check('o teclado ja abre em modo decimal', comFoco.includes('inputmode="decimal"
    sempre junto do selo. */
 const diagCaro = Mercado.htmlDoDiagnostico(
   Precos.avaliar(DB, { product_id: prodArrozV.id, item_id: itArrozV.id, preco: 30, qtd: 5, unidade: 'kg' }));
-check('o selo vermelho aparece', diagCaro.includes('s-red'), true);
+check('o selo vermelho aparece', diagCaro.includes('b-red'), true);
 check('com a PALAVRA junto da cor', diagCaro.includes('Caro'), true);
 check('e a porcentagem', diagCaro.includes('20%'), true);
 check('e a base auditavel: a mediana', diagCaro.includes('mediana'), true);
@@ -1184,7 +1247,7 @@ check('e o melhor preco ja visto, para poder decidir', diagCaro.includes('Melhor
 
 const diagSemBase = Mercado.htmlDoDiagnostico(
   Precos.avaliar(DB, { item_id: itLeiteV.id, preco: 5, qtd: 1, unidade: 'l' }));
-check('sem base, o selo e cinza', diagSemBase.includes('s-slate'), true);
+check('sem base, o selo e cinza', diagSemBase.includes('b-slate'), true);
 check('e diz primeiro registro', diagSemBase.includes('Primeiro registro'), true);
 check('nunca "na media"', diagSemBase.includes('Na média'), false);
 
@@ -1491,21 +1554,26 @@ console.log('\n=== Desktop e shell ===');
 
 /* A SIDEBAR e a barra de baixo sao a MESMA navegacao: uma aba que exista so num
    dos dois some para metade dos usuarios, dependendo do aparelho. */
-const abasDock = [...shell.matchAll(/class="dock-item"[^>]*data-aba="([a-z]+)"/g)].map(m => m[1]);
+const abasDock = [...shell.matchAll(/class="tab"[^>]*data-aba="([a-z]+)"/g)].map(m => m[1]);
 const abasSide = [...shell.matchAll(/class="side-item"[^>]*data-aba="([a-z]+)"/g)].map(m => m[1]);
 check('a barra de baixo tem abas', abasDock.length >= 3, true);
 check('e a sidebar tambem', abasSide.length >= 3, true);
 check('toda aba da barra existe na sidebar',
   abasDock.every(a => abasSide.includes(a)), true);
 
-check('a sidebar so aparece no desktop', /@media \(min-width: 900px\)[\s\S]*?\.dock \{ display: none/.test(css), true);
-check('e a barra de baixo some junto', css.includes('.sidebar { display: none; }'), true);
+/* O DOMI resolve isso com .only-desk / .only-mob e um media query proprio.
+   O que precisa continuar valendo: no celular a sidebar nao aparece, e no
+   desktop a barra de baixo nao aparece. */
+check('a sidebar nao aparece no celular', /\.sidebar \{[^}]*display: none/.test(css), true);
+/* O DOMI já esconde a tabbar no desktop, no media query dele. O CESTA não
+   precisa repetir a regra — precisa NÃO quebrá-la, e é isso que se mede. */
+check('e a barra de baixo some no desktop', /\.tabbar, \.fab \{ display: none/.test(cssDomi), true);
 
 /* A tela de bloqueio vive FORA do #app: desenhar o app e so depois pedir o PIN
    mostraria os dados por um quadro — e um quadro basta para uma foto. */
 check('a tela de bloqueio existe no shell', shell.includes('id="lock"'), true);
 check('e fica fora do app', shell.indexOf('id="lock"') < shell.indexOf('id="app"'), true);
-check('nasce escondida', /<div id="lock" hidden>/.test(shell), true);
+check('nasce escondida', /<div id="lock" class="lock" hidden>/.test(shell), true);
 
 /* A ajuda precisa estar alcancavel dos DOIS lugares: quem esta no celular nao
    ve a sidebar, e quem esta no desktop nao ve a barra de baixo. */
@@ -1906,7 +1974,7 @@ check('ANALISE monta', ViewAnalise.render().length > 200, true);
 
 /* As cinco abas existem nos DOIS modos de navegacao: uma aba que so aparece
    num deles some para metade dos usuarios. */
-const abasDock2 = [...shell.matchAll(/class="dock-item"[^>]*data-aba="([a-z]+)"/g)].map(m => m[1]);
+const abasDock2 = [...shell.matchAll(/class="tab"[^>]*data-aba="([a-z]+)"/g)].map(m => m[1]);
 const abasSide2 = [...shell.matchAll(/class="side-item"[^>]*data-aba="([a-z]+)"/g)].map(m => m[1]);
 check('a barra de baixo tem as cinco abas', abasDock2.length, 5);
 check('a sidebar tambem', abasSide2.length, 5);
@@ -2036,5 +2104,127 @@ check('e nunca R$ 0,00', /R\$ 0,00/.test(htmlHoje), false);
 
   console.log(`
 ${ok} passaram, ${fail} falharam`);
+
+/* ================== O APP DECIDE PELA REALIDADE, NAO POR UM FLAG ===
+
+   O DEFEITO, relatado no uso real: "abri o app e ele nao deu opcao de iniciar a
+   configuracao". A causa era um unico booleano no localStorage — que sobrevive
+   a uma versao anterior do app, a um "apagar tudo" e a um backup restaurado. E
+   quando ele sobrevive, o app abre MUDO: sem apresentacao, sem identidade, sem
+   seguranca.
+
+   Nenhum teste cobria isso porque todos perguntavam `jaFez()`, que era
+   exatamente a funcao com o defeito. */
+
+console.log('\n=== A configuracao inicial ===');
+
+DB.apagarTudo();
+localStorage.removeItem('cesta.abertura');
+localStorage.removeItem('cesta.nuvem');
+Sync.cfg = {};
+
+check('app novo precisa configurar', Onboarding.precisaConfigurar(), true);
+
+/* O CASO QUE QUEBROU NA MAO DO USUARIO: o flag ficou de uma versao anterior,
+   mas o aparelho nao tem identidade nem dado nenhum. */
+Onboarding.marcarFeito();
+check('flag sozinho NAO conta como configurado', Onboarding.precisaConfigurar(), true);
+
+/* Com identidade, esta configurado — a pessoa passou pela apresentacao de fato. */
+Sync.cfg = { nome: 'Ana' };
+check('com identidade, nao pede de novo', Onboarding.precisaConfigurar(), false);
+
+/* Ou com dados: quem ja usa o app nao pode ser mandado de volta para a
+   apresentacao so porque nao preencheu o nome. */
+Sync.cfg = {};
+DB.itemPorNome('Arroz');
+check('com dados, tambem nao pede', Onboarding.precisaConfigurar(), false);
+
+/* E quem escolheu "so neste aparelho" e ainda nao pos nada nao e arrastado de
+   volta: a escolha dele foi registrada e vale. */
+DB.apagarTudo();
+Sync.cfg = {};
+Onboarding.marcarFeito();
+localStorage.setItem('cesta.nuvem', 'local');
+check('quem escolheu usar so aqui nao e importunado', Onboarding.precisaConfigurar(), false);
+localStorage.removeItem('cesta.nuvem');
+
+/* A APRESENTACAO PRECISA CONTER OS PASSOS QUE A TORNAM UMA CONFIGURACAO, e nao
+   um tour: identidade, nuvem e seguranca. Sem os tres, ela e so uma sequencia
+   de telas bonitas. */
+const fonteOb = fs.readFileSync(BASE + 'js/onboarding.js', 'utf8');
+check('a apresentacao pergunta quem e a pessoa', /suaCasa/.test(fonteOb), true);
+check('e oferece a sincronizacao', /aNuvem/.test(fonteOb), true);
+check('e a protecao do aparelho', /protecao/.test(fonteOb), true);
+check('e a rotina, que alimenta o painel', /aRotina/.test(fonteOb), true);
+check('sao nove telas ao todo', Onboarding.telas.length, 9);
+
+/* A PROTECAO NAO PODE SER UM "AGORA NAO" BARATO. O botao principal protege; a
+   recusa e um link de texto, e ela fica REGISTRADA — um app que repete a mesma
+   pergunta a cada abertura ensina a ignorar avisos, e ai o aviso que importa
+   morre junto. */
+Onboarding.passo = Onboarding.telas.findIndex(t => /protecao/.test(t.name));
+const telaSeg = Onboarding.telas[Onboarding.passo].call(Onboarding);
+check('a protecao e a acao principal da tela', /class="btn" data-ob="pin"/.test(telaSeg), true);
+check('e recusar e um link, nao um botao igual', /btn-texto" data-ob="sem-pin"/.test(telaSeg), true);
+check('a tela avisa que nao ha recuperacao', /nao ha recuperacao|não há recuperação/i.test(telaSeg), true);
+
+/* ==================== O SISTEMA VISUAL E O MESMO DO DOMI ===
+
+   Nao e semelhante: e o MESMO arquivo. css/domi.css e copia fiel, e a camada do
+   CESTA so acrescenta o que o app de compras tem e o de financas nao. */
+
+console.log('\n=== Identidade visual com o DOMI ===');
+
+/* O vocabulario de classes tem de ser o do DOMI. Enquanto um app diz .folha e o
+   outro .sheet, os dois NUNCA vao parecer o mesmo — cada peca duplicada e uma
+   chance de divergir na proxima alteracao. */
+const proibidas = ['class="folha"', 'class="dock"', 'class="dock-item"',
+  'class="topbar-acao"', 'class="linha-acao"', 'class="selo"', 'class="vazio"',
+  'class="secao"', 'class="conteudo"'];
+for (const p of proibidas) {
+  const onde = [];
+  for (const arq of ['index.html'].concat(
+      fs.readdirSync(BASE + 'js/views').map(f => 'js/views/' + f))) {
+    if (fs.readFileSync(BASE + arq, 'utf8').includes(p)) onde.push(arq);
+  }
+  check(`ninguem usa ${p} (vocabulario antigo)`, onde.length ? onde.join(', ') : true, true);
+}
+
+/* E o shell tem a mesma estrutura: wrapper > topbar-inner > content > view. */
+check('o shell usa a estrutura do DOMI',
+  shell.includes('topbar-inner') && shell.includes('class="content"') && shell.includes('class="view"'), true);
+check('e a barra de baixo e a tabbar do DOMI', shell.includes('class="tabbar"'), true);
+check('com .tab em vez de .dock-item', /class="tab"/.test(shell), true);
+
+/* NENHUM BOTAO GIGANTE FORA DO MERCADO. Cinco botoes de 56px empilhados nao e
+   hierarquia — e a ausencia dela, e foi o que deu ao app cara de prototipo. */
+{
+  const comBotaoGrande = [];
+  for (const arq of fs.readdirSync(BASE + 'js/views').map(f => 'js/views/' + f)) {
+    if (arq.includes('mercado')) continue;   // ali o alvo grande tem justificativa
+    const src = fs.readFileSync(BASE + arq, 'utf8');
+    if (src.includes('btn-grande')) comBotaoGrande.push(arq);
+  }
+  check('so o Modo Mercado usa alvo aumentado',
+    comBotaoGrande.length ? comBotaoGrande.join(', ') : true, true);
+}
+
+/* Uma tela nao pode ter uma pilha de acoes principais: o botao cheio e A acao,
+   e quando tudo e principal nada e. */
+for (const arq of fs.readdirSync(BASE + 'js/views').map(f => 'js/views/' + f)) {
+  const src = fs.readFileSync(BASE + arq, 'utf8');
+  /* A REGRA REAL nao e quantos botoes cheios ha no ARQUIVO: dialogos.js tem
+     onze folhas, cada uma com a sua acao principal, e isso esta certo. E que
+     nao existam DOIS CHEIOS EM SEQUENCIA na mesma tela — ali nenhum dos dois e
+     o principal, e a pessoa fica sem saber onde tocar. Foi exatamente o que
+     deixou o app com cara de prototipo. */
+  /* Os DOIS precisam ser cheios. O regex anterior olhava só o segundo, e
+     reprovava a hierarquia CERTA — dois vazados seguidos de um cheio, que é
+     exatamente o desenho correto do rodapé do Modo Mercado. */
+  const empilhados = (src.match(/<button class="btn"[\s\S]{0,220}?<\/button>\s*<button class="btn"[^-]/g) || []).length;
+  check(`${arq.replace('js/views/', '')} nao empilha dois botoes cheios`, empilhados, 0);
+}
+
   process.exit(fail ? 1 : 0);
 })();

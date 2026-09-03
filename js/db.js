@@ -90,7 +90,7 @@ const DB = {
     try { lido = JSON.parse(localStorage.getItem(DB_KEY)) || null; } catch (_) { lido = null; }
 
     /* Dados cifrados: NÃO seguir adiante. Criar uma base vazia aqui faria o app
-       parecer novo em folha e, na primeira gravação, apagaria por cima do que
+       parecer novo em sheet e, na primeira gravação, apagaria por cima do que
        estava cifrado — perda total e silenciosa. */
     if (lido && lido.cifrado === true) {
       this._blob = lido;

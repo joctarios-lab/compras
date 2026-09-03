@@ -36,13 +36,13 @@ function abrirImportacao() {
     leitor.onload = () => {
       const nota = NFCe.ler(String(leitor.result || ''), f.name);
       if (!nota) {
-        area.innerHTML = `<div class="diag s-red"><span>🔴 Não consegui ler este arquivo</span></div>
+        area.innerHTML = `<div class="diag b-red"><span>🔴 Não consegui ler este arquivo</span></div>
           <p class="diag-nota">Tente salvar a página completa da nota, ou exporte
           uma planilha com as colunas <b>descrição, quantidade, unidade e valor</b>.</p>`;
         return;
       }
       if (Importar.jaImportada(nota.chave)) {
-        area.innerHTML = `<div class="diag s-amber"><span>🟡 Esta nota já foi importada</span></div>
+        area.innerHTML = `<div class="diag b-amber"><span>🟡 Esta nota já foi importada</span></div>
           <p class="diag-nota">Nada foi duplicado — a chave de acesso já está no seu histórico.</p>`;
         return;
       }
@@ -85,7 +85,7 @@ function abrirRevisao() {
       ${linhas.map(l => linhaDeRevisao(l)).join('')}
     </div>
 
-    <button class="btn btn-principal btn-largo btn-grande" id="imp-ok" style="margin-top:var(--e4)">
+    <button class="btn" id="imp-ok" style="margin-top:var(--e4)">
       Importar os marcados
     </button>`);
 
@@ -125,10 +125,10 @@ function abrirRevisao() {
 }
 
 function linhaDeRevisao(l) {
-  const selo = l.problema ? 's-slate'
-    : l.confianca === 'ean' ? 's-green'
-    : l.confianca === 'aprendido' ? 's-blue'
-    : l.confianca === 'nome' ? 's-amber' : 's-slate';
+  const selo = l.problema ? 'b-slate'
+    : l.confianca === 'ean' ? 'b-green'
+    : l.confianca === 'aprendido' ? 'b-blue'
+    : l.confianca === 'nome' ? 'b-amber' : 'b-slate';
   const rotulo = l.problema ? l.problema
     : l.confianca === 'ean' ? 'código de barras'
     : l.confianca === 'aprendido' ? 'já vinculado antes'
@@ -146,7 +146,7 @@ function linhaDeRevisao(l) {
         ${l.qtd && l.unidade && l.valorTotal ? ' · ' + UI.fmtBase(l.valorTotal / l.qtd, l.unidade) : ''}
       </span>
     </div>
-    <span class="selo ${selo}">${rotulo}</span>
+    <span class="badge ${selo}">${rotulo}</span>
   </label>`;
 }
 
@@ -203,7 +203,7 @@ function abrirEntreLojas() {
             <b>${i === 0 ? '🏆 ' : ''}${UI.esc(r.loja.nome)}</b>
             <span class="sub">cesta comparável: ${UI.fmt(r.custo)}</span>
           </div>
-          <span class="selo ${i === 0 ? 's-green' : dif > 0.1 ? 's-red' : 's-amber'}">
+          <span class="badge ${i === 0 ? 'b-green' : dif > 0.1 ? 'b-red' : 'b-amber'}">
             ${i === 0 ? 'mais barato' : '+' + (dif * 100).toFixed(0) + '%'}
           </span>
         </div>`;

@@ -17,13 +17,13 @@ const ViewDespensa = {
     if (!tudo.length) {
       return `<h1 class="titulo">Despensa</h1>
         <p class="sub">O que tem em casa, sem você precisar anotar nada.</p>
-        <div class="card"><div class="vazio">
+        <div class="card"><div class="ui-empty">
           <b>Ainda vazia</b>
           A despensa se enche sozinha: tudo o que você registra numa compra ou
           importa de uma nota fiscal entra aqui. O consumo sai do seu próprio
           ritmo de compra.
         </div>
-        <button class="btn btn-principal btn-largo btn-grande" data-acao="importar">
+        <button class="btn" data-acao="importar">
           Importar nota fiscal
         </button></div>`;
     }
@@ -44,7 +44,7 @@ const ViewDespensa = {
 
       ${lista.length ? `<div class="card lista-itens">
         ${lista.map(s => this.linha(s)).join('')}
-      </div>` : `<div class="card"><div class="vazio">
+      </div>` : `<div class="card"><div class="ui-empty">
         <b>Nada aqui</b>
         ${this.filtro === 'acabando' ? 'Nenhum item se aproximando do fim.' : 'Nenhum item passando da validade típica.'}
       </div></div>`}`;
@@ -60,17 +60,17 @@ const ViewDespensa = {
        Mostrar zero onde não se sabe seria afirmar que acabou. */
     let direita;
     if (s.perecivel) {
-      direita = `<span class="selo ${s.vencido ? 's-red' : 's-slate'}">
+      direita = `<span class="badge ${s.vencido ? 'b-red' : 'b-slate'}">
         ${s.diasDesdeUltima == null ? '—' : s.vencido ? 'pode ter estragado' : `há ${s.diasDesdeUltima}d`}
       </span>`;
     } else if (s.saldo == null) {
-      direita = `<span class="selo s-slate">não sei</span>`;
+      direita = `<span class="badge b-slate">não sei</span>`;
     } else {
-      const selo = s.diasParaAcabar == null ? 's-slate'
-        : s.diasParaAcabar <= 0 ? 's-red'
-        : s.diasParaAcabar <= 7 ? 's-amber' : 's-green';
+      const selo = s.diasParaAcabar == null ? 'b-slate'
+        : s.diasParaAcabar <= 0 ? 'b-red'
+        : s.diasParaAcabar <= 7 ? 'b-amber' : 'b-green';
       direita = `<b class="valor">${Despensa.fmtQtd(s.saldo, s.unidade)}</b>
-        <span class="selo ${selo}">${s.diasParaAcabar == null ? '—'
+        <span class="badge ${selo}">${s.diasParaAcabar == null ? '—'
           : s.diasParaAcabar <= 0 ? 'acabou' : `~${s.diasParaAcabar}d`}</span>`;
     }
 
@@ -106,27 +106,27 @@ const ViewDespensa = {
         O app não estima o que sobrou — acompanha pelo seu ritmo de compra, que é
         o que dá para saber sem você abrir a geladeira.</p>` : ''}
 
-      <p class="secao">Está errado?</p>
+      <p class="section-title">Está errado?</p>
       <p class="sub">Diga quanto há de verdade. O app passa a contar a partir daí,
         e a estimativa melhora.</p>
       <div class="preco-campos" style="margin-top:var(--e2)">
         <label class="preco-campo">
           <span class="rotulo">Tenho em casa</span>
-          <input class="campo" id="dp-qtd" inputmode="decimal" placeholder="0">
+          <input  id="dp-qtd" inputmode="decimal" placeholder="0">
         </label>
         <label class="preco-campo estreito">
           <span class="rotulo">Un.</span>
-          <input class="campo" id="dp-un" value="${UI.esc(s.unidade)}" readonly>
+          <input  id="dp-un" value="${UI.esc(s.unidade)}" readonly>
         </label>
       </div>
-      <button class="btn btn-principal btn-largo btn-grande" id="dp-ok" style="margin-top:var(--e2)">
+      <button class="btn" id="dp-ok" style="margin-top:var(--e2)">
         Corrigir
       </button>
-      <button class="btn btn-largo" id="dp-zero" style="margin-top:var(--e2)">
+      <button class="btn btn-vazado" id="dp-zero" style="margin-top:var(--e2)">
         Acabou — não tenho mais
       </button>
 
-      <p class="secao">Histórico de entradas</p>
+      <p class="section-title">Histórico de entradas</p>
       <div class="lista-itens">
         ${Despensa.entradasDe(DB, itemId).slice(-6).reverse().map(e => {
           const loja = e.store_id ? DB.get('stores', e.store_id) : null;

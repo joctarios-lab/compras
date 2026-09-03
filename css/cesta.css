@@ -1,0 +1,599 @@
+/* ============================================================================
+   CESTA — a camada própria, sobre o sistema visual do DOMI
+
+   css/domi.css é HERDADO E NÃO SE EDITA: é o mesmo arquivo do app de finanças,
+   copiado sem alteração. Toda medida, token, componente e comportamento de tema
+   vêm de lá — botão, card, folha, header, tabbar, badge, formulário, tela de
+   bloqueio. É o que faz os dois apps serem o mesmo app com conteúdos
+   diferentes, em vez de dois parecidos.
+
+   Aqui mora SÓ o que o CESTA tem e o DOMI não: o diagnóstico de preço, o Modo
+   Mercado, a despensa, o cardápio e a apresentação. Cada peça usa os tokens do
+   DOMI — nenhum hex, nenhum rgba, nenhuma medida solta.
+
+   Quando bater a dúvida "crio uma classe ou reaproveito?", a resposta é
+   reaproveitar. Uma classe nova só se justifica quando o DOMI não tem nada
+   parecido, e é sempre uma peça que o CESTA precisa por ser sobre compras.
+   ============================================================================ */
+
+
+/* ------------------------------------------------------- alvo de toque ---
+
+   O DOMI não precisa destes tokens: as telas dele são usadas sentado, e o alvo
+   padrão de 46px do botão dá conta. O CESTA tem o Modo Mercado, e ali a pessoa
+   mira com o polegar, andando, com a outra mão no carrinho — é o único lugar do
+   app onde o alvo cresce, e ele cresce por um motivo, não por precaução. */
+:root {
+  --toque: 48px;
+  --toque-mercado: 56px;
+}
+
+/* ====================================================== A TINTA QUE FALTA ===
+
+   O DOMI não tem --slate porque no app de finanças não existe o estado "ainda
+   não sei". No CESTA ele é central: é a cor do ⚪ primeiro registro, do saldo
+   desconhecido da despensa, do produto sem histórico.
+
+   Ela precisa ser visivelmente diferente do âmbar de "na média" — dizer "na
+   média" quando não há média é a mentira que derruba a confiança no app
+   inteiro, e a cor não pode sugerir o que a palavra nega.
+
+   Vem nas TRÊS CAMADAS, como manda o sistema: :root sempre definido, o media
+   query do sistema, e a escolha explícita. Uma cor definida só dentro de um
+   media query some no outro tema. */
+
+:root {
+  --slate: #9AA4BC;
+  --slate-ink: #9AA4BC;
+  --slate-contraste: #0B0F1A;
+  --slate-soft: #1B2130;
+  --slate-borda: #333D52;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-tema="dark"]) {
+    --slate: #5A6377;
+    --slate-ink: #4A5266;
+    --slate-contraste: #FFFFFF;
+    --slate-soft: #ECEFF6;
+    --slate-borda: #D2D8E6;
+  }
+}
+
+:root[data-tema="light"] {
+  --slate: #5A6377;
+  --slate-ink: #4A5266;
+  --slate-contraste: #FFFFFF;
+  --slate-soft: #ECEFF6;
+  --slate-borda: #D2D8E6;
+}
+
+/* ------------------------------------------------------------ tipografia ---
+   O DOMI não tem .titulo nem .sub porque os títulos dele vivem dentro de
+   componentes. O CESTA tem telas com cabeçalho próprio, então estas duas
+   existem — mas com as medidas da escala do DOMI, não inventadas. */
+
+.titulo {
+  font-size: 19px; font-weight: 800; letter-spacing: -.02em;
+  margin: 0 0 2px; color: var(--paper);
+}
+.sub {
+  font-size: 12.5px; color: var(--paper-dim); margin: 0; line-height: 1.45;
+}
+.sub b { color: var(--paper); font-weight: 600; }
+
+/* O rótulo pequeno acima de um número. Mesmo padrão do .kpi-label do DOMI. */
+.rotulo {
+  display: block; font-size: 11px; font-weight: 500;
+  color: var(--paper-dim); margin-bottom: 2px;
+}
+.valor { font-family: var(--font-num); font-variant-numeric: tabular-nums; font-weight: 700; }
+.valor.grande { font-size: 26px; letter-spacing: -.03em; display: block; }
+.fraco { color: var(--paper-faint); font-weight: 500; }
+
+/* Uma linha com dois ou três números lado a lado. */
+.linha-resumo {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  gap: var(--e3); margin-top: 12px;
+}
+.linha-resumo .direita { text-align: right; }
+
+/* Duas ações lado a lado, quando as duas são legítimas. Mais que duas viram
+   linhas de lista (.settings-item), como no DOMI. */
+.acoes-linha { display: flex; gap: var(--e2); margin-top: 12px; }
+.acoes-linha .btn { flex: 1; }
+
+/* ====================================================== O DIAGNÓSTICO ===
+
+   A peça central do app, e a única razão de existirem cores fortes numa tela
+   de lista. Segue a regra do DOMI: a cor é do DADO, e vem sempre com palavra e
+   número — daltonismo, sol na tela, corredor mal iluminado. */
+
+.diag {
+  display: inline-flex; align-items: baseline; gap: 8px;
+  font-size: 14px; font-weight: 800;
+  padding: 7px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+}
+.diag .pct { font-family: var(--font-num); font-variant-numeric: tabular-nums; font-weight: 700; }
+.diag.s-green, .diag.b-green { background: var(--green-soft); color: var(--green-ink); border-color: var(--green-borda); }
+.diag.s-amber, .diag.b-amber { background: var(--amber-soft); color: var(--amber-ink); border-color: var(--amber-borda); }
+.diag.s-red,   .diag.b-red   { background: var(--red-soft);   color: var(--red-ink);   border-color: var(--red-borda); }
+.diag.s-slate, .diag.b-slate { background: var(--slate-soft); color: var(--slate-ink); border-color: var(--slate-borda); }
+.diag.s-blue,  .diag.b-blue  { background: var(--blue-soft);  color: var(--blue-ink);  border-color: var(--blue-borda); }
+
+/* A nota que carrega a BASE do veredito — mediana, número de registros, escopo.
+   É ela que permite auditar o número, e sem ela o selo é palpite com cara de
+   fato. */
+.diag-nota { margin: 8px 0 0; font-size: 12px; color: var(--paper-dim); line-height: 1.45; }
+.diag-nota b { color: var(--paper); }
+.diag-area { min-height: 48px; }
+
+/* O cinza do "primeiro registro" não existe no DOMI: lá não há um estado
+   "ainda não sei". Aqui ele é essencial, e precisa ser visivelmente diferente
+   do âmbar de "na média". */
+.b-slate { background: var(--slate-soft); color: var(--slate-ink); }
+
+/* ======================================================= MODO MERCADO ===
+
+   A única tela do app com ergonomia própria, e ela se justifica: a pessoa está
+   andando, com uma mão no carrinho e pressa. É o único lugar onde o alvo cresce
+   acima do padrão do DOMI. */
+
+.mercado-topo {
+  display: flex; align-items: flex-end; justify-content: space-between; gap: var(--e3);
+  padding: 12px 14px;
+  background: var(--destaque);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  position: sticky; top: var(--h-topbar); z-index: 20;
+  box-shadow: var(--shadow);
+}
+.mercado-total .valor.grande { font-size: 30px; }
+.mercado-contagem { text-align: right; }
+.mercado-contagem b { font-family: var(--font-num); font-size: 18px; font-weight: 800; }
+
+.mercado-linha { border-radius: var(--radius-sm); }
+.mercado-linha + .mercado-linha { border-top: 1px solid var(--line); }
+.mercado-linha.aberta { background: var(--embutido); border-top-color: transparent; }
+
+.mercado-toque {
+  width: 100%; display: flex; align-items: center; gap: var(--e3);
+  padding: 10px 8px; text-align: left;
+  background: none; border: none; cursor: pointer;
+  font-family: var(--font-body); color: var(--paper);
+}
+.modo-mercado .mercado-toque { min-height: var(--toque-mercado); }
+.mercado-nome { flex: 1; min-width: 0; }
+.mercado-nome b { display: block; font-weight: 700; font-size: 14px; }
+.mercado-seta { width: 18px; height: 18px; color: var(--paper-faint); flex: none; }
+
+.mercado-linha.feita { display: flex; align-items: center; justify-content: space-between; gap: var(--e3); padding: 8px; }
+.feitos { opacity: .72; }
+.btn-desfazer {
+  font-size: 11px; color: var(--gold-ink); font-weight: 700;
+  background: none; border: none; cursor: pointer; display: block; padding: 2px 0;
+}
+
+.preco-painel { padding: 12px 8px; display: flex; flex-direction: column; gap: 12px; }
+.preco-campos { display: flex; gap: var(--e2); }
+.preco-campo { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.preco-campo.estreito { flex: 0 0 80px; }
+.campo-preco { font-family: var(--font-num); font-size: 20px; font-weight: 800; }
+.modo-mercado .campo-preco { font-size: 24px; padding: 14px 13px; }
+.preco-botoes { display: flex; gap: var(--e2); }
+.preco-botoes .btn { flex: 1; }
+.preco-botoes .btn:last-child { flex: 2; }
+
+.mercado-acoes { display: flex; flex-direction: column; gap: var(--e2); margin-top: 14px; }
+
+/* O corredor como divisória: só aparece quando muda, e serve para a pessoa se
+   localizar na loja sem contar itens. */
+.corredor-titulo {
+  font-size: 11px; font-weight: 700; letter-spacing: .04em;
+  color: var(--paper-faint); text-transform: uppercase;
+  margin: 14px 8px 4px; padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+.lista-mercado .corredor-titulo:first-child { border-top: 0; margin-top: 0; padding-top: 0; }
+
+/* ========================================================= AS LISTAS ===
+
+   A linha de item do CESTA. Segue a .tx do DOMI (a linha de lançamento) em
+   altura, peso e comportamento de toque — é a mesma ideia: uma linha de dado
+   com ação. */
+
+.lista-itens, .lista-mercado { display: flex; flex-direction: column; }
+
+.item-linha {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 8px;
+  border-radius: var(--radius-sm);
+  background: none; border: none;
+  font-family: var(--font-body); color: var(--paper);
+  text-align: left; width: 100%;
+  transition: transform .12s ease, background .15s ease;
+}
+.item-linha + .item-linha { border-top: 1px solid var(--line); border-radius: 0; }
+.linha-clicavel { cursor: pointer; }
+.linha-clicavel:hover { background: var(--ink-3); }
+.linha-clicavel:active { transform: scale(.99); }
+
+.item-corpo { flex: 1; min-width: 0; }
+.item-corpo b { display: block; font-weight: 600; font-size: 13.5px; }
+.item-corpo .sub { font-size: 11.5px; }
+.item-linha.comprado .item-corpo b { text-decoration: line-through; color: var(--paper-faint); }
+.item-emoji { font-size: 18px; flex: none; width: 26px; text-align: center; }
+
+.item-marca {
+  width: 26px; height: 26px; flex: none;
+  border: 2px solid var(--line-strong);
+  border-radius: var(--radius-pill);
+  display: grid; place-items: center;
+  color: var(--green-contraste);
+  background: none; cursor: pointer;
+}
+.item-linha.comprado .item-marca { background: var(--green); border-color: var(--green); }
+.item-marca span { width: 14px; height: 14px; }
+
+.item-remover {
+  width: 30px; height: 30px; flex: none;
+  color: var(--paper-faint); font-size: 20px; line-height: 1;
+  border-radius: var(--radius-pill);
+  background: none; border: none; cursor: pointer;
+}
+.item-remover:hover { background: var(--red-soft); color: var(--red-ink); }
+
+.btn-mini {
+  font-size: 11px; font-weight: 700; color: var(--gold-ink);
+  padding: 3px 8px; border-radius: var(--radius-pill);
+  background: var(--gold-soft); border: none; cursor: pointer;
+  display: block; margin-top: 2px;
+}
+
+.marca-mini {
+  font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+  color: var(--blue-ink); background: var(--blue-soft);
+  border: 1px solid var(--blue-borda);
+  padding: 1px 6px; border-radius: var(--radius-pill);
+  vertical-align: middle;
+}
+
+.direita { text-align: right; flex: none; }
+
+/* Adicionar item: campo + botão, colados. */
+.add-linha { display: flex; gap: var(--e2); }
+.add-linha input { flex: 1; }
+.add-btn { width: 46px; flex: none; padding: 0; }
+.add-btn span { width: 18px; height: 18px; display: block; }
+
+.sugestoes { display: flex; flex-direction: column; gap: 2px; margin-top: var(--e2); }
+.sugestao {
+  text-align: left; width: 100%;
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--ink-3); border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: space-between; gap: var(--e2);
+  font-family: var(--font-body); font-weight: 600; font-size: 13px; color: var(--paper);
+}
+.sugestao:hover { background: var(--line); }
+
+/* ============================================================ HOJE ===
+
+   O painel. Os conselhos seguem o .callout do DOMI: uma faixa tintada com
+   ícone à esquerda, texto curto e ação implícita ao toque. */
+
+.hoje-topo { margin-bottom: 4px; }
+
+.plano-cabeca { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+.plano-ico { font-size: 24px; flex: none; }
+.plano-nome { display: block; font-size: 15px; font-weight: 800; }
+
+.conselhos { display: flex; flex-direction: column; gap: var(--e2); }
+
+.conselho {
+  display: flex; align-items: flex-start; gap: 12px;
+  width: 100%; text-align: left;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--ink-2);
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: transform .12s ease, border-color .15s ease;
+}
+.conselho:active { transform: scale(.99); }
+.conselho b { display: block; font-size: 13px; margin-bottom: 2px; color: var(--paper); }
+.conselho > div > span { font-size: 12px; color: var(--paper-dim); line-height: 1.4; }
+.conselho-ico { width: 20px; height: 20px; flex: none; margin-top: 1px; color: var(--paper-dim); }
+
+.conselho.s-red { background: var(--red-soft); border-color: var(--red-borda); }
+.conselho.s-red b, .conselho.s-red .conselho-ico { color: var(--red-ink); }
+.conselho.s-amber { background: var(--amber-soft); border-color: var(--amber-borda); }
+.conselho.s-amber b, .conselho.s-amber .conselho-ico { color: var(--amber-ink); }
+.conselho.s-blue { background: var(--blue-soft); border-color: var(--blue-borda); }
+.conselho.s-blue b, .conselho.s-blue .conselho-ico { color: var(--blue-ink); }
+
+.atalhos { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--e2); }
+.atalho {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 12px 8px;
+  border-radius: var(--radius);
+  background: var(--ink-2); border: 1px solid var(--line);
+  text-align: center; min-height: 78px; justify-content: center;
+  font-family: var(--font-body); cursor: pointer;
+  transition: transform .12s ease, border-color .15s ease;
+}
+.atalho:hover { border-color: var(--line-strong); }
+.atalho:active { transform: scale(.98); }
+.atalho span[data-ico] { width: 20px; height: 20px; color: var(--gold-ink); }
+.atalho b { font-size: 12px; font-weight: 700; color: var(--paper); }
+.atalho .sub { font-size: 10.5px; }
+
+/* A barra de orçamento. Duas faixas seria exagero aqui: só há um número a
+   mostrar, e o selo ao lado diz em palavras o que a cor sugere. */
+.orcamento { margin-top: 12px; display: flex; flex-direction: column; gap: var(--e2); }
+.orcamento-trilho { height: 7px; background: var(--ink-3); border-radius: var(--radius-pill); overflow: hidden; }
+.orcamento-barra { height: 100%; border-radius: var(--radius-pill); transition: width .25s var(--ease-out); }
+.orcamento-barra.s-green, .orcamento-barra.b-green { background: var(--green); }
+.orcamento-barra.s-amber, .orcamento-barra.b-amber { background: var(--amber); }
+.orcamento-barra.s-red, .orcamento-barra.b-red { background: var(--red); }
+.orcamento-barra.s-slate { background: var(--slate); }
+
+.barra-fina { height: 4px; background: var(--ink-3); border-radius: var(--radius-pill); margin-top: 5px; overflow: hidden; }
+.barra-fina > div { height: 100%; background: var(--gold-fraco); border-radius: var(--radius-pill); }
+
+/* ------------------------------------------------------------- sub-abas --- */
+
+.sub-abas {
+  display: flex; gap: 2px; padding: 3px;
+  background: var(--ink-3); border-radius: var(--radius-sm);
+}
+.sub-abas.rolavel { overflow-x: auto; scrollbar-width: none; }
+.sub-abas.rolavel::-webkit-scrollbar { display: none; }
+.sub-aba {
+  flex: 1; min-height: 34px; padding: 0 12px;
+  border-radius: calc(var(--radius-sm) - 3px);
+  font-size: 12.5px; font-weight: 700; white-space: nowrap;
+  color: var(--paper-dim); background: none; border: none; cursor: pointer;
+  font-family: var(--font-body);
+}
+.sub-aba.ativa { background: var(--ink-2); color: var(--paper); box-shadow: var(--shadow); }
+
+/* --------------------------------------------------------------- ciclos --- */
+
+.ciclos { display: grid; grid-template-columns: repeat(auto-fit, minmax(132px, 1fr)); gap: var(--e2); }
+.ciclo-card {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  background: var(--ink-2); border: 1px solid var(--line);
+  text-align: left; min-height: 76px; cursor: pointer;
+  font-family: var(--font-body); color: var(--paper);
+  transition: transform .12s ease, border-color .15s ease;
+}
+.ciclo-card:hover { border-color: var(--line-strong); }
+.ciclo-card:active { transform: scale(.99); }
+.ciclo-card.ativo { background: var(--gold-soft); border-color: var(--gold-borda); }
+.ciclo-card.ativo b { color: var(--gold-ink); }
+.ciclo-ico { font-size: 20px; }
+.ciclo-card b { font-size: 13px; }
+
+/* ------------------------------------------------------------- cardápio --- */
+
+.dia-chip {
+  flex: none; width: 38px; text-align: center;
+  font-size: 9.5px; text-transform: uppercase; letter-spacing: .05em;
+  color: var(--paper-faint); font-weight: 700;
+}
+.dia-chip b { display: block; font-size: 16px; font-weight: 800; color: var(--paper); font-family: var(--font-num); }
+
+.mini-serie { display: flex; align-items: flex-end; gap: 3px; height: 80px; margin-top: var(--e2); }
+.mini-barra { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; height: 100%; gap: 3px; }
+.mini-barra > div { background: var(--gold-fraco); border-radius: 3px 3px 0 0; min-height: 3px; }
+.mini-barra span { font-size: 8.5px; color: var(--paper-faint); text-align: center; }
+
+/* ------------------------------------------------------------ revisão --- */
+
+.revisao { max-height: 45vh; overflow-y: auto; }
+.rev-linha {
+  display: flex; align-items: center; gap: 12px;
+  padding: 9px 4px; min-height: 46px;
+}
+.rev-linha + .rev-linha { border-top: 1px solid var(--line); }
+.rev-linha.com-problema { opacity: .5; }
+.rev-corpo { flex: 1; min-width: 0; }
+.rev-corpo b { display: block; font-size: 13px; }
+.rev-check { width: 20px; height: 20px; flex: none; accent-color: var(--gold); }
+
+.passos p { font-size: 13px; color: var(--paper-dim); margin: 0 0 var(--e2); line-height: 1.5; }
+.passos b { color: var(--paper); }
+.nota-cors { font-size: 11.5px; padding: 12px; background: var(--ink-3); border-radius: var(--radius-sm); }
+.aviso-fora { color: var(--amber-ink); font-size: 12.5px; }
+.lojas { display: flex; flex-direction: column; gap: var(--e2); }
+
+/* --------------------------------------------------------------- casa --- */
+
+.membro { display: flex; align-items: center; gap: 12px; padding: 8px 0; }
+.membro-avatar {
+  width: 32px; height: 32px; flex: none;
+  display: grid; place-items: center;
+  border-radius: var(--radius-sm);
+  background: var(--gold); color: var(--gold-contraste);
+  font-weight: 700; font-size: 13px;
+}
+.codigo-familia {
+  font-family: var(--font-num); font-size: 24px; font-weight: 800;
+  letter-spacing: .18em; text-align: center;
+  padding: 16px; margin: 12px 0;
+  background: var(--destaque); border: 1px dashed var(--line-strong);
+  border-radius: var(--radius);
+}
+.pegou-por {
+  font-size: 10.5px; font-weight: 700;
+  color: var(--blue-ink); background: var(--blue-soft);
+  border: 1px solid var(--blue-borda);
+  padding: 2px 7px; border-radius: var(--radius-pill);
+}
+
+/* ================================================== A APRESENTAÇÃO ===
+
+   A única parte do app que não parece o resto — e é de propósito: ela não é uma
+   tela de trabalho, é uma conversa. Por isso o texto centralizado e o título
+   maior, que em nenhuma outra tela apareceriam. */
+
+.ob { max-width: 520px; margin: 0 auto; padding: 8px 0 var(--e6); }
+
+.ob-marca { display: flex; align-items: center; gap: var(--e2); justify-content: center; margin-bottom: 22px; }
+.ob-marca img { width: 38px; height: 38px; border-radius: 10px; }
+.ob-marca b { font-size: 18px; font-weight: 800; letter-spacing: .06em; }
+
+.ob-titulo {
+  font-size: 26px; font-weight: 800; line-height: 1.18;
+  letter-spacing: -.03em; margin: 0 0 12px; text-align: center;
+}
+.ob-texto { font-size: 14.5px; line-height: 1.5; color: var(--paper-dim); margin: 0 0 16px; text-align: center; }
+.ob-texto b { color: var(--paper); font-weight: 600; }
+.ob-texto.pequeno { font-size: 12.5px; }
+
+.ob-exemplo {
+  background: var(--destaque); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 14px; margin-bottom: 16px;
+}
+.ob-linha-ex { margin-bottom: 10px; }
+.ob-linha-ex b { display: block; font-size: 15px; }
+
+.ob-passo { display: flex; gap: 12px; margin-bottom: 16px; align-items: flex-start; }
+.ob-num {
+  flex: none; width: 26px; height: 26px;
+  display: grid; place-items: center;
+  border-radius: var(--radius-pill);
+  background: var(--gold-soft); color: var(--gold-ink);
+  font-weight: 800; font-size: 13px;
+}
+.ob-passo b { display: block; margin-bottom: 2px; font-size: 14px; }
+.ob-passo p { margin: 0; font-size: 13px; color: var(--paper-dim); line-height: 1.45; }
+.ob-passo p b { display: inline; color: var(--paper); }
+
+.ob-sugestoes { max-height: 44vh; overflow-y: auto; margin-bottom: 12px; }
+.ob-chips { display: flex; flex-wrap: wrap; gap: var(--e2); }
+.ob-rodape { position: sticky; bottom: 0; background: var(--ink); padding-top: var(--e2); }
+.ob-conta { display: block; text-align: center; font-size: 12.5px; color: var(--paper-faint); margin-bottom: var(--e2); }
+
+.ob-check {
+  width: 56px; height: 56px; margin: 0 auto 16px;
+  display: grid; place-items: center;
+  border-radius: var(--radius-pill);
+  background: var(--green-soft); color: var(--green-ink);
+  font-size: 28px; font-weight: 800;
+}
+
+.ob-proximo {
+  background: var(--destaque); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 14px; margin-bottom: 16px;
+}
+.ob-proximo b { display: block; margin-bottom: var(--e2); }
+.ob-proximo p { margin: 0 0 3px; font-size: 13px; color: var(--paper-dim); }
+
+.ob-pontos { display: flex; gap: 5px; justify-content: center; margin: 20px 0 12px; }
+.ob-pontos span { width: 6px; height: 6px; border-radius: var(--radius-pill); background: var(--line-strong); transition: width .2s ease; }
+.ob-pontos span.ativo { background: var(--gold); width: 18px; }
+
+.btn-texto {
+  display: block; width: 100%; margin-top: var(--e2);
+  min-height: 40px;
+  color: var(--paper-dim); font-weight: 600; font-size: 13px;
+  background: none; border: none; cursor: pointer; font-family: var(--font-body);
+}
+.btn-texto:hover { color: var(--paper); }
+
+/* As duas opções da tela da nuvem. As duas são legítimas: "só neste aparelho"
+   não é a escolha do preguiçoso, é a certa para quem usa um celular só. */
+.escolha {
+  display: block; width: 100%; text-align: left;
+  padding: 16px;
+  margin-bottom: var(--e2);
+  border-radius: var(--radius);
+  background: var(--ink-2); border: 1px solid var(--line);
+  cursor: pointer; font-family: var(--font-body);
+  transition: transform .12s ease, border-color .15s ease;
+}
+.escolha:hover { border-color: var(--gold-borda); }
+.escolha:active { transform: scale(.99); }
+.escolha b { display: block; font-size: 15px; margin-bottom: 4px; color: var(--paper); }
+.escolha span { font-size: 12.5px; color: var(--paper-dim); line-height: 1.45; }
+
+/* Durante a apresentação a navegação sai do caminho: ela ainda não significa
+   nada para quem não sabe o que o app faz. */
+body.em-abertura .tabbar,
+body.em-abertura .sidebar-menu,
+body.em-abertura .ajuda summary::-webkit-details-marker { display: none; }
+.ajuda summary::after { content: "+"; color: var(--paper-faint); font-size: 18px; font-weight: 400; }
+.ajuda details[open] summary::after { content: "\2212"; }
+.ajuda p { margin: var(--e2) 0 0; font-size: 13px; color: var(--paper-dim); line-height: 1.5; }
+.ajuda p b { color: var(--paper); }
+
+/* ----------------------------------------------------------- câmera --- */
+
+.cam-video { width: 100%; border-radius: var(--radius); background: var(--ink-3); aspect-ratio: 4/3; object-fit: cover; }
+.cam-botoes { display: flex; flex-direction: column; gap: var(--e2); margin-top: 12px; }
+
+/* --------------------------------------------------- Mais por Menos --- */
+
+.mpm { display: flex; gap: 12px; }
+.mpm-lado { flex: 1; min-width: 0; }
+.mpm-resposta { margin-top: 16px; min-height: 36px; }
+
+.aviso-encolhimento {
+  padding: 12px;
+  background: var(--blue-soft); border: 1px solid var(--blue-borda);
+  border-radius: var(--radius-sm);
+}
+.aviso-encolhimento + .aviso-encolhimento { margin-top: var(--e2); }
+.aviso-encolhimento b { color: var(--blue-ink); }
+
+.destaque-compra { background: var(--destaque); }
+
+/* ----------------------------------------------- o que faltava ligar ---
+
+   O DOMI já traz a tela de bloqueio inteira (.lock-card, .pin-dots, .pin-pad,
+   .pin-key, .pin-ok, .bio-alvo). Aqui ficam só as duas peças que ele não tem,
+   porque a tela dele não as usa. */
+
+.lock-ico { width: 52px; height: 52px; border-radius: 14px; margin: 0 auto 12px; }
+.lock-txt { color: var(--paper-dim); font-size: 13px; margin: 0 0 18px; line-height: 1.45; }
+.lock-txt b { color: var(--paper); }
+.pin-vazia { background: none !important; border: 0 !important; pointer-events: none; }
+
+/* Os campos de quantidade e unidade no painel de preço: estreitos, ao lado do
+   preço. O input já vem estilizado pelo DOMI — aqui só a largura. */
+.campo-qtd, .campo-un { text-align: center; }
+
+/* O botão de escolher loja, na folha de entrada no mercado. */
+.loja-op { margin-bottom: var(--e2); }
+
+.rec-check { width: 20px; height: 20px; flex: none; accent-color: var(--gold); }
+
+/* --------------------------------------------------- variações do botão ---
+
+   O DOMI tem um botão só, e está certo: um app com quatro tipos de botão não
+   tem hierarquia. As duas variações abaixo existem porque o CESTA tem uma tela
+   que o DOMI não tem — o Modo Mercado — e porque há telas com duas ações
+   igualmente legítimas lado a lado.
+
+   Fora isso, use .btn puro. */
+
+/* A ação secundária ao lado de uma principal. Mesmo formato, sem o peso da cor. */
+.btn-vazado {
+  background: var(--ink-3);
+  color: var(--paper);
+  border: 1px solid var(--line);
+}
+.btn-vazado:hover { background: var(--line); border-color: var(--line-strong); }
+
+/* O alvo maior SÓ vale dentro do Modo Mercado, onde a pessoa mira com o polegar,
+   andando, com a outra mão no carrinho. Fora dali ele é só um botão grande
+   demais — foi o que deixou o app com cara de protótipo. */
+.btn-grande { min-height: 46px; }
+.modo-mercado .btn-grande { min-height: var(--toque-mercado); font-size: 15px; }

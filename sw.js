@@ -9,12 +9,13 @@
    isso aparece como defeito onde não há nenhum. */
 'use strict';
 
-const VERSAO = '4';
+const VERSAO = '5';
 const CACHE = 'cesta-' + VERSAO;
 const SHELL = [
   './',
   'index.html',
-  'css/styles.css?v=' + VERSAO,
+  'css/domi.css?v=' + VERSAO,
+  'css/cesta.css?v=' + VERSAO,
   'js/config.js?v=' + VERSAO,
   'js/icons.js?v=' + VERSAO,
   'js/ui.js?v=' + VERSAO,

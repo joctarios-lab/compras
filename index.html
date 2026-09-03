@@ -19,7 +19,10 @@
 <!-- Figtree nos títulos e na marca; Inter nos valores, onde dígito de largura
      fixa importa mais que personalidade. As mesmas do DOMI. -->
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css?v=4">
+<!-- O sistema visual do DOMI, herdado sem alteração, e a camada do CESTA por
+     cima. A ordem importa: a camada só acrescenta o que é de compras. -->
+<link rel="stylesheet" href="css/domi.css?v=5">
+<link rel="stylesheet" href="css/cesta.css?v=5">
 <script>
   /* TEMA ANTES DA PRIMEIRA PINTURA.
 
@@ -38,7 +41,7 @@
 
 <!-- A TELA DE BLOQUEIO vive FORA do #app e cobre tudo: enquanto os dados estão
      cifrados, nada do app pode ser desenhado por baixo dela. -->
-<div id="lock" hidden></div>
+<div id="lock" class="lock" hidden></div>
 
 <div id="app">
 
@@ -51,101 +54,108 @@
     </div>
 
     <nav class="sidebar-menu">
-      <p class="sidebar-secao">Dia a dia</p>
+      <p class="sidebar-section">Dia a dia</p>
       <button class="side-item" data-aba="hoje"><span class="tab-ico" data-ico="casa"></span>Hoje</button>
       <button class="side-item" data-aba="planejar"><span class="tab-ico" data-ico="lista"></span>Planejar</button>
       <button class="side-item" data-aba="mercado"><span class="tab-ico" data-ico="carrinho"></span>Modo Mercado</button>
-      <p class="sidebar-secao">A casa</p>
+      <p class="sidebar-section">A casa</p>
       <button class="side-item" data-aba="despensa"><span class="tab-ico" data-ico="despensa"></span>Despensa</button>
       <button class="side-item" data-aba="analise"><span class="tab-ico" data-ico="historico"></span>Análise</button>
     </nav>
 
-    <div class="sidebar-rodape">
+    <div class="sidebar-footer">
       <button class="side-item" id="side-ajuda"><span class="tab-ico" data-ico="ajuda"></span>Ajuda</button>
       <button class="side-item" id="side-ajustes"><span class="tab-ico" data-ico="ajustes"></span>Ajustes</button>
     </div>
   </aside>
 
-  <div class="conteudo">
+  <div class="wrapper">
     <header class="topbar">
-      <div class="topbar-marca">
-        <img src="icons/icon.svg" alt="">
-        <span>CESTA</span>
+      <div class="topbar-inner">
+        <div class="topbar-left">
+          <div class="topbar-logo">
+            <img src="icons/icon.svg" alt="">
+            <span>CESTA</span>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <button class="icon-btn" id="btn-ajuda" title="Ajuda" aria-label="Ajuda">
+            <span data-ico="ajuda"></span>
+          </button>
+          <button class="icon-btn" id="btn-tema" title="Alternar tema" aria-label="Alternar tema">
+            <span data-ico="tema"></span>
+          </button>
+          <button class="icon-btn" id="btn-ajustes" title="Ajustes" aria-label="Ajustes">
+            <span data-ico="ajustes"></span>
+          </button>
+        </div>
       </div>
-      <div class="topbar-espaco"></div>
-      <button class="topbar-acao" id="btn-ajuda" title="Ajuda" aria-label="Ajuda">
-        <span data-ico="ajuda"></span>
-      </button>
-      <button class="topbar-acao" id="btn-tema" title="Alternar tema" aria-label="Alternar tema">
-        <span data-ico="tema"></span>
-      </button>
-      <button class="topbar-acao" id="btn-ajustes" title="Ajustes" aria-label="Ajustes">
-        <span data-ico="ajustes"></span>
-      </button>
     </header>
 
-    <main id="tela">
-      <!-- As telas são montadas por js/app.js. Nada de conteúdo estático aqui:
-           HTML de exemplo esquecido no shell vira dado fantasma na primeira
-           abertura, e ninguém entende de onde ele veio. -->
-    </main>
+    <div class="content">
+      <main id="tela" class="view">
+        <!-- As telas são montadas por js/app.js. Nada de conteúdo estático:
+             HTML de exemplo esquecido no shell vira dado fantasma na primeira
+             abertura, e ninguém entende de onde ele veio. -->
+      </main>
+    </div>
   </div>
 
   <!-- BARRA INFERIOR (celular). Fica na zona do polegar, a única parte da tela
        alcançável com uma mão enquanto a outra segura o carrinho. -->
-  <nav class="dock" aria-label="Navegação principal">
-    <button class="dock-item" data-aba="hoje" aria-current="page">
-      <span class="dock-ico" data-ico="casa"></span>Hoje
+  <nav class="tabbar" aria-label="Navegação principal">
+    <button class="tab" data-aba="hoje" aria-current="page">
+      <span class="tab-ico" data-ico="casa"></span>Hoje
     </button>
-    <button class="dock-item" data-aba="planejar">
-      <span class="dock-ico" data-ico="lista"></span>Planejar
+    <button class="tab" data-aba="planejar">
+      <span class="tab-ico" data-ico="lista"></span>Planejar
     </button>
-    <button class="dock-item" data-aba="mercado">
-      <span class="dock-ico" data-ico="carrinho"></span>Mercado
+    <button class="tab" data-aba="mercado">
+      <span class="tab-ico" data-ico="carrinho"></span>Mercado
     </button>
-    <button class="dock-item" data-aba="despensa">
-      <span class="dock-ico" data-ico="despensa"></span>Despensa
+    <button class="tab" data-aba="despensa">
+      <span class="tab-ico" data-ico="despensa"></span>Despensa
     </button>
-    <button class="dock-item" data-aba="analise">
-      <span class="dock-ico" data-ico="historico"></span>Análise
+    <button class="tab" data-aba="analise">
+      <span class="tab-ico" data-ico="historico"></span>Análise
     </button>
   </nav>
 
 </div>
 
-<script src="js/config.js?v=4"></script>
-<script src="js/icons.js?v=4"></script>
-<script src="js/ui.js?v=4"></script>
-<script src="js/catalogo.js?v=4"></script>
-<script src="js/db.js?v=4"></script>
-<script src="js/precos.js?v=4"></script>
-<script src="js/despensa.js?v=4"></script>
-<script src="js/decisoes.js?v=4"></script>
-<script src="js/cozinha.js?v=4"></script>
-<script src="js/nfce.js?v=4"></script>
-<script src="js/importar.js?v=4"></script>
-<script src="js/fotos.js?v=4"></script>
-<script src="js/leitura.js?v=4"></script>
-<script src="js/auth.js?v=4"></script>
-<script src="js/bloqueio.js?v=4"></script>
-<script src="js/sync.js?v=4"></script>
-<script src="js/onboarding.js?v=4"></script>
-<script src="js/views/historico.js?v=4"></script>
-<script src="js/views/produtos.js?v=4"></script>
-<script src="js/planejar.js?v=4"></script>
-<script src="js/views/hoje.js?v=4"></script>
-<script src="js/views/planejar.js?v=4"></script>
-<script src="js/views/despensa.js?v=4"></script>
-<script src="js/views/analise.js?v=4"></script>
-<script src="js/views/dialogos.js?v=4"></script>
-<script src="js/views/lista.js?v=4"></script>
-<script src="js/views/mercado.js?v=4"></script>
-<script src="js/views/ferramentas.js?v=4"></script>
-<script src="js/views/importar.js?v=4"></script>
-<script src="js/views/ajustes.js?v=4"></script>
-<script src="js/views/sync.js?v=4"></script>
-<script src="js/views/familia.js?v=4"></script>
-<script src="js/views/camera.js?v=4"></script>
-<script src="js/app.js?v=4"></script>
+<script src="js/config.js?v=5"></script>
+<script src="js/icons.js?v=5"></script>
+<script src="js/ui.js?v=5"></script>
+<script src="js/catalogo.js?v=5"></script>
+<script src="js/db.js?v=5"></script>
+<script src="js/precos.js?v=5"></script>
+<script src="js/despensa.js?v=5"></script>
+<script src="js/decisoes.js?v=5"></script>
+<script src="js/cozinha.js?v=5"></script>
+<script src="js/nfce.js?v=5"></script>
+<script src="js/importar.js?v=5"></script>
+<script src="js/fotos.js?v=5"></script>
+<script src="js/leitura.js?v=5"></script>
+<script src="js/auth.js?v=5"></script>
+<script src="js/bloqueio.js?v=5"></script>
+<script src="js/sync.js?v=5"></script>
+<script src="js/onboarding.js?v=5"></script>
+<script src="js/views/historico.js?v=5"></script>
+<script src="js/views/produtos.js?v=5"></script>
+<script src="js/planejar.js?v=5"></script>
+<script src="js/views/hoje.js?v=5"></script>
+<script src="js/views/planejar.js?v=5"></script>
+<script src="js/views/despensa.js?v=5"></script>
+<script src="js/views/analise.js?v=5"></script>
+<script src="js/views/dialogos.js?v=5"></script>
+<script src="js/views/lista.js?v=5"></script>
+<script src="js/views/mercado.js?v=5"></script>
+<script src="js/views/ferramentas.js?v=5"></script>
+<script src="js/views/importar.js?v=5"></script>
+<script src="js/views/ajustes.js?v=5"></script>
+<script src="js/views/sync.js?v=5"></script>
+<script src="js/views/familia.js?v=5"></script>
+<script src="js/views/camera.js?v=5"></script>
+<script src="js/app.js?v=5"></script>
 </body>
 </html>

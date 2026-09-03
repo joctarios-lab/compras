@@ -33,12 +33,12 @@ const ViewProdutos = {
     if (!DB.all('items').length) {
       return `${dentro ? '' : `<h1 class="titulo">Meus produtos</h1>`}
         <p class="sub">Tudo o que você já comprou, e quanto costuma custar.</p>
-        <div class="card"><div class="vazio">
+        <div class="card"><div class="ui-empty">
           <b>Ainda não há produtos</b>
           Eles nascem sozinhos conforme você monta listas e registra preços.
           Importar uma nota fiscal preenche isto de uma vez.
         </div>
-        <button class="btn btn-principal btn-largo btn-grande" data-acao="importar">
+        <button class="btn" data-acao="importar">
           Importar nota fiscal
         </button></div>`;
     }
@@ -47,13 +47,13 @@ const ViewProdutos = {
       <p class="sub">${comHistorico.length} com histórico de preço · ${DB.all('items').length} no catálogo</p>
 
       <div class="card">
-        <input class="campo" id="busca-prod" placeholder="Buscar produto"
+        <input  id="busca-prod" placeholder="Buscar produto"
                value="${UI.esc(this.busca)}" autocomplete="off" aria-label="Buscar produto">
       </div>
 
       ${itens.length ? `<div class="card lista-itens">
         ${itens.map(r => this.linha(r)).join('')}
-      </div>` : `<div class="card"><div class="vazio"><b>Nada encontrado</b>
+      </div>` : `<div class="card"><div class="ui-empty"><b>Nada encontrado</b>
         Tente outro nome.</div></div>`}`;
   },
 
@@ -64,7 +64,7 @@ const ViewProdutos = {
     const preco = ref.n
       ? `<b class="valor">${UI.fmtBase(ref.mediana, ref.unidade || item.unidade)}</b>
          <span class="sub">${vezes} ${vezes === 1 ? 'registro' : 'registros'}</span>`
-      : `<span class="selo s-slate">sem preço ainda</span>`;
+      : `<span class="badge b-slate">sem preço ainda</span>`;
 
     return `<button class="item-linha linha-clicavel" data-item="${item.id}">
       <span class="item-emoji">${corredor.icone}</span>
@@ -111,17 +111,17 @@ const ViewProdutos = {
         <p class="sub">${ref.n} ${ref.n === 1 ? 'registro' : 'registros'} nos últimos 12 meses${
           ref.melhorLoja && DB.get('stores', ref.melhorLoja)
             ? ` · mais barato em <b>${UI.esc(DB.get('stores', ref.melhorLoja).nome)}</b>` : ''}</p>
-      ` : `<div class="vazio" style="padding:var(--e4) 0">
+      ` : `<div class="ui-empty" style="padding:var(--e4) 0">
         <b>Ainda sem preço registrado</b>
         Registre no Modo Mercado ou importe uma nota fiscal.
       </div>`}
 
-      ${cad ? `<p class="secao">Ritmo de compra</p>
+      ${cad ? `<p class="section-title">Ritmo de compra</p>
         <p class="sub">Você costuma comprar a cada <b>${cad.intervalo} dias</b>.
           A última foi há ${cad.diasDesde}.
           ${cad.acabando ? ' <b>Provavelmente está acabando.</b>' : ''}</p>` : ''}
 
-      ${serie.length > 1 ? `<p class="secao">Mês a mês</p>
+      ${serie.length > 1 ? `<p class="section-title">Mês a mês</p>
         <div class="mini-serie">
           ${serie.map(p => {
             const max = Math.max(...serie.map(x => x.mediana));
@@ -133,7 +133,7 @@ const ViewProdutos = {
           }).join('')}
         </div>` : ''}
 
-      ${obs.length ? `<p class="secao">Últimos preços</p>
+      ${obs.length ? `<p class="section-title">Últimos preços</p>
         <div class="lista-itens">
           ${obs.map(o => {
             const loja = o.store_id ? DB.get('stores', o.store_id) : null;
@@ -148,14 +148,14 @@ const ViewProdutos = {
           }).join('')}
         </div>` : ''}
 
-      <button class="btn btn-principal btn-largo btn-grande" id="prod-add" style="margin-top:var(--e4)">
+      <button class="btn" id="prod-add" style="margin-top:var(--e4)">
         Adicionar à lista
       </button>`);
 
     document.querySelector('#prod-add').addEventListener('click', () => {
       const lista = DB.listaEmCurso() || DB.listasPlanejadas()[0] || DB.novaLista({});
       DB.addNaLista(lista.id, { item_id: item.id, qtd: item.qtd_habitual, unidade: item.unidade });
-      document.querySelector('.folha-fundo').remove();
+      document.querySelector('.sheet-backdrop').remove();
       UI.toast(`${item.nome} entrou na lista`);
       irPara('lista');
     });

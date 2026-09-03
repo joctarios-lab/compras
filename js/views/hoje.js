@@ -45,13 +45,13 @@ const ViewHoje = {
 
     if (!plano) {
       return `<div class="card destaque-compra">
-        <p class="secao" style="margin-top:0">Próxima compra</p>
-        <div class="vazio" style="padding:var(--e4) 0">
+        <p class="section-title" style="margin-top:0">Próxima compra</p>
+        <div class="ui-empty" style="padding:var(--e4) 0">
           <b>Nenhuma compra marcada</b>
           Marque o dia do rancho e o app monta a lista sozinho, com o que deve
           faltar até lá.
         </div>
-        <button class="btn btn-principal btn-largo btn-grande" data-acao="novo-plano">
+        <button class="btn" data-acao="novo-plano">
           Marcar uma compra
         </button>
       </div>`;
@@ -70,7 +70,7 @@ const ViewHoje = {
       : `em ${dias} dias`;
 
     return `<div class="card destaque-compra">
-      <p class="secao" style="margin-top:0">Próxima compra</p>
+      <p class="section-title" style="margin-top:0">Próxima compra</p>
       <div class="plano-cabeca">
         <span class="plano-ico">${ciclo.icone}</span>
         <div>
@@ -94,10 +94,10 @@ const ViewHoje = {
       ${custo.semBase ? `<p class="sub">${custo.semBase} ${custo.semBase === 1
         ? 'item ainda sem histórico de preço' : 'itens ainda sem histórico de preço'}.</p>` : ''}
 
-      ${sugestoes ? `<button class="btn btn-principal btn-largo btn-grande" data-acao="revisar" data-plano="${plano.id}" style="margin-top:var(--e3)">
+      ${sugestoes ? `<button class="btn" data-acao="revisar" data-plano="${plano.id}" style="margin-top:var(--e3)">
         Revisar ${sugestoes} ${sugestoes === 1 ? 'sugestão' : 'sugestões'}
       </button>` : ''}
-      <button class="btn ${sugestoes ? '' : 'btn-principal'} btn-largo btn-grande" data-acao="ir-mercado" style="margin-top:var(--e2)">
+      <button class="btn ${sugestoes ? 'btn-vazado' : ''}" data-acao="ir-mercado" style="margin-top:var(--e2)">
         ${dias <= 0 ? 'Estou no mercado' : 'Ver a lista'}
       </button>
     </div>`;
@@ -106,10 +106,10 @@ const ViewHoje = {
   barraDoPlano(previsto, orcamento) {
     const uso = orcamento > 0 ? previsto / orcamento : 0;
     const estoura = previsto > orcamento;
-    const selo = estoura ? 's-red' : uso >= 0.9 ? 's-amber' : 's-green';
+    const selo = estoura ? 'b-red' : uso >= 0.9 ? 'b-amber' : 'b-green';
     return `<div class="orcamento">
       <div class="orcamento-trilho"><div class="orcamento-barra ${selo}" style="width:${Math.min(100, uso * 100).toFixed(1)}%"></div></div>
-      <span class="selo ${selo}">${estoura
+      <span class="badge ${selo}">${estoura
         ? `${UI.fmt(previsto - orcamento)} acima do planejado`
         : `${UI.fmt(orcamento - previsto)} dentro do planejado`}</span>
     </div>`;
@@ -148,8 +148,8 @@ const ViewHoje = {
     if (!lista.length) {
       const temBase = DB.all('price_obs').length >= 4;
       return `<div class="card">
-        <p class="secao" style="margin-top:0">Está acabando</p>
-        <div class="vazio" style="padding:var(--e4) 0">
+        <p class="section-title" style="margin-top:0">Está acabando</p>
+        <div class="ui-empty" style="padding:var(--e4) 0">
           <b>${temBase ? 'Nada acabando por enquanto' : 'Ainda aprendendo o seu ritmo'}</b>
           ${temBase
             ? 'O app avisa aqui quando algum item se aproximar do fim.'
@@ -159,12 +159,12 @@ const ViewHoje = {
     }
 
     return `<div class="card">
-      <p class="secao" style="margin-top:0">Está acabando</p>
+      <p class="section-title" style="margin-top:0">Está acabando</p>
       <p class="sub">Estimado pelo seu ritmo de compra${plano ? `, até a compra de ${this.dataBR(plano.data)}` : ''}.</p>
       <div class="lista-itens">
         ${lista.map(s => this.linhaAcabando(s)).join('')}
       </div>
-      <button class="btn btn-largo" data-acao="por-na-lista" style="margin-top:var(--e3)">
+      <button class="btn btn-vazado" data-acao="por-na-lista" style="margin-top:var(--e3)">
         Pôr todos na lista
       </button>
     </div>`;
@@ -175,7 +175,7 @@ const ViewHoje = {
     const quando = s.motivo === 'saldo'
       ? (s.diasParaAcabar <= 0 ? 'deve ter acabado' : `~${s.diasParaAcabar} dias`)
       : 'passou do ritmo';
-    const selo = s.motivo === 'saldo' && s.diasParaAcabar <= 0 ? 's-red' : 's-amber';
+    const selo = s.motivo === 'saldo' && s.diasParaAcabar <= 0 ? 'b-red' : 'b-amber';
     return `<div class="item-linha">
       <span class="item-emoji">${corredor.icone}</span>
       <div class="item-corpo">
@@ -183,7 +183,7 @@ const ViewHoje = {
         <span class="sub">${UI.esc(s.explicacao)}</span>
       </div>
       <div class="direita">
-        <span class="selo ${selo}">${quando}</span>
+        <span class="badge ${selo}">${quando}</span>
         <button class="btn-mini" data-acao="add-item" data-item="${s.item_id}">+ lista</button>
       </div>
     </div>`;
@@ -195,12 +195,12 @@ const ViewHoje = {
     const p = Planejar.projecaoDoMes(DB);
     if (!p.gasto && !p.planejado) return '';
 
-    const selo = p.situacao === 'estoura' ? 's-red'
-      : p.situacao === 'atencao' ? 's-amber'
-      : p.situacao === 'tranquilo' ? 's-green' : 's-slate';
+    const selo = p.situacao === 'estoura' ? 'b-red'
+      : p.situacao === 'atencao' ? 'b-amber'
+      : p.situacao === 'tranquilo' ? 'b-green' : 'b-slate';
 
     return `<div class="card">
-      <p class="secao" style="margin-top:0">O mês até agora</p>
+      <p class="section-title" style="margin-top:0">O mês até agora</p>
       <div class="linha-resumo">
         <div>
           <span class="rotulo">Já gastou</span>
@@ -217,7 +217,7 @@ const ViewHoje = {
           <div class="orcamento-trilho">
             <div class="orcamento-barra ${selo}" style="width:${Math.min(100, (p.projetado / p.orcamento) * 100).toFixed(1)}%"></div>
           </div>
-          <span class="selo ${selo}">${p.estoura
+          <span class="badge ${selo}">${p.estoura
             ? `${UI.fmt(Math.abs(p.sobra))} acima do planejado`
             : `${UI.fmt(p.sobra)} de folga`}</span>
         </div>
@@ -226,7 +226,7 @@ const ViewHoje = {
       ` : `
         <p class="sub">Sem orçamento definido, o app não opina sobre o valor —
           só mostra o que aconteceu.</p>
-        <button class="btn btn-largo" data-acao="definir-orcamento" style="margin-top:var(--e2)">
+        <button class="btn btn-vazado" data-acao="definir-orcamento" style="margin-top:var(--e2)">
           Definir orçamento do mês
         </button>
       `}

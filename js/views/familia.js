@@ -20,11 +20,11 @@ function abrirFamilia() {
         lugar onde os dois aparelhos se encontrem — a sincronização.</p>
       <p class="sub">Ela é opcional: sem ela o app funciona inteiro, só que num
         aparelho só.</p>
-      <button class="btn btn-principal btn-largo btn-grande" id="fam-sync" style="margin-top:var(--e4)">
+      <button class="btn" id="fam-sync" style="margin-top:var(--e4)">
         Configurar sincronização
       </button>`);
     document.querySelector('#fam-sync').addEventListener('click', () => {
-      document.querySelector('.folha-fundo').remove();
+      document.querySelector('.sheet-backdrop').remove();
       abrirSync();
     });
     return;
@@ -43,23 +43,23 @@ function telaCriarOuEntrar() {
     <p class="sub">Quem divide as compras vê a mesma lista, e o histórico de
       preços passa a ser da casa inteira.</p>
 
-    <p class="secao">Começar uma casa</p>
-    <input class="campo" id="fam-nome" placeholder="Nome da casa (ex.: Família Silva)"
+    <p class="section-title">Começar uma casa</p>
+    <input  id="fam-nome" placeholder="Nome da casa (ex.: Família Silva)"
            autocomplete="off">
-    <input class="campo" id="fam-eu" placeholder="Seu nome" autocomplete="given-name"
+    <input  id="fam-eu" placeholder="Seu nome" autocomplete="given-name"
            style="margin-top:var(--e2)" value="${UI.esc(Sync.meuNome() === 'Eu' ? '' : Sync.meuNome())}">
-    <button class="btn btn-principal btn-largo btn-grande" id="fam-criar" style="margin-top:var(--e2)">
+    <button class="btn" id="fam-criar" style="margin-top:var(--e2)">
       Criar e convidar depois
     </button>
 
-    <p class="secao">Ou entrar numa que já existe</p>
+    <p class="section-title">Ou entrar numa que já existe</p>
     <p class="sub">Peça o código de seis letras a quem já usa.</p>
-    <input class="campo" id="fam-codigo" placeholder="Código (ex.: BQTM49)"
+    <input  id="fam-codigo" placeholder="Código (ex.: BQTM49)"
            autocomplete="off" maxlength="8"
            style="margin-top:var(--e2); text-transform:uppercase; letter-spacing:3px; font-family:var(--font-num)">
-    <input class="campo" id="fam-eu2" placeholder="Seu nome" autocomplete="given-name"
+    <input  id="fam-eu2" placeholder="Seu nome" autocomplete="given-name"
            style="margin-top:var(--e2)">
-    <button class="btn btn-largo btn-grande" id="fam-entrar" style="margin-top:var(--e2)">
+    <button class="btn btn-vazado" id="fam-entrar" style="margin-top:var(--e2)">
       Entrar na casa
     </button>
 
@@ -104,19 +104,19 @@ async function telaDaFamilia() {
     <h2 class="titulo">${UI.esc(cfg.family_nome || 'Minha casa')}</h2>
     <p class="sub">Todos aqui veem a mesma lista e o mesmo histórico de preços.</p>
 
-    <p class="secao">Convidar alguém</p>
+    <p class="section-title">Convidar alguém</p>
     <p class="sub">Peça para a pessoa instalar o CESTA, ir em
       <b>Ajustes → Compartilhar a lista</b> e digitar este código:</p>
     <div class="codigo-familia" id="fam-cod">${UI.esc(cfg.family_codigo || '—')}</div>
-    <button class="btn btn-largo" id="fam-copiar">Copiar código</button>
-    <button class="btn btn-largo" id="fam-convite" style="margin-top:var(--e2)">
+    <button class="btn btn-vazado" id="fam-copiar">Copiar código</button>
+    <button class="btn btn-vazado" id="fam-convite" style="margin-top:var(--e2)">
       Enviar convite
     </button>
 
-    <p class="secao">Quem está na casa</p>
+    <p class="section-title">Quem está na casa</p>
     <div id="fam-membros"><p class="sub">Carregando…</p></div>
 
-    <button class="btn btn-largo" id="fam-sair" style="margin-top:var(--e5); color:var(--red-ink)">
+    <button class="btn btn-vazado" id="fam-sair" style="margin-top:var(--e5); color:var(--red-ink)">
       Sair desta casa
     </button>`);
 
@@ -144,8 +144,8 @@ async function telaDaFamilia() {
       <p class="sub">Este aparelho para de receber e enviar mudanças. O que já
         está aqui continua, e o que está na nuvem continua com as outras
         pessoas. Dá para entrar de novo com o mesmo código.</p>
-      <button class="btn btn-largo btn-grande" id="sair-nao" style="margin-top:var(--e4)">Cancelar</button>
-      <button class="btn btn-largo" id="sair-sim" style="margin-top:var(--e2); color:var(--red-ink)">
+      <button class="btn btn-vazado" id="sair-nao" style="margin-top:var(--e4)">Cancelar</button>
+      <button class="btn btn-vazado" id="sair-sim" style="margin-top:var(--e2); color:var(--red-ink)">
         Sair da casa
       </button>`);
     document.querySelector('#sair-nao').addEventListener('click', f2);
