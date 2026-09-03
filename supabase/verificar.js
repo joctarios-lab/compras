@@ -57,7 +57,19 @@ const ESPERADO = {
 };
 
 // Colunas que TODA tabela sincronizada precisa ter
-const COMUNS = ['id', 'family_id', 'updated_at', 'deleted', 'server_at'];
+const COMUNS = ['id', 'family_id', 'updated_at', 'rev', 'deleted', 'server_at'];
+
+/* A ESTRUTURA DA FAMÍLIA, conferida à parte: ela tem colunas próprias e não
+   carrega o envelope de sincronização — é o que LIGA os aparelhos, não o que
+   trafega entre eles.
+
+   Ela ficava de fora, e foi exatamente onde o banco quebrou: `create table if
+   not exists` numa tabela que já existe não acrescenta coluna, e o app pedia
+   um 'codigo' que nunca chegou. */
+const ESTRUTURA = {
+  families: ['id', 'nome', 'codigo', 'criada_por', 'criada_em'],
+  family_members: ['user_id', 'family_id', 'nome', 'entrou_em'],
+};
 
 /* --------------------------------------------------------- verificação --- */
 
@@ -77,6 +89,23 @@ const COMUNS = ['id', 'family_id', 'updated_at', 'deleted', 'server_at'];
 
   let faltando = 0, ok = 0;
   const semTabela = [];
+
+  /* A estrutura vem PRIMEIRO: sem ela, nada mais funciona — nem entrar numa
+     casa, nem sincronizar uma linha. */
+  for (const [tabela, colunas] of Object.entries(ESTRUTURA)) {
+    const r = await fetch(`${cfg.url}/rest/v1/${tabela}?select=${colunas.join(',')}&limit=1`, {
+      headers: { apikey: cfg.anonKey, Authorization: 'Bearer ' + cfg.anonKey },
+    });
+    if (r.ok) {
+      console.log(`  OK    | ${tabela.padEnd(15)} existe, com as ${colunas.length} colunas da estrutura`);
+      ok++;
+      continue;
+    }
+    let detalhe = '';
+    try { const d = await r.json(); detalhe = d.message || ''; } catch (_) {}
+    console.log(` FALTA | ${tabela.padEnd(15)} ${detalhe || 'HTTP ' + r.status}`);
+    faltando++;
+  }
 
   for (const [tabela, colunas] of Object.entries(ESPERADO)) {
     /* Pede UMA linha só, com todas as colunas nomeadas. O PostgREST responde:
@@ -108,15 +137,17 @@ const COMUNS = ['id', 'family_id', 'updated_at', 'deleted', 'server_at'];
     faltando++;
   }
 
-  console.log(`\n${ok}/${Object.keys(ESPERADO).length} tabelas prontas.`);
+  const total = Object.keys(ESPERADO).length + Object.keys(ESTRUTURA).length;
+  console.log(`\n${ok}/${total} tabelas prontas.`);
 
   if (faltando) {
     console.log('\nO QUE FAZER:');
     console.log('  1. Abra o painel do Supabase → SQL Editor');
     console.log('  2. Cole o conteúdo de supabase/schema.sql');
     console.log('  3. Run');
-    console.log('\nO schema é idempotente: rodar de novo não apaga nada e é o jeito');
-    console.log('certo de aplicar uma atualização. Depois, rode este script outra vez.');
+    console.log('\nO schema é idempotente: rodar de novo não apaga nada, e é o jeito');
+    console.log('certo de aplicar uma atualização — inclusive quando a tabela JÁ EXISTE');
+    console.log('mas está sem uma coluna nova. Depois, rode este script outra vez.');
     process.exit(1);
   }
 

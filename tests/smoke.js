@@ -2447,6 +2447,73 @@ Sync.cfg = cfgAntes;
     fs.readFileSync(BASE + 'js/app.js', 'utf8').includes('Sync.ligarAutomatico()'), true);
 }
 
+
+/* ================= O SCHEMA EVOLUI, NAO SO CRIA ===
+
+   O ERRO RELATADO, ao criar a familia num banco que ja existia:
+
+       Could not find the 'codigo' column of 'families' in the schema cache
+
+   `create table if not exists` numa tabela que JA EXISTE nao faz nada — nem
+   acrescenta as colunas novas. Quem rodou uma versao anterior do schema ficava
+   com a tabela antiga para sempre, e o app quebrava pedindo uma coluna que
+   nunca chegou.
+
+   Esta classe de defeito VOLTA toda vez que uma coluna nova e acrescentada, e
+   por isso ela precisa de teste — nao de cuidado. */
+
+console.log('\n=== O schema aceita banco antigo ===');
+
+check('ha um bloco de migracao', /add column if not exists/.test(sql), true);
+
+/* TODA COLUNA QUE O APP ENVIA precisa estar na migracao, e nao so no create
+   table. Se estiver so no create, ela nunca chega a um banco que ja existe. */
+{
+  const blocoMigracao = (schema.match(/colunas text\[\]\[\] := array\[([\s\S]*?)\];/) || [])[1] || '';
+  const faltando = [];
+  for (const [tabela, colunas] of Object.entries(SYNC_TABELAS)) {
+    for (const col of colunas.concat(['rev'])) {
+      /* As colunas do create table original de cada tabela ja existem em
+         qualquer banco que tenha rodado o schema alguma vez. O que precisa
+         estar na migracao e o que veio DEPOIS — e como nao da para saber quando
+         cada uma chegou, exige-se as que o app envia HOJE e que nao estavam na
+         primeira versao. */
+      if (['rev', 'pegou_por', 'ciclo', 'cnpj', 'descricao_pdv', 'nfce_chave', 'foto_id', 'formato'].includes(col)) {
+        const temNaMigracao = new RegExp("'" + tabela + "'\\s*,\\s*'" + col + "'").test(blocoMigracao);
+        if (!temNaMigracao) faltando.push(tabela + '.' + col);
+      }
+    }
+  }
+  check('toda coluna recente esta na migracao',
+    faltando.length ? faltando.join(', ') : true, true);
+}
+
+/* AS TABELAS DA FAMILIA sao as que quebraram, e sao as que o verificador
+   ignorava. Sem 'codigo', ninguem cria nem entra numa casa. */
+check('families.codigo esta na migracao', /'families'\s*,\s*'codigo'/.test(sql), true);
+check('e o indice unico e criado a parte', /idx_families_codigo/.test(sql), true);
+/* O indice tem de vir DEPOIS da coluna: num banco antigo a coluna acabou de
+   nascer, e criar o indice antes falharia. */
+check('e o indice vem depois da migracao',
+  sql.indexOf('idx_families_codigo') > sql.indexOf('add column if not exists'), true);
+
+/* A migracao nao pode explodir num banco onde a tabela ainda nao existe: ela
+   roda antes do create table em algumas ordens, e um erro ali derruba o script
+   inteiro — o mesmo defeito que o server_at ja teve. */
+check('a migracao pula tabela que ainda nao existe', /to_regclass/.test(sql), true);
+
+/* O VERIFICADOR PRECISA COBRIR O QUE QUEBROU. Ele conferia as 8 tabelas de
+   dados e ignorava families e family_members — e dizia "banco pronto" com a
+   estrutura incompleta. Um verificador que nao cobre tudo da a pior garantia
+   possivel: a falsa. */
+{
+  const v = fs.readFileSync(BASE + 'supabase/verificar.js', 'utf8');
+  check('o verificador confere families', /families:/.test(v), true);
+  check('e family_members', /family_members:/.test(v), true);
+  check('e o codigo, que foi o que faltou', /'codigo'/.test(v), true);
+  check('e o contador de versao nas tabelas de dados', /'rev'/.test(v), true);
+}
+
   console.log(`
 ${ok} passaram, ${fail} falharam`);
   process.exit(fail ? 1 : 0);

@@ -181,6 +181,75 @@ create table if not exists public.aliases (
   deleted boolean not null default false
 );
 
+-- ----------------------------------------------------------- migração ---
+--
+-- TODA COLUNA QUE O APP USA, GARANTIDA UMA A UMA.
+--
+-- `create table if not exists` numa tabela que já existe não faz NADA — nem
+-- acrescenta as colunas novas. Quem rodou uma versão anterior deste arquivo
+-- ficava com a tabela antiga para sempre, e o app quebrava pedindo uma coluna
+-- que nunca chegou:
+--
+--     Could not find the 'codigo' column of 'families' in the schema cache
+--
+-- Este bloco resolve isso e é o que torna o schema realmente idempotente: num
+-- banco vazio ele não faz nada (o create table já criou tudo), e num banco
+-- antigo ele acrescenta exatamente o que falta.
+--
+-- REGRA: toda coluna nova que o app passar a enviar entra AQUI também, e não só
+-- no create table acima. Senão o defeito volta na próxima atualização.
+
+do $
+declare
+  c record;
+  colunas text[][] := array[
+    -- família
+    ['families', 'nome', 'text'],
+    ['families', 'codigo', 'text'],
+    ['families', 'criada_por', 'uuid'],
+    ['families', 'criada_em', 'timestamptz not null default now()'],
+    ['family_members', 'nome', 'text'],
+    ['family_members', 'entrou_em', 'timestamptz not null default now()'],
+
+    -- o contador de versão, que protege o envio contra perda: ele é comparado
+    -- antes de marcar um registro como enviado
+    ['stores', 'rev', 'int not null default 1'],
+    ['items', 'rev', 'int not null default 1'],
+    ['products', 'rev', 'int not null default 1'],
+    ['lists', 'rev', 'int not null default 1'],
+    ['list_items', 'rev', 'int not null default 1'],
+    ['price_obs', 'rev', 'int not null default 1'],
+    ['nfce_docs', 'rev', 'int not null default 1'],
+    ['aliases', 'rev', 'int not null default 1'],
+
+    -- quem pegou o item, na lista compartilhada
+    ['list_items', 'pegou_por', 'text'],
+
+    -- o ciclo da compra: mensal, semanal, do dia, evento
+    ['lists', 'ciclo', 'text'],
+
+    -- campos que chegaram depois da primeira versão
+    ['stores', 'cnpj', 'text'],
+    ['products', 'descricao_pdv', 'text'],
+    ['price_obs', 'nfce_chave', 'text'],
+    ['price_obs', 'foto_id', 'text'],
+    ['nfce_docs', 'formato', 'text']
+  ];
+begin
+  for i in 1 .. array_length(colunas, 1) loop
+    -- to_regclass devolve nulo quando a tabela ainda não existe: pular é o
+    -- certo, porque o create table acima cuidará dela na ordem natural
+    if to_regclass('public.' || colunas[i][1]) is not null then
+      execute format('alter table public.%I add column if not exists %I %s',
+                     colunas[i][1], colunas[i][2], colunas[i][3]);
+    end if;
+  end loop;
+end $;
+
+-- O código só pode ser único DEPOIS de a coluna existir — num banco antigo, o
+-- índice criado junto do create table nunca chegou a ser feito.
+create unique index if not exists idx_families_codigo on public.families (codigo);
+
 -- ------------------------------------------------- carimbo do servidor ---
 -- DEPOIS das tabelas, e não antes: numa base nova o `alter table if exists`
 -- passa em silêncio, mas o `create index` da linha seguinte aborta com
