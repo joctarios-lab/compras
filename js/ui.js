@@ -7,11 +7,18 @@ const UI = {
 
   /* ---------------------------------------------------------- moeda --- */
 
-  /* Formata em real. Sempre com duas casas: preço com uma casa só ("R$ 4,9")
-     lê-se errado num relance, e relance é tudo o que se tem no corredor. */
+  /* Formata em real — a MESMA função do app de finanças, letra por letra.
+
+     A minha montava o texto à mão e colava um "R$ " com espaço comum; o
+     `toLocaleString` usa espaço NÃO-SEPARÁVEL entre o símbolo e o número. Os
+     dois se parecem na tela e são caracteres diferentes: o valor quebrava linha
+     entre o R$ e o número onde o do DOMI não quebra. Diferença pequena o
+     bastante para eu não ver e grande o bastante para os apps não serem iguais.
+
+     Sempre com duas casas: preço com uma casa só ("R$ 4,9") lê-se errado num
+     relance, e relance é tudo o que se tem no corredor. */
   fmt(v) {
-    const n = Number(v) || 0;
-    return 'R$ ' + n.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    return (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   },
 
   /* Formata um preço por unidade canônica: R$ 4,98/kg.
@@ -21,32 +28,50 @@ const UI = {
   fmtBase(v, unidade) {
     const n = Number(v) || 0;
     const casas = n < 1 ? 3 : 2;
-    return 'R$ ' + n.toFixed(casas).replace('.', ',') + '/' + unidade;
+    /* O mesmo espaço não-separável do fmt: dois espaçamentos diferentes
+       para o mesmo "R$" na mesma tela é o tipo de detalhe que ninguém nomeia
+       e todo mundo sente. */
+    return 'R$ ' + n.toFixed(casas).replace('.', ',') + '/' + unidade;
   },
 
-  /* MÁSCARA DE ENTRADA: a pessoa digita dígitos, o campo mostra dinheiro.
-     `498` vira R$ 4,98. Sem isto, digitar preço no mercado exige achar a
-     vírgula no teclado numérico — que em vários teclados nem está lá. */
-  mascaraMoeda(el) {
+  /* MÁSCARA MONETÁRIA — a mesma do app de finanças, dígito por dígito.
+
+     Padrão bancário brasileiro: o que se digita entra como CENTAVOS. `498`
+     vira R$ 4,98. É o que dispensa procurar a vírgula num teclado numérico de
+     celular, onde em vários ela nem aparece.
+
+     O valor verdadeiro mora em `dataset.cents`, não no texto exibido. Ler de
+     volta reinterpretando o texto formatado — que era o que eu fazia aqui —
+     depende de a formatação e a leitura concordarem para sempre; guardar o
+     número cru não depende de nada. É assim no DOMI, e agora é assim aqui. */
+  mascaraMoeda(el, valorInicial) {
+    if (!el) return () => {};
+    const set = cents => {
+      el.dataset.cents = cents;
+      el.value = cents === '' ? '' :
+        (Number(cents) / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    };
+    const inicial = Number(valorInicial);
+    set(inicial > 0 ? String(Math.round(inicial * 100)) : '');
     const aplicar = () => {
-      const digitos = String(el.value).replace(/\D/g, '').slice(0, 9);
-      el.value = digitos ? this.fmt(Number(digitos) / 100) : '';
+      const digitos = String(el.value).replace(/\D/g, '').replace(/^0+(?=\d)/, '').slice(0, 12);
+      set(digitos);
       // O cursor vai sempre para o fim: editar no meio de um valor mascarado
       // produz resultado imprevisível, e ninguém tenta isso de propósito.
-      if (el.setSelectionRange) {
-        const n = el.value.length;
-        try { el.setSelectionRange(n, n); } catch (_) {}
-      }
+      if (el.setSelectionRange) el.setSelectionRange(el.value.length, el.value.length);
     };
     el.addEventListener('input', aplicar);
-    el.inputMode = 'decimal';
+    el.addEventListener('focus', () => setTimeout(() => {
+      if (el.setSelectionRange) el.setSelectionRange(el.value.length, el.value.length);
+    }, 0));
+    el.inputMode = 'numeric';
     return aplicar;
   },
 
-  /* Lê o número de volta de um campo mascarado. */
+  /* Lê o número de volta — do dado guardado, nunca do texto na tela. */
   lerMoeda(el) {
-    const digitos = String(el && el.value || '').replace(/\D/g, '');
-    return digitos ? Number(digitos) / 100 : 0;
+    if (typeof el === 'string') el = document.querySelector(el);
+    return el ? (Number(el.dataset.cents) || 0) / 100 : 0;
   },
 
   /* --------------------------------------------------------- teclado --- */
@@ -88,10 +113,23 @@ const UI = {
 
        O botão fica no canto superior direito porque é onde a mão procura, e é
        grande o bastante para ser acertado sem mirar. */
+    /* O X vai para DENTRO do título, que é onde o DOMI o põe — o .sheet-title
+       dele já é um flex com espaço entre justamente para isso. Um X solto,
+       posicionado por cima, era peça minha onde já havia a do DOMI. */
+    const comX = html.replace(
+      /<h2 class="sheet-title">([\s\S]*?)<\/h2>/,
+      '<h2 class="sheet-title">$1<button class="close-x" type="button" aria-label="Fechar">✕</button></h2>');
+    /* Folha sem título ganha um .sheet-title VAZIO só com o X. Nenhuma peça
+       nova para isso: o .sheet-title do DOMI é flex com espaço entre, então um
+       único filho já vai para a direita sozinho. Era o que eu resolveria
+       inventando um botão flutuante posicionado por cima. */
+    const cabeca = comX === html
+      ? '<h2 class="sheet-title"><span></span><button class="close-x" type="button" aria-label="Fechar">✕</button></h2>'
+      : '';
     fundo.innerHTML = `<div class="sheet" role="dialog" aria-modal="true">
       <div class="sheet-handle"></div>
-      <button class="sheet-fechar" type="button" aria-label="Fechar">✕</button>
-      ${html}</div>`;
+      ${cabeca}
+      ${comX}</div>`;
     const fechar = () => {
       if (!fundo.parentNode) return;
       fundo.remove();
@@ -100,7 +138,7 @@ const UI = {
     };
     const naTecla = e => { if (e.key === 'Escape') fechar(); };
     fundo.addEventListener('click', e => { if (e.target === fundo) fechar(); });
-    const botaoX = fundo.querySelector('.sheet-fechar');
+    const botaoX = fundo.querySelector('.close-x');
     if (botaoX) botaoX.addEventListener('click', fechar);
     document.addEventListener('keydown', naTecla);
     document.body.appendChild(fundo);

@@ -35,7 +35,15 @@ const Auth = {
     try { localStorage.setItem(this.KEY, JSON.stringify(this.cfg)); } catch (_) {}
   },
 
-  ligado() { return !!(this.cfg && this.cfg.salt); },
+  /* Há bloqueio quando existe a configuração do PIN — ou quando os DADOS
+     estão cifrados. O segundo caso importa porque os dois fatos moram em
+     chaves separadas do localStorage: perder o `cesta.auth` (uma limpeza
+     parcial do site, uma gravação que falhou) deixava dados cifrados e um app
+     convencido de que não havia PIN. Ele abria e morria. */
+  ligado() {
+    if (this.cfg && this.cfg.salt) return true;
+    return DB.cifradoNoDisco();
+  },
 
   /* -------------------------------------------------------- derivação --- */
 

@@ -36,10 +36,10 @@ const ViewDespensa = {
       <p class="sub">Estimada pelas suas compras e pelo seu ritmo de consumo.
         Corrija o que estiver errado — a correção ensina o app.</p>
 
-      <div class="sub-abas">
-        <button class="sub-aba ${this.filtro === 'tudo' ? 'ativa' : ''}" data-f="tudo">Tudo (${tudo.length})</button>
-        <button class="sub-aba ${this.filtro === 'acabando' ? 'ativa' : ''}" data-f="acabando">Acabando (${acabando.length})</button>
-        <button class="sub-aba ${this.filtro === 'vencendo' ? 'ativa' : ''}" data-f="vencendo">Vencendo (${vencendo.length})</button>
+      <div class="chips">
+        <button class="chip ${this.filtro === 'tudo' ? 'active' : ''}" data-f="tudo">Tudo (${tudo.length})</button>
+        <button class="chip ${this.filtro === 'acabando' ? 'active' : ''}" data-f="acabando">Acabando (${acabando.length})</button>
+        <button class="chip ${this.filtro === 'vencendo' ? 'active' : ''}" data-f="vencendo">Vencendo (${vencendo.length})</button>
       </div>
 
       ${lista.length ? `<div class="card lista-itens">
@@ -69,14 +69,14 @@ const ViewDespensa = {
       const selo = s.diasParaAcabar == null ? 'b-slate'
         : s.diasParaAcabar <= 0 ? 'b-red'
         : s.diasParaAcabar <= 7 ? 'b-amber' : 'b-green';
-      direita = `<b class="valor">${Despensa.fmtQtd(s.saldo, s.unidade)}</b>
+      direita = `<b class="tx-amount">${Despensa.fmtQtd(s.saldo, s.unidade)}</b>
         <span class="badge ${selo}">${s.diasParaAcabar == null ? '—'
           : s.diasParaAcabar <= 0 ? 'acabou' : `~${s.diasParaAcabar}d`}</span>`;
     }
 
-    return `<button class="item-linha linha-clicavel" data-item="${s.item_id}">
-      <span class="item-emoji">${corredor.icone}</span>
-      <div class="item-corpo">
+    return `<button class="tx" data-item="${s.item_id}">
+      <span class="tx-ico">${corredor.icone}</span>
+      <div class="tx-info">
         <b>${UI.esc(s.item.nome)}${s.corrigido ? ' <span class="marca-mini">corrigido</span>' : ''}</b>
         <span class="sub">${UI.esc(s.explicacao)}</span>
       </div>
@@ -90,16 +90,16 @@ const ViewDespensa = {
     const corredor = Catalogo.corredor(s.item.categoria);
 
     const fechar = UI.folha(`
-      <h2 class="titulo">${corredor.icone} ${UI.esc(s.item.nome)}</h2>
+      <h2 class="sheet-title">${corredor.icone} ${UI.esc(s.item.nome)}</h2>
       <p class="sub">${UI.esc(s.explicacao)}</p>
 
       ${!s.perecivel && s.saldo != null ? `
-        <div class="linha-resumo">
-          <div><span class="rotulo">Deve haver em casa</span>
-            <b class="valor grande">${Despensa.fmtQtd(s.saldo, s.unidade)}</b></div>
+        <div class="kpi">
+          <div><span class="kpi-label">Deve haver em casa</span>
+            <b class="kpi-value">${Despensa.fmtQtd(s.saldo, s.unidade)}</b></div>
           ${s.diasParaAcabar != null ? `<div class="direita">
-            <span class="rotulo">Acaba em</span>
-            <b class="valor">${s.diasParaAcabar <= 0 ? 'já acabou' : s.diasParaAcabar + ' dias'}</b></div>` : ''}
+            <span class="kpi-label">Acaba em</span>
+            <b class="tx-amount">${s.diasParaAcabar <= 0 ? 'já acabou' : s.diasParaAcabar + ' dias'}</b></div>` : ''}
         </div>` : ''}
 
       ${s.perecivel ? `<p class="sub"><b>${UI.esc(s.item.nome)} estraga rápido.</b>
@@ -111,18 +111,18 @@ const ViewDespensa = {
         e a estimativa melhora.</p>
       <div class="preco-campos" style="margin-top:var(--e2)">
         <label class="preco-campo">
-          <span class="rotulo">Tenho em casa</span>
+          <span class="kpi-label">Tenho em casa</span>
           <input  id="dp-qtd" inputmode="decimal" placeholder="0">
         </label>
         <label class="preco-campo estreito">
-          <span class="rotulo">Un.</span>
+          <span class="kpi-label">Un.</span>
           <input  id="dp-un" value="${UI.esc(s.unidade)}" readonly>
         </label>
       </div>
       <button class="btn" id="dp-ok" style="margin-top:var(--e2)">
         Corrigir
       </button>
-      <button class="btn btn-vazado" id="dp-zero" style="margin-top:var(--e2)">
+      <button class="btn ghost" id="dp-zero" style="margin-top:var(--e2)">
         Acabou — não tenho mais
       </button>
 
@@ -130,8 +130,8 @@ const ViewDespensa = {
       <div class="lista-itens">
         ${Despensa.entradasDe(DB, itemId).slice(-6).reverse().map(e => {
           const loja = e.store_id ? DB.get('stores', e.store_id) : null;
-          return `<div class="item-linha">
-            <div class="item-corpo">
+          return `<div class="tx">
+            <div class="tx-info">
               <b>${Despensa.fmtQtd(e.qtd_canonica, e.unidade_base)}</b>
               <span class="sub">${this.dataBR(e.data)}${loja ? ' · ' + UI.esc(loja.nome) : ''}</span>
             </div>

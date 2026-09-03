@@ -13,10 +13,10 @@ const ViewPlanejar = {
       <h1 class="titulo">Planejar</h1>
       <p class="sub">O que vai ser comprado, quando, e por quanto.</p>
 
-      <div class="sub-abas">
-        <button class="sub-aba ${this.aba === 'compras' ? 'ativa' : ''}" data-sub="compras">Compras</button>
-        <button class="sub-aba ${this.aba === 'cardapio' ? 'ativa' : ''}" data-sub="cardapio">Cardápio</button>
-        <button class="sub-aba ${this.aba === 'eventos' ? 'ativa' : ''}" data-sub="eventos">Eventos</button>
+      <div class="chips">
+        <button class="chip ${this.aba === 'compras' ? 'active' : ''}" data-sub="compras">Compras</button>
+        <button class="chip ${this.aba === 'cardapio' ? 'active' : ''}" data-sub="cardapio">Cardápio</button>
+        <button class="chip ${this.aba === 'eventos' ? 'active' : ''}" data-sub="eventos">Eventos</button>
       </div>
 
       ${this.aba === 'compras' ? this.telaCompras()
@@ -61,13 +61,13 @@ const ViewPlanejar = {
         <div class="card">${fechados.map(l => {
           const t = DB.totalDoCarrinho(l.id, () => null);
           const loja = l.store_id ? DB.get('stores', l.store_id) : null;
-          return `<button class="item-linha linha-clicavel" data-acao="repetir" data-lista="${l.id}">
-            <div class="item-corpo">
+          return `<button class="tx" data-acao="repetir" data-lista="${l.id}">
+            <div class="tx-info">
               <b>${UI.esc(l.nome)}</b>
               <span class="sub">${this.dataBR(l.data_fechamento)}${loja ? ' · ' + UI.esc(loja.nome) : ''} · ${t.comprados} itens</span>
             </div>
             <div class="direita">
-              <b class="valor">${UI.fmt(l.total_cupom || t.firme)}</b>
+              <b class="tx-amount">${UI.fmt(l.total_cupom || t.firme)}</b>
               <span class="sub">repetir</span>
             </div>
           </button>`;
@@ -80,9 +80,9 @@ const ViewPlanejar = {
     const itens = p.list_id ? DB.itensDaLista(p.list_id).length : 0;
     const custo = p.list_id ? Planejar.custoPrevisto(DB, p.list_id) : { previsto: 0 };
     const atrasado = dias < 0;
-    return `<button class="item-linha linha-clicavel" data-acao="abrir-plano" data-plano="${p.id}">
-      <span class="item-emoji">${ciclo.icone}</span>
-      <div class="item-corpo">
+    return `<button class="tx" data-acao="abrir-plano" data-plano="${p.id}">
+      <span class="tx-ico">${ciclo.icone}</span>
+      <div class="tx-info">
         <b>${UI.esc(p.nome)}</b>
         <span class="sub">${this.dataBR(p.data)} · ${itens} ${itens === 1 ? 'item' : 'itens'}${
           custo.previsto ? ' · ≈ ' + UI.fmt(custo.previsto) : ''}</span>
@@ -122,9 +122,9 @@ const ViewPlanejar = {
           const receita = c ? DB.get('recipes', c.recipe_id) : null;
           const nomes = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
           const dow = nomes[new Date(d + 'T12:00:00').getDay()];
-          return `<button class="item-linha linha-clicavel" data-acao="escolher-prato" data-data="${d}">
+          return `<button class="tx" data-acao="escolher-prato" data-data="${d}">
             <span class="dia-chip">${dow}<b>${d.slice(8, 10)}</b></span>
-            <div class="item-corpo">
+            <div class="tx-info">
               ${receita ? `<b>${UI.esc(receita.nome)}</b>
                 <span class="sub">${c.porcoes} ${c.porcoes === 1 ? 'porção' : 'porções'} · ≈ ${UI.fmt(Cozinha.custoDoPrato(DB, receita.id, c.porcoes).custo)}</span>`
                 : `<b class="fraco">Escolher prato</b>`}
@@ -136,14 +136,14 @@ const ViewPlanejar = {
       ${lista.length ? `
         <p class="section-title">O que a semana pede</p>
         <div class="card">
-          <div class="linha-resumo" style="margin-top:0">
-            <div><span class="rotulo">Falta comprar</span><b class="valor grande">${faltando.length}</b></div>
-            <div class="direita"><span class="rotulo">Já tem em casa</span><b class="valor">${lista.length - faltando.length}</b></div>
+          <div class="kpi" style="margin-top:0">
+            <div><span class="kpi-label">Falta comprar</span><b class="kpi-value">${faltando.length}</b></div>
+            <div class="direita"><span class="kpi-label">Já tem em casa</span><b class="tx-amount">${lista.length - faltando.length}</b></div>
           </div>
           <div class="lista-itens" style="margin-top:var(--e3)">
-            ${lista.map(l => `<div class="item-linha ${l.temEmCasa ? 'comprado' : ''}">
-              <span class="item-emoji">${Catalogo.corredor(l.item.categoria).icone}</span>
-              <div class="item-corpo">
+            ${lista.map(l => `<div class="tx ${l.temEmCasa ? 'comprado' : ''}">
+              <span class="tx-ico">${Catalogo.corredor(l.item.categoria).icone}</span>
+              <div class="tx-info">
                 <b>${UI.esc(l.item.nome)}</b>
                 <span class="sub">precisa de ${Despensa.fmtQtd(l.precisa, l.unidade)}${
                   l.temEmCasa ? ' · tem em casa' : l.incerto ? ' · não sei o que há em casa' : ` · faltam ${Despensa.fmtQtd(l.faltam, l.unidade)}`}</span>

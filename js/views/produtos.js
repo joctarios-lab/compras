@@ -62,13 +62,13 @@ const ViewProdutos = {
     /* SEM HISTÓRICO, DIZ QUE NÃO TEM. Mostrar "R$ 0,00" seria um número falso
        apresentado como verdadeiro — o defeito que este app existe para não ter. */
     const preco = ref.n
-      ? `<b class="valor">${UI.fmtBase(ref.mediana, ref.unidade || item.unidade)}</b>
+      ? `<b class="tx-amount">${UI.fmtBase(ref.mediana, ref.unidade || item.unidade)}</b>
          <span class="sub">${vezes} ${vezes === 1 ? 'registro' : 'registros'}</span>`
       : `<span class="badge b-slate">sem preço ainda</span>`;
 
-    return `<button class="item-linha linha-clicavel" data-item="${item.id}">
-      <span class="item-emoji">${corredor.icone}</span>
-      <div class="item-corpo">
+    return `<button class="tx" data-item="${item.id}">
+      <span class="tx-ico">${corredor.icone}</span>
+      <div class="tx-info">
         <b>${UI.esc(item.nome)}</b>
         <span class="sub">${corredor.nome}${
           cad ? ` · compra a cada ${cad.intervalo} dias` : ''}${
@@ -94,18 +94,18 @@ const ViewProdutos = {
     const corredor = Catalogo.corredor(item.categoria);
 
     UI.folha(`
-      <h2 class="titulo">${corredor.icone} ${UI.esc(item.nome)}</h2>
+      <h2 class="sheet-title">${corredor.icone} ${UI.esc(item.nome)}</h2>
       <p class="sub">${corredor.nome}</p>
 
       ${ref.n ? `
-        <div class="linha-resumo">
+        <div class="kpi">
           <div>
-            <span class="rotulo">Você costuma pagar</span>
-            <b class="valor grande">${UI.fmtBase(ref.mediana, ref.unidade)}</b>
+            <span class="kpi-label">Você costuma pagar</span>
+            <b class="kpi-value">${UI.fmtBase(ref.mediana, ref.unidade)}</b>
           </div>
           <div class="direita">
-            <span class="rotulo">Melhor que já viu</span>
-            <b class="valor">${UI.fmtBase(ref.melhorPreco, ref.unidade)}</b>
+            <span class="kpi-label">Melhor que já viu</span>
+            <b class="tx-amount">${UI.fmtBase(ref.melhorPreco, ref.unidade)}</b>
           </div>
         </div>
         <p class="sub">${ref.n} ${ref.n === 1 ? 'registro' : 'registros'} nos últimos 12 meses${
@@ -137,8 +137,8 @@ const ViewProdutos = {
         <div class="lista-itens">
           ${obs.map(o => {
             const loja = o.store_id ? DB.get('stores', o.store_id) : null;
-            return `<div class="item-linha">
-              <div class="item-corpo">
+            return `<div class="tx">
+              <div class="tx-info">
                 <b>${UI.fmtBase(o.preco_base, o.unidade_base)}</b>
                 <span class="sub">${this.dataBR(o.data)}${loja ? ' · ' + UI.esc(loja.nome) : ''}${
                   o.origem === 'nfce' ? ' · da nota fiscal' : ''}</span>

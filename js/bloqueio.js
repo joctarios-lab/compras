@@ -20,8 +20,43 @@ const Bloqueio = {
      saída — é o inverso do que parece: a digital falha mais (dedo molhado,
      leitor sujo), então o PIN nunca pode sumir da tela. */
   mostrar(aoLiberar) {
+    /* SEM A CHAVE, NENHUM PIN ABRE — e pedir um seria uma mentira educada.
+
+       Os dados cifrados e a configuração do PIN moram em chaves separadas do
+       localStorage. Quando a segunda some (uma limpeza parcial do site, uma
+       gravação que falhou) e a primeira fica, não existe PIN capaz de abrir
+       nada: o `salt` que deriva a chave foi embora com ela. Mostrar o teclado
+       ali prenderia a pessoa tentando senhas que nunca vão funcionar.
+
+       Então o app diz a verdade e oferece a única saída que existe. */
+    if (DB.cifradoNoDisco() && !(Auth.cfg && Auth.cfg.salt)) { this.telaSemChave(); return; }
     if (Auth.bioAtiva()) this.telaDigital(aoLiberar);
     else this.telaPin(aoLiberar);
+  },
+
+  telaSemChave() {
+    const el = this.el();
+    el.hidden = false;
+    el.innerHTML = `
+      <div class="lock-card">
+        <img src="icons/icon.svg" alt="" class="lock-ico">
+        <h1>CESTA</h1>
+        <p class="lock-txt">Os dados deste aparelho estão protegidos por um PIN,
+          mas a chave que os abre não está mais aqui. Sem ela, nenhum PIN
+          funciona — nem o certo.</p>
+        <p class="lock-txt">Se você usa a nuvem, entrar na sua conta traz tudo de
+          volta. Recomeçar aqui apaga só o que está neste aparelho.</p>
+        <p class="lock-err" id="lk-erro" role="alert"></p>
+        <button class="btn" id="lk-recomecar">Recomeçar neste aparelho</button>
+      </div>`;
+    pintarIcones(el);
+    document.getElementById('lk-recomecar').addEventListener('click', () => {
+      /* Confirmação de verdade: isto apaga dados, e um toque sem querer numa
+         tela que a pessoa não esperava ver não pode custar o histórico dela. */
+      if (!confirm('Apagar os dados protegidos deste aparelho e começar de novo?')) return;
+      try { localStorage.removeItem('cesta.v1'); localStorage.removeItem('cesta.auth'); } catch (_) {}
+      location.reload();
+    });
   },
 
   telaDigital(aoLiberar) {

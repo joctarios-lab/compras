@@ -204,12 +204,19 @@ console.log('\n=== Passo 3: consigo sair de qualquer tela ===');
    sozinho num celular. */
 {
   const ui = fs.readFileSync(BASE + 'js/ui.js', 'utf8');
-  check('toda folha nasce com o X', ui.includes('class="sheet-fechar"'), true);
-  check('e o X fecha de verdade', /sheet-fechar[\s\S]{0,120}addEventListener\('click', fechar\)/.test(ui), true);
+  check('toda folha nasce com o X', ui.includes('class="close-x"'), true);
+  check('e o X fecha de verdade', /close-x'\)[\s\S]{0,120}addEventListener\('click', fechar\)/.test(ui), true);
 
-  const css = fs.readFileSync(BASE + 'css/cesta.css', 'utf8');
-  check('o X tem alvo confortável', /\.sheet-fechar \{[\s\S]{0,200}width: 34px/.test(css), true);
-  check('e não fica escondido atrás do título', /padding-right: 44px/.test(css), true);
+  /* No css/domi.css: o X é peça HERDADA, e é por isso que ela não pode estar
+     na camada do CESTA. Achá-la aqui seria o defeito. */
+  const css = fs.readFileSync(BASE + 'css/domi.css', 'utf8');
+  check('o X tem alvo confortável', /\.close-x \{[\s\S]{0,240}width: 40px/.test(css), true);
+  check('e vem do DOMI, não da camada do CESTA',
+    fs.readFileSync(BASE + 'css/cesta.css', 'utf8').includes('.close-x {'), false);
+  /* O X mora DENTRO do .sheet-title, que no DOMI é um flex com espaço entre:
+     não há o que reservar com padding, porque ele não flutua por cima. */
+  check('e o título reserva o lugar dele',
+    /\.sheet-title[^{]*\{[\s\S]{0,240}justify-content: space-between/.test(css), true);
 }
 
 /* A folha de "nada a sugerir" era o pior beco: não tinha saída E não tinha

@@ -15,7 +15,7 @@ function abrirFamilia(opcoes = {}) {
 
   if (!Sync.configurado() || !Sync.logado()) {
     UI.folha(`
-      <h2 class="titulo">Compartilhar a lista</h2>
+      <h2 class="sheet-title">Compartilhar a lista</h2>
       <p class="sub">Para dividir a lista com outra pessoa, o app precisa de um
         lugar onde os dois aparelhos se encontrem — a sincronização.</p>
       <p class="sub">Ela é opcional: sem ela o app funciona inteiro, só que num
@@ -40,7 +40,7 @@ function abrirFamilia(opcoes = {}) {
    digitá-lo. */
 function telaCriarOuEntrar(opcoes = {}) {
   const fechar = UI.folha(`
-    <h2 class="titulo">Compartilhar a lista</h2>
+    <h2 class="sheet-title">Compartilhar a lista</h2>
     <p class="sub">Quem divide as compras vê a mesma lista, e o histórico de
       preços passa a ser da casa inteira.</p>
 
@@ -60,7 +60,7 @@ function telaCriarOuEntrar(opcoes = {}) {
            style="margin-top:var(--e2); text-transform:uppercase; letter-spacing:3px; font-family:var(--font-num)">
     <input  id="fam-eu2" placeholder="Seu nome" autocomplete="given-name"
            style="margin-top:var(--e2)">
-    <button class="btn btn-vazado" id="fam-entrar" style="margin-top:var(--e2)">
+    <button class="btn ghost" id="fam-entrar" style="margin-top:var(--e2)">
       Entrar na casa
     </button>
 
@@ -104,22 +104,22 @@ function telaCriarOuEntrar(opcoes = {}) {
 async function telaDaFamilia() {
   const cfg = Sync.cfg;
   const fechar = UI.folha(`
-    <h2 class="titulo">${UI.esc(cfg.family_nome || 'Minha casa')}</h2>
+    <h2 class="sheet-title">${UI.esc(cfg.family_nome || 'Minha casa')}</h2>
     <p class="sub">Todos aqui veem a mesma lista e o mesmo histórico de preços.</p>
 
     <p class="section-title">Convidar alguém</p>
     <p class="sub">Peça para a pessoa instalar o CESTA, ir em
       <b>Ajustes → Compartilhar a lista</b> e digitar este código:</p>
     <div class="codigo-familia" id="fam-cod">${UI.esc(cfg.family_codigo || '—')}</div>
-    <button class="btn btn-vazado" id="fam-copiar">Copiar código</button>
-    <button class="btn btn-vazado" id="fam-convite" style="margin-top:var(--e2)">
+    <button class="btn ghost" id="fam-copiar">Copiar código</button>
+    <button class="btn ghost" id="fam-convite" style="margin-top:var(--e2)">
       Enviar convite
     </button>
 
     <p class="section-title">Quem está na casa</p>
     <div id="fam-membros"><p class="sub">Carregando…</p></div>
 
-    <button class="btn btn-vazado" id="fam-sair" style="margin-top:var(--e5); color:var(--red-ink)">
+    <button class="btn ghost" id="fam-sair" style="margin-top:var(--e5); color:var(--red-ink)">
       Sair desta casa
     </button>`);
 
@@ -143,12 +143,12 @@ async function telaDaFamilia() {
 
   document.querySelector('#fam-sair').addEventListener('click', () => {
     const f2 = UI.folha(`
-      <h2 class="titulo">Sair da casa?</h2>
+      <h2 class="sheet-title">Sair da casa?</h2>
       <p class="sub">Este aparelho para de receber e enviar mudanças. O que já
         está aqui continua, e o que está na nuvem continua com as outras
         pessoas. Dá para entrar de novo com o mesmo código.</p>
-      <button class="btn btn-vazado" id="sair-nao" style="margin-top:var(--e4)">Cancelar</button>
-      <button class="btn btn-vazado" id="sair-sim" style="margin-top:var(--e2); color:var(--red-ink)">
+      <button class="btn ghost" id="sair-nao" style="margin-top:var(--e4)">Cancelar</button>
+      <button class="btn ghost" id="sair-sim" style="margin-top:var(--e2); color:var(--red-ink)">
         Sair da casa
       </button>`);
     document.querySelector('#sair-nao').addEventListener('click', f2);
@@ -166,7 +166,7 @@ async function telaDaFamilia() {
     caixa.innerHTML = membros.length
       ? membros.map(m => `<div class="membro">
           <span class="membro-avatar">${UI.esc(String(m.nome || '?').trim().charAt(0).toUpperCase())}</span>
-          <div class="item-corpo">
+          <div class="tx-info">
             <b>${UI.esc(m.nome)}${m.user_id === Sync.cfg.user_id ? ' (você)' : ''}</b>
             <span class="sub">desde ${String(m.entrou_em || '').slice(0, 10).split('-').reverse().join('/')}</span>
           </div>

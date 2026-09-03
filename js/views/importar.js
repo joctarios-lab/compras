@@ -7,7 +7,7 @@ let _lojaEmRevisao = null;
 
 function abrirImportacao() {
   UI.folha(`
-    <h2 class="titulo">Importar nota fiscal</h2>
+    <h2 class="sheet-title">Importar nota fiscal</h2>
     <p class="sub">Enche o seu histórico de uma vez, em vez de esperar meses de uso.</p>
 
     <div class="passos">
@@ -99,15 +99,15 @@ function abrirRevisao() {
   const comProblema = linhas.filter(l => l.problema).length;
 
   const fechar = UI.folha(`
-    <h2 class="titulo">Conferir antes de importar</h2>
+    <h2 class="sheet-title">Conferir antes de importar</h2>
     <p class="sub">
       ${linhas.length} ${linhas.length === 1 ? 'item' : 'itens'}${
         nota.data ? ' · ' + nota.data.split('-').reverse().join('/') : ''}${
         _lojaEmRevisao ? ' · ' + UI.esc(_lojaEmRevisao.nome) : ''}
     </p>
 
-    <div class="linha-resumo">
-      <div><span class="rotulo">Vão entrar</span><b class="valor grande" id="imp-conta">${marcadas}</b></div>
+    <div class="kpi">
+      <div><span class="kpi-label">Vão entrar</span><b class="kpi-value" id="imp-conta">${marcadas}</b></div>
       <button class="btn" id="imp-todos">Marcar todos</button>
     </div>
 
@@ -194,7 +194,7 @@ function linhaDeRevisao(l) {
 function abrirEntreLojas() {
   const lojas = DB.all('stores');
   if (lojas.length < 2) {
-    UI.folha(`<h2 class="titulo">Onde sai mais barato</h2>
+    UI.folha(`<h2 class="sheet-title">Onde sai mais barato</h2>
       <p class="sub">É preciso ter registrado preços em pelo menos dois mercados.
         Hoje há ${lojas.length}.</p>`);
     return;
@@ -212,7 +212,7 @@ function abrirEntreLojas() {
     : [];
 
   if (comuns.length < 2) {
-    UI.folha(`<h2 class="titulo">Onde sai mais barato</h2>
+    UI.folha(`<h2 class="sheet-title">Onde sai mais barato</h2>
       <p class="sub">Ainda não há produtos suficientes comprados nos mesmos mercados
         para uma comparação honesta. Foram encontrados ${comuns.length}.</p>
       <p class="sub">Comparar o total gasto em cada loja responderia outra pergunta —
@@ -227,7 +227,7 @@ function abrirEntreLojas() {
 
   const melhor = ranking[0];
   UI.folha(`
-    <h2 class="titulo">Onde sai mais barato</h2>
+    <h2 class="sheet-title">Onde sai mais barato</h2>
     <p class="sub">Comparando os <b>${comuns.length} produtos</b> que você compra
       em todos esses mercados — a mesma cesta, nos dois lugares.</p>
     <div class="revisao" style="margin-top:var(--e3)">

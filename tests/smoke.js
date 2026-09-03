@@ -204,19 +204,19 @@ check('store ausente numa base antiga vira lista vazia', Array.isArray(DB.data.a
 
 console.log('\n=== Dinheiro na tela ===');
 
-check('formata com duas casas', UI.fmt(4.5), 'R$ 4,50');
-check('e com separador de milhar', UI.fmt(1234.56), 'R$ 1.234,56');
-check('zero e zero, nao vazio', UI.fmt(0), 'R$ 0,00');
-check('nulo nao vira NaN na tela', UI.fmt(null), 'R$ 0,00');
-check('texto tambem nao', UI.fmt('abacaxi'), 'R$ 0,00');
+check('formata com duas casas', UI.fmt(4.5), 'R$ 4,50');
+check('e com separador de milhar', UI.fmt(1234.56), 'R$ 1.234,56');
+check('zero e zero, nao vazio', UI.fmt(0), 'R$ 0,00');
+check('nulo nao vira NaN na tela', UI.fmt(null), 'R$ 0,00');
+check('texto tambem nao', UI.fmt('abacaxi'), 'R$ 0,00');
 
 /* O PRECO POR UNIDADE CANONICA e o numero que o app existe para mostrar.
    Abaixo de R$ 1 ele ganha a terceira casa: 0,04 e 0,044 sao precos diferentes,
    e arredondar aqui esconderia justamente a diferenca que se quer ver. */
-check('preco por quilo', UI.fmtBase(4.98, 'kg'), 'R$ 4,98/kg');
-check('preco por litro', UI.fmtBase(5.9, 'L'), 'R$ 5,90/L');
-check('valor pequeno ganha a terceira casa', UI.fmtBase(0.0445, 'un'), 'R$ 0,044/un');
-check('e um valor grande nao ganha', UI.fmtBase(32.14, 'kg'), 'R$ 32,14/kg');
+check('preco por quilo', UI.fmtBase(4.98, 'kg'), 'R$ 4,98/kg');
+check('preco por litro', UI.fmtBase(5.9, 'L'), 'R$ 5,90/L');
+check('valor pequeno ganha a terceira casa', UI.fmtBase(0.0445, 'un'), 'R$ 0,044/un');
+check('e um valor grande nao ganha', UI.fmtBase(32.14, 'kg'), 'R$ 32,14/kg');
 
 /* A MASCARA: a pessoa digita digitos e o campo mostra dinheiro. Sem ela, digitar
    preco no mercado exige achar a virgula num teclado numerico que muitas vezes
@@ -224,10 +224,10 @@ check('e um valor grande nao ganha', UI.fmtBase(32.14, 'kg'), 'R$ 32,14/kg');
 const campo = novoEl('#preco');
 const aplicar = UI.mascaraMoeda(campo);
 campo.value = '498'; aplicar();
-check('digitar 498 mostra R$ 4,98', campo.value, 'R$ 4,98');
+check('digitar 498 mostra R$ 4,98', campo.value, 'R$ 4,98');
 check('e le de volta o numero', UI.lerMoeda(campo), 4.98);
 campo.value = '5'; aplicar();
-check('um digito vira centavo', campo.value, 'R$ 0,05');
+check('um digito vira centavo', campo.value, 'R$ 0,05');
 campo.value = ''; aplicar();
 check('campo vazio fica vazio, nao R$ 0,00', campo.value, '');
 check('e le zero', UI.lerMoeda(campo), 0);
@@ -1231,11 +1231,11 @@ check('e o botao de finalizar', mercadoHtml.includes('Finalizar compra'), true);
 
 /* O painel de preco so existe na linha em FOCO: abrir todos de uma vez encheria
    a tela de campos e destruiria a leitura no corredor. */
-check('sem foco, nenhum campo de preco aberto', mercadoHtml.includes('campo-preco'), false);
+check('sem foco, nenhum campo de preco aberto', mercadoHtml.includes('amount-input'), false);
 Mercado.focoId = li.id;
 const comFoco = Mercado.render();
-check('com foco, o campo de preco aparece', comFoco.includes('campo-preco'), true);
-check('e so um', (comFoco.match(/campo-preco/g) || []).length, 1);
+check('com foco, o campo de preco aparece', comFoco.includes('amount-input'), true);
+check('e so um', (comFoco.match(/amount-input/g) || []).length, 1);
 check('o teclado ja abre em modo decimal', comFoco.includes('inputmode="decimal"'), true);
 
 /* 4. O DIAGNOSTICO NA TELA. A cor NUNCA informa sozinha: palavra e numero
@@ -2105,7 +2105,7 @@ const itemNovo = DB.itemPorNome('Coisa nova', { unidade: 'un' });
 DB.addNaLista(planoSemPreco.list_id, { item_id: itemNovo.id, qtd: 1, unidade: 'un' });
 const htmlHoje = ViewHoje.render();
 check('o plano aparece na tela', /Próxima compra/.test(htmlHoje), true);
-check('mas sem historico o previsto e um traco', /<b class="valor grande">—<\/b>/.test(htmlHoje), true);
+check('mas sem historico o previsto e um traco', /<b class="kpi-value">—<\/b>/.test(htmlHoje), true);
 check('e nunca R$ 0,00', /R\$ 0,00/.test(htmlHoje), false);
 
 

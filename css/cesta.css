@@ -98,26 +98,16 @@
 }
 .sub b { color: var(--paper); font-weight: 600; }
 
-/* O rótulo pequeno acima de um número. Mesmo padrão do .kpi-label do DOMI. */
-.rotulo {
-  display: block; font-size: 11px; font-weight: 500;
-  color: var(--paper-dim); margin-bottom: 2px;
-}
-.valor { font-family: var(--font-num); font-variant-numeric: tabular-nums; font-weight: 700; }
-.valor.grande { font-size: 26px; letter-spacing: -.03em; display: block; }
+/* O rótulo, o número e a linha de números são o .kpi-label, o .kpi-value e o
+   .kpi do DOMI — eu os tinha reescrito com outros nomes. Nada disso mora aqui.
+
+   Fica só o .fraco: o "ainda não sei" do CESTA precisa de um texto visivelmente
+   apagado, e o DOMI não tem esse estado. */
 .fraco { color: var(--paper-faint); font-weight: 500; }
 
-/* Uma linha com dois ou três números lado a lado. */
-.linha-resumo {
-  display: flex; align-items: flex-end; justify-content: space-between;
-  gap: var(--e3); margin-top: 12px;
-}
-.linha-resumo .direita { text-align: right; }
-
-/* Duas ações lado a lado, quando as duas são legítimas. Mais que duas viram
-   linhas de lista (.settings-item), como no DOMI. */
-.acoes-linha { display: flex; gap: var(--e2); margin-top: 12px; }
-.acoes-linha .btn { flex: 1; }
+/* O .kpi do DOMI alinha pela base; nas telas do CESTA a coluna da direita
+   precisa do texto alinhado à direita. */
+.kpi .direita { text-align: right; }
 
 /* ====================================================== O DIAGNÓSTICO ===
 
@@ -166,7 +156,9 @@
   position: sticky; top: var(--h-topbar); z-index: 20;
   box-shadow: var(--shadow);
 }
-.mercado-total .valor.grande { font-size: 30px; }
+/* O ÚNICO número do app que passa do padrão do DOMI, e por um motivo: é lido
+   de relance, andando, com a outra mão no carrinho. */
+.mercado-total .kpi-value { font-size: 30px; }
 .mercado-contagem { text-align: right; }
 .mercado-contagem b { font-family: var(--font-num); font-size: 18px; font-weight: 800; }
 
@@ -196,11 +188,12 @@
 .preco-campos { display: flex; gap: var(--e2); }
 .preco-campo { flex: 1; display: flex; flex-direction: column; gap: 3px; }
 .preco-campo.estreito { flex: 0 0 80px; }
-.campo-preco { font-family: var(--font-num); font-size: 20px; font-weight: 800; }
-.modo-mercado .campo-preco { font-size: 24px; padding: 14px 13px; }
-.preco-botoes { display: flex; gap: var(--e2); }
-.preco-botoes .btn { flex: 1; }
-.preco-botoes .btn:last-child { flex: 2; }
+/* O campo de dinheiro é o .amount-input do DOMI, inteiro. Só no Modo Mercado
+   ele cresce — digitar preço de pé, no corredor, é outra situação. */
+.modo-mercado .amount-input { font-size: 24px; padding: 14px 13px; }
+/* A fileira é o .btn-row do DOMI; aqui só se diz que "Salvar" pesa o dobro
+   de "Cancelar", porque é o que se toca noventa e nove vezes em cem. */
+.btn-row .btn:last-child { flex: 2; }
 
 .mercado-acoes { display: flex; flex-direction: column; gap: var(--e2); margin-top: 14px; }
 
@@ -222,35 +215,23 @@
 
 .lista-itens, .lista-mercado { display: flex; flex-direction: column; }
 
-.item-linha {
-  display: flex; align-items: center; gap: 12px;
-  padding: 10px 8px;
-  border-radius: var(--radius-sm);
-  background: none; border: none;
-  font-family: var(--font-body); color: var(--paper);
-  text-align: left; width: 100%;
-  transition: transform .12s ease, background .15s ease;
-}
-.item-linha + .item-linha { border-top: 1px solid var(--line); border-radius: 0; }
-.linha-clicavel { cursor: pointer; }
-.linha-clicavel:hover { background: var(--ink-3); }
-.linha-clicavel:active { transform: scale(.99); }
+/* A LINHA DE ITEM É O .tx DO DOMI — moldura, espaçamento, ícone, o nome que
+   quebra e o valor que não. Eu havia reescrito o componente inteiro com outros
+   nomes; ele saiu daqui.
 
-.item-corpo { flex: 1; min-width: 0; }
-.item-corpo b { display: block; font-weight: 600; font-size: 13.5px; }
-.item-corpo .sub { font-size: 11.5px; }
-.item-linha.comprado .item-corpo b { text-decoration: line-through; color: var(--paper-faint); }
-.item-emoji { font-size: 18px; flex: none; width: 26px; text-align: center; }
+   O que fica é o que o DOMI não tem, porque ele não tem lista para conferir no
+   corredor: o item JÁ COMPRADO e a caixa de marcar. */
+.tx.comprado .tx-name { text-decoration: line-through; color: var(--paper-faint); }
 
 .item-marca {
   width: 26px; height: 26px; flex: none;
   border: 2px solid var(--line-strong);
   border-radius: var(--radius-pill);
+  background: none; cursor: pointer;
   display: grid; place-items: center;
   color: var(--green-contraste);
-  background: none; cursor: pointer;
 }
-.item-linha.comprado .item-marca { background: var(--green); border-color: var(--green); }
+.tx.comprado .item-marca { background: var(--green); border-color: var(--green); }
 .item-marca span { width: 14px; height: 14px; }
 
 .item-remover {
@@ -284,21 +265,13 @@
 .add-btn { width: 46px; flex: none; padding: 0; }
 .add-btn span { width: 18px; height: 18px; display: block; }
 
-.sugestoes { display: flex; flex-direction: column; gap: 2px; margin-top: var(--e2); }
-.sugestao {
-  text-align: left; width: 100%;
-  padding: 9px 12px;
-  border-radius: var(--radius-sm);
-  background: var(--ink-3); border: none; cursor: pointer;
-  display: flex; align-items: center; justify-content: space-between; gap: var(--e2);
-  font-family: var(--font-body); font-weight: 600; font-size: 13px; color: var(--paper);
-}
-.sugestao:hover { background: var(--line); }
+/* A lista de sugestões é o .ui-list com .ui-opt do DOMI — a mesma que o campo
+   de busca dele abre. Não havia nada a inventar aqui. */
 
 /* ============================================================ HOJE ===
 
-   O painel. Os conselhos seguem o .callout do DOMI: uma faixa tintada com
-   ícone à esquerda, texto curto e ação implícita ao toque. */
+   O painel. Os conselhos usam o .settings-item do DOMI: a linha clicável com
+   ícone, título, subtítulo e chevron. Aqui só mora o empilhamento deles. */
 
 .hoje-topo { margin-bottom: 4px; }
 
@@ -306,30 +279,20 @@
 .plano-ico { font-size: 24px; flex: none; }
 .plano-nome { display: block; font-size: 15px; font-weight: 800; }
 
+/* O .settings-item do DOMI já traz a própria margem inferior; aqui só se
+   garante que a pilha não ganhe espaçamento em dobro. */
+.conselhos .settings-item { margin-bottom: 0; }
 .conselhos { display: flex; flex-direction: column; gap: var(--e2); }
 
-.conselho {
-  display: flex; align-items: flex-start; gap: 12px;
-  width: 100%; text-align: left;
-  padding: 12px 14px;
-  border-radius: var(--radius);
-  border: 1px solid var(--line);
-  background: var(--ink-2);
-  cursor: pointer;
-  font-family: var(--font-body);
-  transition: transform .12s ease, border-color .15s ease;
-}
-.conselho:active { transform: scale(.99); }
-.conselho b { display: block; font-size: 13px; margin-bottom: 2px; color: var(--paper); }
-.conselho > div > span { font-size: 12px; color: var(--paper-dim); line-height: 1.4; }
-.conselho-ico { width: 20px; height: 20px; flex: none; margin-top: 1px; color: var(--paper-dim); }
-
-.conselho.s-red { background: var(--red-soft); border-color: var(--red-borda); }
-.conselho.s-red b, .conselho.s-red .conselho-ico { color: var(--red-ink); }
-.conselho.s-amber { background: var(--amber-soft); border-color: var(--amber-borda); }
-.conselho.s-amber b, .conselho.s-amber .conselho-ico { color: var(--amber-ink); }
-.conselho.s-blue { background: var(--blue-soft); border-color: var(--blue-borda); }
-.conselho.s-blue b, .conselho.s-blue .conselho-ico { color: var(--blue-ink); }
+/* O CONSELHO usa o .settings-item do DOMI inteiro — estrutura, medidas,
+   estados de toque. Só o TOM é do CESTA: um conselho de estouro de orçamento
+   precisa parecer diferente de um informativo, e o DOMI não tem conselheiro. */
+.settings-item.tom-red { background: var(--red-soft); border-color: var(--red-borda); }
+.settings-item.tom-red .cfg-txt b, .settings-item.tom-red .cfg-ico { color: var(--red-ink); }
+.settings-item.tom-amber { background: var(--amber-soft); border-color: var(--amber-borda); }
+.settings-item.tom-amber .cfg-txt b, .settings-item.tom-amber .cfg-ico { color: var(--amber-ink); }
+.settings-item.tom-blue { background: var(--blue-soft); border-color: var(--blue-borda); }
+.settings-item.tom-blue .cfg-txt b, .settings-item.tom-blue .cfg-ico { color: var(--blue-ink); }
 
 .atalhos { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--e2); }
 .atalho {
@@ -362,20 +325,17 @@
 
 /* ------------------------------------------------------------- sub-abas --- */
 
-.sub-abas {
-  display: flex; gap: 2px; padding: 3px;
-  background: var(--ink-3); border-radius: var(--radius-sm);
-}
-.sub-abas.rolavel { overflow-x: auto; scrollbar-width: none; }
-.sub-abas.rolavel::-webkit-scrollbar { display: none; }
-.sub-aba {
-  flex: 1; min-height: 34px; padding: 0 12px;
-  border-radius: calc(var(--radius-sm) - 3px);
-  font-size: 12.5px; font-weight: 700; white-space: nowrap;
-  color: var(--paper-dim); background: none; border: none; cursor: pointer;
-  font-family: var(--font-body);
-}
-.sub-aba.ativa { background: var(--ink-2); color: var(--paper); box-shadow: var(--shadow); }
+/* AS PASTILHAS SÃO AS DO DOMI, inteiras — incluindo o estado marcado, que
+   ele pinta como `.active`. Eu tinha reescrito o componente e batizado o
+   estado de `.ativa`: parecido o bastante para eu não notar e diferente o
+   bastante para a seleção não aparecer.
+
+   Daqui fica só a variante ROLÁVEL: o CESTA tem fileiras de corredor de
+   mercado que não caberiam na largura de um celular, e o DOMI não tem
+   fileira longa nenhuma. */
+.chips.rolavel { overflow-x: auto; scrollbar-width: none; }
+.chips.rolavel::-webkit-scrollbar { display: none; }
+.chips.rolavel .chip { flex: none; }
 
 /* --------------------------------------------------------------- ciclos --- */
 
@@ -580,7 +540,6 @@ body.em-abertura .ajuda summary::-webkit-details-marker { display: none; }
 .lock-ico { width: 52px; height: 52px; border-radius: 14px; margin: 0 auto 12px; }
 .lock-txt { color: var(--paper-dim); font-size: 13px; margin: 0 0 18px; line-height: 1.45; }
 .lock-txt b { color: var(--paper); }
-.pin-vazia { background: none !important; border: 0 !important; pointer-events: none; }
 
 /* Os campos de quantidade e unidade no painel de preço: estreitos, ao lado do
    preço. O input já vem estilizado pelo DOMI — aqui só a largura. */
@@ -601,12 +560,12 @@ body.em-abertura .ajuda summary::-webkit-details-marker { display: none; }
    Fora isso, use .btn puro. */
 
 /* A ação secundária ao lado de uma principal. Mesmo formato, sem o peso da cor. */
-.btn-vazado {
+.ghost {
   background: var(--ink-3);
   color: var(--paper);
   border: 1px solid var(--line);
 }
-.btn-vazado:hover { background: var(--line); border-color: var(--line-strong); }
+.ghost:hover { background: var(--line); border-color: var(--line-strong); }
 
 /* O alvo maior SÓ vale dentro do Modo Mercado, onde a pessoa mira com o polegar,
    andando, com a outra mão no carrinho. Fora dali ele é só um botão grande
@@ -675,24 +634,14 @@ body.em-abertura .ajuda summary::-webkit-details-marker { display: none; }
 
    Ele existe porque tocar no fundo escuro e apertar Esc são saídas que ninguém
    descobre sozinho num celular. */
-/* Especialização, não redefinição: o .sheet do DOMI continua mandando em tudo
-   o mais, e aqui só se acrescenta o ancoradouro do X. */
-.sheet:has(.sheet-fechar) { position: relative; }
-.sheet-fechar {
-  position: absolute; top: 12px; right: 12px;
-  width: 34px; height: 34px;
-  display: grid; place-items: center;
-  border-radius: var(--radius-pill);
-  background: var(--ink-3);
-  border: 1px solid var(--line);
-  color: var(--paper-dim);
-  font-size: 15px; line-height: 1;
-  cursor: pointer;
-  transition: color .15s ease, background .15s ease, transform .12s ease;
-  z-index: 2;
-}
-.sheet-fechar:hover { background: var(--line); color: var(--paper); }
-.sheet-fechar:active { transform: scale(.92); }
+/* O X É O .close-x DO DOMI, e ele mora DENTRO do .sheet-title — que já é um
+   flex com espaço entre, justamente para receber um botão à direita.
+
+   Eu havia feito outro: um botão de 34px posicionado por cima do conteúdo, com
+   z-index e um `:has()` para abrir espaço. Duas peças para o mesmo trabalho,
+   e a minha era a pior — flutuando, ela cobria o começo de qualquer título
+   longo. Nada disto precisa existir aqui. */
+
 
 /* O título da folha não pode passar por baixo do X. */
 .sheet > .titulo:first-of-type,

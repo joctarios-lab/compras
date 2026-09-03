@@ -9,14 +9,14 @@ function abrirCamera(liId, recarregar) {
   const suporta = Leitura.suportaBarras();
 
   const fechar = UI.folha(`
-    <h2 class="titulo">Câmera</h2>
+    <h2 class="sheet-title">Câmera</h2>
     <p class="sub">Guarde a etiqueta como comprovante${suporta ? ', ou leia o código de barras' : ''}.</p>
 
     <video id="cam-video" playsinline muted class="cam-video"></video>
     <div id="cam-aviso" class="sub" style="margin-top:var(--e2)"></div>
 
     <div class="cam-botoes">
-      ${suporta ? `<button class="btn btn-vazado" id="cam-barras">Ler código de barras</button>` : ''}
+      ${suporta ? `<button class="btn ghost" id="cam-barras">Ler código de barras</button>` : ''}
       <button class="btn" id="cam-foto">Fotografar etiqueta</button>
     </div>
 

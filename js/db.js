@@ -85,6 +85,15 @@ const DB = {
 
   /* ------------------------------------------------------------ ciclo --- */
 
+  /* Os dados estão cifrados? Lê do DISCO, e por isso responde igual antes e
+     depois do load() — ao contrário de `trancado`, que só existe depois dele. */
+  cifradoNoDisco() {
+    try {
+      const cru = JSON.parse(localStorage.getItem(DB_KEY));
+      return !!(cru && cru.cifrado === true);
+    } catch (_) { return false; }
+  },
+
   load() {
     let lido = null;
     try { lido = JSON.parse(localStorage.getItem(DB_KEY)) || null; } catch (_) { lido = null; }
@@ -213,11 +222,16 @@ const DB = {
     return true;
   },
 
-  get(store, id) { return (this.data[store] || []).find(r => r.id === id && !r.deleted) || null; },
+  get(store, id) { return (this._loja(store)).find(r => r.id === id && !r.deleted) || null; },
 
-  all(store) { return (this.data[store] || []).filter(r => !r.deleted); },
+  all(store) { return this._loja(store).filter(r => !r.deleted); },
 
-  pendentes() { return STORES.reduce((n, s) => n + (this.data[s] || []).filter(r => r.dirty).length, 0); },
+  pendentes() { return STORES.reduce((n, s) => n + this._loja(s).filter(r => r.dirty).length, 0); },
+
+  /* Uma store lida com a base trancada é uma store VAZIA, nunca um estouro.
+     Quem chama isto antes de destrancar está perguntando cedo demais — a
+     resposta certa é "não tenho nada para te dar", não derrubar o boot. */
+  _loja(store) { return (this.data && this.data[store]) || []; },
 
   /* ---------------------------------------------------------- semente --- */
 
@@ -246,7 +260,7 @@ const DB = {
     }];
   },
 
-  cfg() { return this.data.settings[0] || null; },
+  cfg() { return (this.data && this.data.settings && this.data.settings[0]) || null; },
 
   setCfg(patch) {
     const atual = this.cfg();

@@ -23,3 +23,12 @@ desktop.ini
 
 # Backups exportados pelo app
 compras-backup-*.json
+
+# Notas fiscais de verdade NÃO entram no repositório: elas têm CNPJ, endereço
+# e a lista de compras da casa. A fixture sintética em tests/fixtures cobre o
+# mesmo defeito de leitura em 404 bytes.
+*.pdf
+!tests/fixtures/*.pdf
+
+# Perfis do Chrome que a suite de abertura cria ao rodar - nunca versionados.
+.tmp-chrome-*/

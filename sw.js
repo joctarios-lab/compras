@@ -9,7 +9,7 @@
    isso aparece como defeito onde não há nenhum. */
 'use strict';
 
-const VERSAO = '10';
+const VERSAO = '11';
 const CACHE = 'cesta-' + VERSAO;
 const SHELL = [
   './',

@@ -62,8 +62,8 @@ const Mercado = {
     return `
       <div class="mercado-topo" role="status" aria-live="polite">
         <div class="mercado-total">
-          <span class="rotulo">No carrinho</span>
-          <b class="valor grande">${UI.fmt(t.firme)}</b>
+          <span class="kpi-label">No carrinho</span>
+          <b class="kpi-value">${UI.fmt(t.firme)}</b>
           ${t.estimado > 0 ? `<span class="sub">+ ${t.aEstimar} ${t.aEstimar === 1 ? 'item' : 'itens'} ≈ ${UI.fmt(t.estimado)}</span>` : ''}
         </div>
         <div class="mercado-contagem">
@@ -80,10 +80,10 @@ const Mercado = {
       </div></div>`}
 
       <div class="mercado-acoes">
-        <button class="btn btn-vazado" data-acao="add-aqui">
+        <button class="btn ghost" data-acao="add-aqui">
           <span data-ico="mais"></span> Item que não estava na lista
         </button>
-        <button class="btn btn-vazado" data-acao="mais-por-menos">
+        <button class="btn ghost" data-acao="mais-por-menos">
           <span data-ico="balanca"></span> Mais por Menos
         </button>
         <button class="btn" data-acao="finalizar">Finalizar compra</button>
@@ -149,17 +149,17 @@ const Mercado = {
     return `<div class="preco-painel">
       <div class="preco-campos">
         <label class="preco-campo">
-          <span class="rotulo">Preço pago</span>
-          <input class="campo-preco" id="preco-${li.id}" inputmode="decimal"
+          <span class="kpi-label">Preço pago</span>
+          <input class="amount-input" id="preco-${li.id}" type="text" inputmode="numeric" autocomplete="off"
                  enterkeyhint="done" placeholder="R$ 0,00" aria-label="Preço de ${UI.esc(nome)}">
         </label>
         <label class="preco-campo estreito">
-          <span class="rotulo">Qtd</span>
+          <span class="kpi-label">Qtd</span>
           <input class="campo-qtd" id="qtd-${li.id}" inputmode="decimal"
                  value="${li.qtd}" aria-label="Quantidade">
         </label>
         <label class="preco-campo estreito">
-          <span class="rotulo">Un.</span>
+          <span class="kpi-label">Un.</span>
           <select class="campo-un" id="un-${li.id}" aria-label="Unidade">
             ${['un', 'kg', 'g', 'l', 'ml'].map(u =>
               `<option value="${u}" ${u === String(li.unidade).toLowerCase() ? 'selected' : ''}>${u}</option>`).join('')}
@@ -171,8 +171,8 @@ const Mercado = {
         ${this.htmlDoDiagnostico(null)}
       </div>
 
-      <div class="preco-botoes">
-        <button class="btn btn-vazado" data-acao="nao-tinha" data-li="${li.id}">Não tinha</button>
+      <div class="btn-row">
+        <button class="btn ghost" data-acao="nao-tinha" data-li="${li.id}">Não tinha</button>
         <button class="btn btn-grande" data-acao="confirmar" data-li="${li.id}">
           <span data-ico="ok"></span> No carrinho
         </button>
@@ -228,7 +228,7 @@ const Mercado = {
       </div>
       <div class="direita">
         ${li.pegou_por ? `<span class="pegou-por">${UI.esc(li.pegou_por)}</span>` : ''}
-        <b class="valor">${li.preco_total != null ? UI.fmt(li.preco_total) : '—'}</b>
+        <b class="tx-amount">${li.preco_total != null ? UI.fmt(li.preco_total) : '—'}</b>
         <button class="btn-desfazer" data-acao="desfazer" data-li="${li.id}">desfazer</button>
       </div>
     </div>`;
@@ -350,7 +350,7 @@ const Mercado = {
 
   adicionarAqui(recarregar) {
     const fechar = UI.folha(`
-      <h2 class="titulo">Item fora da lista</h2>
+      <h2 class="sheet-title">Item fora da lista</h2>
       <p class="sub">Entra na compra e no seu catálogo.</p>
       <input  id="novo-aqui" placeholder="Ex.: azeite" enterkeyhint="done"
              autocomplete="off" style="margin-top:var(--e3)">

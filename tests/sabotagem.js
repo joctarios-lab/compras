@@ -52,8 +52,8 @@ const casos = [
    'store ausente numa base antiga vira lista vazia'],
 
   ['preco com uma casa decimal', 'js/ui.js',
-   `return 'R$ ' + n.toFixed(2).replace('.', ',')`,
-   `return 'R$ ' + n.toFixed(1).replace('.', ',')`,
+   `{ style: 'currency', currency: 'BRL' });`,
+   `{ style: 'currency', currency: 'BRL', maximumFractionDigits: 1 });`,
    'formata com duas casas'],
 
   ['valor pequeno perde a terceira casa', 'js/ui.js',
@@ -62,8 +62,8 @@ const casos = [
    'valor pequeno ganha a terceira casa'],
 
   ['a mascara deixa entrar letra', 'js/ui.js',
-   `const digitos = String(el.value).replace(/\\D/g, '').slice(0, 9);`,
-   `const digitos = String(el.value).slice(0, 9);`,
+   `String(el.value).replace(/\\D/g, '').replace(/^0+(?=\\d)/, '').slice(0, 12)`,
+   `String(el.value).slice(0, 12)`,
    'letra nao entra'],
 
   ['esc() usando replace, que corrompe o R$', 'js/ui.js',
@@ -440,8 +440,8 @@ const casos = [
    ``,
    "nao duplica ao rodar de novo"],
   ["HOJE inventa um valor onde nao ha dado", "js/views/hoje.js",
-   `          <b class="valor grande">\${custo.previsto > 0 ? '≈ ' + UI.fmt(custo.previsto) : '—'}</b>`,
-   `          <b class="valor grande">\${UI.fmt(custo.previsto)}</b>`,
+   `          <b class="kpi-value">\${custo.previsto > 0 ? '≈ ' + UI.fmt(custo.previsto) : '—'}</b>`,
+   `          <b class="kpi-value">\${UI.fmt(custo.previsto)}</b>`,
    "sem inventar numero nenhum"],
   // ---------------- a sincronizacao ----------------
   ["a edicao feita durante o envio volta a ser perdida", "js/sync.js",

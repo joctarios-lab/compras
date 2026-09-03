@@ -101,6 +101,12 @@ const Onboarding = {
     const tela = document.getElementById('tela');
     tela.innerHTML = this.telas[this.passo].call(this);
     pintarIcones(tela);
+    /* A acolhida usa os MESMOS componentes do resto do app — o <select> do dia
+       da compra tinha ficado nativo, com a cara do sistema operacional, logo na
+       primeira tela que a pessoa vê. */
+    if (typeof UIForm !== 'undefined' && UIForm.enhance) {
+      try { UIForm.enhance(tela); } catch (_) {}
+    }
     this.ligar(tela);
     window.scrollTo(0, 0);
   },
@@ -343,8 +349,8 @@ const Onboarding = {
         </select>
 
         <p class="section-title">Quanto costuma gastar por mês com mercado?</p>
-        <input class="campo-preco" id="ob-gasto" inputmode="decimal"
-               placeholder="R$ 0,00" value="${cfg.gasto_mensal_esperado ? UI.fmt(cfg.gasto_mensal_esperado) : ''}">
+        <input class="amount-input" id="ob-gasto" type="text" inputmode="numeric" autocomplete="off"
+               placeholder="R$ 0,00">
         <p class="ob-texto pequeno">Serve para o app avisar <b>antes</b> de
           estourar, não para cobrar você. Pode ser um chute — dá para mudar depois.</p>
 
@@ -386,7 +392,7 @@ const Onboarding = {
         <button class="btn" data-ob="importar">
           Importar uma nota agora
         </button>
-        <button class="btn btn-vazado" data-ob="avancar">Deixar para depois</button>
+        <button class="btn ghost" data-ob="avancar">Deixar para depois</button>
       </div>`;
     },
 
@@ -423,6 +429,12 @@ const Onboarding = {
   /* ---------------------------------------------------------- eventos --- */
 
   ligar(tela) {
+    /* Todo campo de dinheiro da acolhida ganha a máscara aqui, em UM lugar.
+       O #ob-gasto não tinha nenhuma: quem digitasse "600" gravava R$ 600,00
+       por acaso, e quem digitasse "1.200" gravava outra coisa. */
+    for (const campo of tela.querySelectorAll('.amount-input')) {
+      UI.mascaraMoeda(campo, campo.id === 'ob-gasto' ? DB.cfg().gasto_mensal_esperado : 0);
+    }
     for (const b of tela.querySelectorAll('[data-ob]')) {
       b.addEventListener('click', () => {
         const acao = b.dataset.ob;
@@ -552,7 +564,7 @@ const Onboarding = {
    que as pessoas fazem de verdade, na linguagem delas. */
 function abrirAjuda() {
   UI.folha(`
-    <h2 class="titulo">Ajuda</h2>
+    <h2 class="sheet-title">Ajuda</h2>
 
     <div class="ajuda">
       <details open>
@@ -620,7 +632,7 @@ function abrirAjuda() {
       </details>
     </div>
 
-    <button class="btn btn-vazado" id="ajuda-tour" style="margin-top:var(--e4)">
+    <button class="btn ghost" id="ajuda-tour" style="margin-top:var(--e4)">
       Ver a apresentação de novo
     </button>`);
 

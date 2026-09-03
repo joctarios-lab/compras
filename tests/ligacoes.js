@@ -163,7 +163,7 @@ console.log('\n=== O vocabulário é o do DOMI ===');
 /* Enquanto metade do app diz .folha e a outra metade .sheet, alguma coisa deixa
    de funcionar em silêncio: o querySelector procura uma e o HTML gera a outra. */
 const antigas = ['folha-fundo', 'folha-alca', 'dock-item', 'topbar-acao',
-  'linha-acao', 'sub-abas ativa'];
+  'linha-acao', 'chips active'];
 for (const c of antigas) {
   /* A classe pode aparecer sozinha (`'.dock-item'`), num atributo
      (`class="dock-item"`) ou dentro de um SELETOR COMPOSTO
@@ -382,6 +382,80 @@ console.log('\n=== O app abre configurando quando precisa ===');
   const semPrefixo = chaves.filter(k => !k.startsWith('cesta'));
   check('toda chave guardada leva o prefixo do app',
     semPrefixo.length ? semPrefixo.join(', ') : true, true);
+}
+
+/* ============ NENHUM COMPONENTE REINVENTADO ===
+
+   Cada par abaixo é uma peça que eu criei tendo o equivalente do DOMI ao lado.
+   O prejuízo não é estético: dois componentes com a mesma função divergem na
+   primeira alteração de um dos lados, e "os apps são iguais" passa a ser uma
+   frase no README em vez de um fato.
+
+   A guarda existe porque a atenção não bastou — foram três pedidos. */
+{
+  const PROIBIDOS = [
+    ['item-linha', 'tx'],
+    ['item-corpo', 'tx-info'],
+    ['item-emoji', 'tx-ico'],
+    ['linha-resumo', 'kpi'],
+    ['rotulo', 'kpi-label'],
+    ['valor grande', 'kpi-value'],
+    ['campo-preco', 'amount-input'],
+    ['preco-botoes', 'btn-row'],
+    ['sheet-fechar', 'close-x'],
+    ['close-solto', 'close-x dentro do .sheet-title'],
+    ['sub-abas', 'chips'],
+    ['sub-aba', 'chip'],
+    ['btn-vazado', 'btn ghost'],
+    ['conselho', 'settings-item'],
+    ['sugestoes', 'ui-list'],
+    ['folha-fundo', 'sheet-backdrop'],
+    ['dock-item', 'tab'],
+  ];
+  const reincidentes = [];
+  for (const [meu, doDomi] of PROIBIDOS) {
+    /* Só como CLASSE em HTML gerado ou em seletor — a palavra solta num
+       comentário ou num nome de variável não é o defeito. */
+    /* Compara a classe como TOKEN inteiro do atributo. Usar \\b aqui dava
+       falso positivo: o hífen é limite de palavra, e `sugestoes` casava
+       dentro de `ob-sugestoes`, que é peça legítima do CESTA. Guarda que
+       acusa o inocente é guarda que se aprende a ignorar. */
+    const usos = [];
+    for (const [arq, src] of Object.entries(fontes)) {
+      let achou = src.includes("'." + meu + "'");
+      for (const m of src.matchAll(/class="([^"]*)"/g)) {
+        for (const tok of m[1].split(/\s+/)) {
+          if (tok === meu) achou = true;
+        }
+      }
+      /* Nome composto ("valor grande") aparece inteiro no atributo. */
+      if (meu.includes(' ') && src.includes('class="' + meu + '"')) achou = true;
+      if (achou) usos.push(arq);
+    }
+    if (usos.length) reincidentes.push(meu + ' -> use .' + doDomi + ' (' + usos.join(', ') + ')');
+  }
+  check('nenhum componente reinventado onde o DOMI ja tem a peca',
+    reincidentes.length ? reincidentes.join(' | ') : true, true);
+
+  /* E o caminho inverso: as peças do DOMI que o CESTA precisa estar usando.
+     Sem isto, dá para "passar" a guarda acima apagando a tela inteira. */
+  const tudoJunto = Object.values(fontes).join('\n');
+  for (const peca of ['tx', 'tx-info', 'tx-amount', 'kpi-value', 'kpi-label',
+    'amount-input', 'close-x', 'sheet-title', 'chips', 'chip', 'settings-item',
+    'btn-row', 'ui-list', 'ui-empty', 'card', 'btn']) {
+    check('usa o .' + peca + ' do DOMI',
+      new RegExp('class="[^"]*\\b' + peca + '\\b').test(tudoJunto), true);
+  }
+
+  /* A camada do CESTA nao pode REDEFINIR peca do DOMI: se ela redefine, o que
+     se ve nao e mais o componente herdado, e a identidade se perde de novo. */
+  const cestaCss = fs.readFileSync(BASE + 'css/cesta.css', 'utf8');
+  const redefinidas = ['tx', 'tx-info', 'tx-ico', 'tx-name', 'tx-amount', 'kpi',
+    'kpi-label', 'kpi-value', 'callout', 'close-x', 'sheet-title', 'settings-item',
+    'chip', 'chips', 'btn', 'card', 'amount-input', 'ui-list', 'ui-select']
+    .filter(c => new RegExp('^\\.' + c + '\\s*\\{', 'm').test(cestaCss));
+  check('a camada do CESTA nao redefine componente do DOMI',
+    redefinidas.length ? redefinidas.join(', ') : true, true);
 }
 
 console.log(`\n${ok} passaram, ${fail} falharam`);

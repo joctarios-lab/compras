@@ -31,15 +31,60 @@ const PDF = {
     return typeof DecompressionStream !== 'undefined';
   },
 
+  /* Corta \r, \n, espaço e tab do fim da fatia.
+
+     O corpo do stream vai de depois de `stream\n` até a palavra `endstream`, e
+     entre o último byte de dado e essa palavra o PDF põe uma quebra de linha.
+     Ela não faz parte do fluxo comprimido. */
+  semCauda(fatia) {
+    let fim = fatia.length;
+    while (fim > 0) {
+      const c = fatia[fim - 1];
+      if (c === 0x0A || c === 0x0D || c === 0x20 || c === 0x09) fim--;
+      else break;
+    }
+    return fatia.subarray(0, fim);
+  },
+
   async inflar(bytes) {
-    /* Dois formatos possíveis: zlib (com cabeçalho) e deflate cru. O PDF usa o
-       primeiro, mas alguns geradores emitem o segundo — tentar os dois custa
-       nada e evita um "não consegui ler" que seria mentira. */
+    const fatia = this.semCauda(bytes);
+
+    /* LER EM PEDAÇOS, e não de uma vez.
+
+       Aqui estava o defeito que fazia o app dizer "este PDF é uma imagem" sobre
+       PDFs cheios de texto — o DANFE do Rio Grande do Norte entre eles, que é
+       justamente o motivo deste arquivo existir.
+
+       O `new Response(fluxo).arrayBuffer()` resolve com TUDO ou rejeita com
+       NADA. E o DecompressionStream aborta no primeiro byte que sobra depois do
+       fim do fluxo comprimido — coisa que o inflate do zlib tolera calado. Nos
+       15 streams deste PDF, todos os 15 abortavam, todo o texto já
+       descomprimido ia para o lixo, e o app concluía que não havia camada de
+       texto. A conclusão errada vinha de uma verdade: não sobrou texto. Só que
+       o texto existia; era o leitor que o jogava fora.
+
+       Lendo pedaço por pedaço, o que chegou antes do aborto FICA. */
     for (const formato of ['deflate', 'deflate-raw']) {
+      const partes = [];
+      let total = 0;
       try {
-        const fluxo = new Blob([bytes]).stream().pipeThrough(new DecompressionStream(formato));
-        return new Uint8Array(await new Response(fluxo).arrayBuffer());
-      } catch (_) { /* tenta o próximo */ }
+        const leitor = new Blob([fatia]).stream()
+          .pipeThrough(new DecompressionStream(formato)).getReader();
+        for (;;) {
+          const { done, value } = await leitor.read();
+          if (done) break;
+          partes.push(value);
+          total += value.length;
+        }
+      } catch (_) { /* o que já veio serve; o resto era cauda */ }
+      if (total) {
+        const saida = new Uint8Array(total);
+        let i = 0;
+        for (const p of partes) { saida.set(p, i); i += p.length; }
+        return saida;
+      }
+      /* Zero byte com este formato: aí sim tenta o outro. O PDF usa zlib, mas
+         alguns geradores emitem deflate cru. */
     }
     return null;
   },

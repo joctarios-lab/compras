@@ -76,10 +76,10 @@ const ViewHistorico = {
       ${this.cartaoCadencia()}
       ${this.cartaoCompras(compras)}
 
-      <button class="btn btn-vazado" data-acao="importar" style="margin-top:var(--e4)">
+      <button class="btn ghost" data-acao="importar" style="margin-top:var(--e4)">
         Importar nota fiscal (NFC-e)
       </button>
-      <button class="btn btn-vazado" data-acao="entre-lojas" style="margin-top:var(--e2)">
+      <button class="btn ghost" data-acao="entre-lojas" style="margin-top:var(--e2)">
         Onde minha cesta sai mais barata
       </button>`;
   },
@@ -102,9 +102,9 @@ const ViewHistorico = {
     const selo = Math.abs(c.indice) < 0.02 ? 'b-slate' : sobe ? 'b-red' : 'b-green';
     return `<div class="card">
       <p class="section-title" style="margin-top:0">Sua cesta comparável</p>
-      <div class="linha-resumo">
+      <div class="kpi">
         <div>
-          <b class="valor grande">${sobe ? '+' : '−'}${Math.abs(c.indice * 100).toFixed(1)}%</b>
+          <b class="kpi-value">${sobe ? '+' : '−'}${Math.abs(c.indice * 100).toFixed(1)}%</b>
           <span class="sub">${this.nomeDoMes(mesBase)} → ${this.nomeDoMes(mesAtual)}</span>
         </div>
         <span class="badge ${selo}">${c.n} ${c.n === 1 ? 'produto' : 'produtos'} nos dois meses</span>
@@ -120,9 +120,9 @@ const ViewHistorico = {
     const var_ = a > 0 ? (b - a) / a : null;
     return `<div class="card">
       <p class="section-title" style="margin-top:0">Você gastou</p>
-      <div class="linha-resumo">
-        <div><span class="rotulo">${this.nomeDoMes(mesAtual)}</span><b class="valor grande">${UI.fmt(b)}</b></div>
-        <div class="direita"><span class="rotulo">${this.nomeDoMes(mesBase)}</span><b class="valor">${UI.fmt(a)}</b></div>
+      <div class="kpi">
+        <div><span class="kpi-label">${this.nomeDoMes(mesAtual)}</span><b class="kpi-value">${UI.fmt(b)}</b></div>
+        <div class="direita"><span class="kpi-label">${this.nomeDoMes(mesBase)}</span><b class="tx-amount">${UI.fmt(a)}</b></div>
       </div>
       ${var_ != null ? `<p class="sub">${var_ > 0 ? 'Subiu' : 'Caiu'} ${Math.abs(var_ * 100).toFixed(0)}% —
         <b>e isto não é inflação</b>: inclui ter comprado mais ou menos coisas.</p>` : ''}
@@ -138,8 +138,8 @@ const ViewHistorico = {
         const prod = DB.get('products', p.product_id);
         const item = prod ? DB.get('items', prod.item_id) : null;
         const nome = prod ? `${item ? item.nome : ''} ${prod.marca || ''}`.trim() : 'produto';
-        return `<div class="item-linha">
-          <div class="item-corpo">
+        return `<div class="tx">
+          <div class="tx-info">
             <b>${UI.esc(nome || '—')}</b>
             <span class="sub">${UI.fmt(p.de)} → ${UI.fmt(p.para)}</span>
           </div>
@@ -198,8 +198,8 @@ const ViewHistorico = {
     avisos.sort((a, b) => b.c.diasDesde - a.c.diasDesde);
     return `<div class="card">
       <p class="section-title" style="margin-top:0">Provavelmente está acabando</p>
-      ${avisos.slice(0, 6).map(({ item, c }) => `<div class="item-linha">
-        <div class="item-corpo">
+      ${avisos.slice(0, 6).map(({ item, c }) => `<div class="tx">
+        <div class="tx-info">
           <b>${UI.esc(item.nome)}</b>
           <span class="sub">Você costuma comprar a cada ${c.intervalo} dias · faz ${c.diasDesde}</span>
         </div>
@@ -216,13 +216,13 @@ const ViewHistorico = {
       ${compras.slice(0, 8).map(l => {
         const t = DB.totalDoCarrinho(l.id, () => null);
         const loja = l.store_id ? DB.get('stores', l.store_id) : null;
-        return `<div class="item-linha">
-          <div class="item-corpo">
+        return `<div class="tx">
+          <div class="tx-info">
             <b>${UI.esc(l.nome)}</b>
             <span class="sub">${this.dataBR(l.data_fechamento)}${loja ? ' · ' + UI.esc(loja.nome) : ''} ·
               ${t.comprados} ${t.comprados === 1 ? 'item' : 'itens'}</span>
           </div>
-          <b class="valor">${UI.fmt(l.total_cupom || t.firme)}</b>
+          <b class="tx-amount">${UI.fmt(l.total_cupom || t.firme)}</b>
         </div>`;
       }).join('')}
     </div>`;

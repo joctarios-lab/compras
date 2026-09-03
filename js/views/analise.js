@@ -13,12 +13,12 @@ const ViewAnalise = {
       <h1 class="titulo">Análise</h1>
       <p class="sub">O que o seu histórico já sabe dizer.</p>
 
-      <div class="sub-abas rolavel">
-        <button class="sub-aba ${this.aba === 'resumo' ? 'ativa' : ''}" data-sub="resumo">Resumo</button>
-        <button class="sub-aba ${this.aba === 'onde' ? 'ativa' : ''}" data-sub="onde">Onde comprar</button>
-        <button class="sub-aba ${this.aba === 'dinheiro' ? 'ativa' : ''}" data-sub="dinheiro">O dinheiro</button>
-        <button class="sub-aba ${this.aba === 'produtos' ? 'ativa' : ''}" data-sub="produtos">Produtos</button>
-        <button class="sub-aba ${this.aba === 'alvos' ? 'ativa' : ''}" data-sub="alvos">Alvos</button>
+      <div class="chips rolavel">
+        <button class="chip ${this.aba === 'resumo' ? 'active' : ''}" data-sub="resumo">Resumo</button>
+        <button class="chip ${this.aba === 'onde' ? 'active' : ''}" data-sub="onde">Onde comprar</button>
+        <button class="chip ${this.aba === 'dinheiro' ? 'active' : ''}" data-sub="dinheiro">O dinheiro</button>
+        <button class="chip ${this.aba === 'produtos' ? 'active' : ''}" data-sub="produtos">Produtos</button>
+        <button class="chip ${this.aba === 'alvos' ? 'active' : ''}" data-sub="alvos">Alvos</button>
       </div>
 
       ${this.aba === 'resumo' ? ViewHistorico.render(true)
@@ -63,12 +63,12 @@ const ViewAnalise = {
         <p class="sub">Comparando os <b>${r.cobertos} itens</b> que você já comprou
           em todos eles — a mesma cesta nos dois lugares.</p>
         <div class="lista-itens" style="margin-top:var(--e3)">
-          ${r.lojas.map((l, i) => `<div class="item-linha">
-            <div class="item-corpo">
+          ${r.lojas.map((l, i) => `<div class="tx">
+            <div class="tx-info">
               <b>${i === 0 ? '🏆 ' : ''}${UI.esc(l.loja.nome)}</b>
               <span class="sub">${i === 0 ? 'mais barato' : `${UI.fmt(l.diferenca)} a mais`}</span>
             </div>
-            <b class="valor">${UI.fmt(l.custo)}</b>
+            <b class="tx-amount">${UI.fmt(l.custo)}</b>
           </div>`).join('')}
         </div>
         ${r.economia > 0 ? `<p class="sub" style="margin-top:var(--e3)">
@@ -92,9 +92,9 @@ const ViewAnalise = {
     return `
       <div class="card">
         <p class="section-title" style="margin-top:0">Os últimos 3 meses</p>
-        <div class="linha-resumo" style="margin-top:0">
-          <div><span class="rotulo">Total</span><b class="valor grande">${UI.fmt(d.total)}</b></div>
-          <div class="direita"><span class="rotulo">Produtos</span><b class="valor">${d.itens.length}</b></div>
+        <div class="kpi" style="margin-top:0">
+          <div><span class="kpi-label">Total</span><b class="kpi-value">${UI.fmt(d.total)}</b></div>
+          <div class="direita"><span class="kpi-label">Produtos</span><b class="tx-amount">${d.itens.length}</b></div>
         </div>
         <p class="sub"><b>${d.quantosFazem80} ${d.quantosFazem80 === 1 ? 'produto faz' : 'produtos fazem'}
           80% da sua conta.</b> Economizar 10% neles vale mais que cortar todo o resto —
@@ -104,14 +104,14 @@ const ViewAnalise = {
       <div class="card">
         <p class="section-title" style="margin-top:0">Por corredor</p>
         <div class="lista-itens">
-          ${d.porCategoria.slice(0, 6).map(c => `<div class="item-linha">
-            <span class="item-emoji">${c.corredor.icone}</span>
-            <div class="item-corpo">
+          ${d.porCategoria.slice(0, 6).map(c => `<div class="tx">
+            <span class="tx-ico">${c.corredor.icone}</span>
+            <div class="tx-info">
               <b>${c.corredor.nome}</b>
               <div class="barra-fina"><div style="width:${((c.gasto / d.total) * 100).toFixed(1)}%"></div></div>
             </div>
             <div class="direita">
-              <b class="valor">${UI.fmt(c.gasto)}</b>
+              <b class="tx-amount">${UI.fmt(c.gasto)}</b>
               <span class="sub">${Math.round((c.gasto / d.total) * 100)}%</span>
             </div>
           </div>`).join('')}
@@ -121,13 +121,13 @@ const ViewAnalise = {
       <div class="card">
         <p class="section-title" style="margin-top:0">Onde o dinheiro se concentra</p>
         <div class="lista-itens">
-          ${d.itens.slice(0, 12).map(l => `<div class="item-linha">
+          ${d.itens.slice(0, 12).map(l => `<div class="tx">
             <span class="badge ${l.classe === 'A' ? 'b-red' : l.classe === 'B' ? 'b-amber' : 'b-slate'}">${l.classe}</span>
-            <div class="item-corpo">
+            <div class="tx-info">
               <b>${UI.esc(l.item.nome)}</b>
               <span class="sub">${l.vezes} ${l.vezes === 1 ? 'compra' : 'compras'} · ${Math.round(l.pct * 100)}% da conta</span>
             </div>
-            <b class="valor">${UI.fmt(l.gasto)}</b>
+            <b class="tx-amount">${UI.fmt(l.gasto)}</b>
           </div>`).join('')}
         </div>
         <p class="sub">A: os que somam os primeiros 80% · B: os 15% seguintes ·
@@ -157,8 +157,8 @@ const ViewAnalise = {
           ${batidos.map(b => {
             const item = b.alvo.item_id ? DB.get('items', b.alvo.item_id) : null;
             const loja = b.loja ? DB.get('stores', b.loja) : null;
-            return `<div class="item-linha">
-              <div class="item-corpo">
+            return `<div class="tx">
+              <div class="tx-info">
                 <b>${UI.esc(item ? item.nome : 'produto')}</b>
                 <span class="sub">${UI.fmtBase(b.melhor, b.unidade)}${loja ? ' em ' + UI.esc(loja.nome) : ''}
                   · alvo ${UI.fmtBase(b.alvo.valor, b.alvo.unidade)}</span>
@@ -172,8 +172,8 @@ const ViewAnalise = {
         <div class="card lista-itens">
           ${alvos.map(a => {
             const item = a.item_id ? DB.get('items', a.item_id) : null;
-            return `<div class="item-linha">
-              <div class="item-corpo">
+            return `<div class="tx">
+              <div class="tx-info">
                 <b>${UI.esc(item ? item.nome : 'produto')}</b>
                 <span class="sub">avisar abaixo de ${UI.fmtBase(a.valor, a.unidade)}</span>
               </div>

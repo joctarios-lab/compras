@@ -107,7 +107,7 @@ function abrirMercado(listaId) {
     <p class="sub">O preço só significa alguma coisa junto com o lugar — é o que
       permite o app dizer depois onde sua cesta sai mais barata.</p>
     ${lojas.length ? `<div class="lojas">${lojas.map(l =>
-      `<button class="btn btn-vazado loja-op" data-loja="${l.id}">${UI.esc(l.nome)}</button>`).join('')}</div>
+      `<button class="btn ghost loja-op" data-loja="${l.id}">${UI.esc(l.nome)}</button>`).join('')}</div>
       <p class="section-title">Ou um novo</p>` : ''}
     <input  id="nova-loja" placeholder="Nome do mercado" autocomplete="off"
            enterkeyhint="done" style="margin-top:var(--e2)">
@@ -234,6 +234,11 @@ function pintarIdentidade() {
 
 function abrirApp() {
   DB.load();
+  /* A base pode estar cifrada mesmo quando o Auth acha que não há PIN — os dois
+     fatos moram em chaves diferentes e nada garantia que concordassem. Seguir
+     daqui desenharia o app sobre dados que não estão abertos, e o primeiro
+     acesso a eles derrubava o boot inteiro. */
+  if (DB.trancado) { Bloqueio.mostrar(abrirApp); return; }
   UI.ligarTeclado();
   Sync.load();
   ligarNavegacao();

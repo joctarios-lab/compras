@@ -140,14 +140,14 @@ const ViewHoje = {
         </div>
       </div>
 
-      <div class="linha-resumo">
+      <div class="kpi">
         <div>
-          <span class="rotulo">Previsto</span>
-          <b class="valor grande">${custo.previsto > 0 ? '≈ ' + UI.fmt(custo.previsto) : '—'}</b>
+          <span class="kpi-label">Previsto</span>
+          <b class="kpi-value">${custo.previsto > 0 ? '≈ ' + UI.fmt(custo.previsto) : '—'}</b>
         </div>
         <div class="direita">
-          <span class="rotulo">Itens</span>
-          <b class="valor">${itens}</b>
+          <span class="kpi-label">Itens</span>
+          <b class="tx-amount">${itens}</b>
         </div>
       </div>
 
@@ -158,7 +158,7 @@ const ViewHoje = {
       ${sugestoes ? `<button class="btn" data-acao="revisar" data-plano="${plano.id}" style="margin-top:var(--e3)">
         Revisar ${sugestoes} ${sugestoes === 1 ? 'sugestão' : 'sugestões'}
       </button>` : ''}
-      <button class="btn ${sugestoes ? 'btn-vazado' : ''}" data-acao="ir-mercado" style="margin-top:var(--e2)">
+      <button class="btn ${sugestoes ? 'ghost' : ''}" data-acao="ir-mercado" style="margin-top:var(--e2)">
         ${dias <= 0 ? 'Estou no mercado' : 'Ver a lista'}
       </button>
     </div>`;
@@ -186,12 +186,12 @@ const ViewHoje = {
     if (!conselhos.length) return '';
     return `<div class="conselhos">
       ${conselhos.map(c => `
-        <button class="conselho s-${c.selo}" data-acao="conselho" data-alvo="${c.acao}">
-          <span class="conselho-ico" data-ico="${c.ico}"></span>
-          <div>
-            <b>${UI.esc(c.titulo)}</b>
-            <span>${c.texto}</span>
-          </div>
+        <button class="settings-item tom-${c.selo}" data-acao="conselho" data-alvo="${c.acao}">
+          <span class="cfg-left">
+            <span class="cfg-ico" data-ico="${c.ico}"></span>
+            <span class="cfg-txt"><b>${UI.esc(c.titulo)}</b><small>${c.texto}</small></span>
+          </span>
+          <span class="chev" data-ico="chev"></span>
         </button>`).join('')}
     </div>`;
   },
@@ -225,7 +225,7 @@ const ViewHoje = {
       <div class="lista-itens">
         ${lista.map(s => this.linhaAcabando(s)).join('')}
       </div>
-      <button class="btn btn-vazado" data-acao="por-na-lista" style="margin-top:var(--e3)">
+      <button class="btn ghost" data-acao="por-na-lista" style="margin-top:var(--e3)">
         Pôr todos na lista
       </button>
     </div>`;
@@ -237,9 +237,9 @@ const ViewHoje = {
       ? (s.diasParaAcabar <= 0 ? 'deve ter acabado' : `~${s.diasParaAcabar} dias`)
       : 'passou do ritmo';
     const selo = s.motivo === 'saldo' && s.diasParaAcabar <= 0 ? 'b-red' : 'b-amber';
-    return `<div class="item-linha">
-      <span class="item-emoji">${corredor.icone}</span>
-      <div class="item-corpo">
+    return `<div class="tx">
+      <span class="tx-ico">${corredor.icone}</span>
+      <div class="tx-info">
         <b>${UI.esc(s.item.nome)}</b>
         <span class="sub">${UI.esc(s.explicacao)}</span>
       </div>
@@ -262,14 +262,14 @@ const ViewHoje = {
 
     return `<div class="card">
       <p class="section-title" style="margin-top:0">O mês até agora</p>
-      <div class="linha-resumo">
+      <div class="kpi">
         <div>
-          <span class="rotulo">Já gastou</span>
-          <b class="valor grande">${UI.fmt(p.gasto)}</b>
+          <span class="kpi-label">Já gastou</span>
+          <b class="kpi-value">${UI.fmt(p.gasto)}</b>
         </div>
         <div class="direita">
-          <span class="rotulo">Deve fechar em</span>
-          <b class="valor">${UI.fmt(p.projetado)}</b>
+          <span class="kpi-label">Deve fechar em</span>
+          <b class="tx-amount">${UI.fmt(p.projetado)}</b>
         </div>
       </div>
 
@@ -287,7 +287,7 @@ const ViewHoje = {
       ` : `
         <p class="sub">Sem orçamento definido, o app não opina sobre o valor —
           só mostra o que aconteceu.</p>
-        <button class="btn btn-vazado" data-acao="definir-orcamento" style="margin-top:var(--e2)">
+        <button class="btn ghost" data-acao="definir-orcamento" style="margin-top:var(--e2)">
           Definir orçamento do mês
         </button>
       `}

@@ -14,16 +14,16 @@ function abrirMaisPorMenos() {
     <div class="mpm-lado">
       <p class="section-title" style="margin-top:0">${titulo}</p>
       <label class="preco-campo">
-        <span class="rotulo">Preço</span>
-        <input class="campo-preco" id="mpm-preco-${id}" inputmode="decimal" placeholder="R$ 0,00">
+        <span class="kpi-label">Preço</span>
+        <input class="amount-input" id="mpm-preco-${id}" type="text" inputmode="numeric" autocomplete="off" placeholder="R$ 0,00">
       </label>
       <div class="preco-campos" style="margin-top:var(--e2)">
         <label class="preco-campo">
-          <span class="rotulo">Tamanho</span>
+          <span class="kpi-label">Tamanho</span>
           <input  id="mpm-qtd-${id}" inputmode="decimal" placeholder="500">
         </label>
         <label class="preco-campo estreito">
-          <span class="rotulo">Un.</span>
+          <span class="kpi-label">Un.</span>
           <select  id="mpm-un-${id}">
             ${['ml', 'l', 'g', 'kg', 'un'].map(u => `<option value="${u}">${u}</option>`).join('')}
           </select>
@@ -32,7 +32,7 @@ function abrirMaisPorMenos() {
     </div>`;
 
   UI.folha(`
-    <h2 class="titulo">Mais por Menos</h2>
+    <h2 class="sheet-title">Mais por Menos</h2>
     <p class="sub">Qual embalagem compensa? Não precisa de histórico — é conta de gôndola.</p>
     <div class="mpm" style="margin-top:var(--e3)">
       ${lado('a', 'Opção A')}
@@ -103,17 +103,17 @@ function abrirFechamento(listaId) {
   const pendentes = itens.filter(li => !li.comprado && !li.nao_tinha);
 
   const fechar = UI.folha(`
-    <h2 class="titulo">Fechar a compra</h2>
+    <h2 class="sheet-title">Fechar a compra</h2>
     <p class="sub">${t.comprados} ${t.comprados === 1 ? 'item registrado' : 'itens registrados'}${
       pendentes.length ? ` · ${pendentes.length} ainda sem preço` : ''}.</p>
 
-    <div class="linha-resumo" style="margin-top:var(--e3)">
-      <div><span class="rotulo">Total no app</span><b class="valor grande">${UI.fmt(t.firme)}</b></div>
+    <div class="kpi" style="margin-top:var(--e3)">
+      <div><span class="kpi-label">Total no app</span><b class="kpi-value">${UI.fmt(t.firme)}</b></div>
     </div>
 
     <label class="preco-campo" style="margin-top:var(--e4)">
-      <span class="rotulo">Total do cupom (opcional)</span>
-      <input class="campo-preco" id="fech-cupom" inputmode="decimal" placeholder="R$ 0,00">
+      <span class="kpi-label">Total do cupom (opcional)</span>
+      <input class="amount-input" id="fech-cupom" type="text" inputmode="numeric" autocomplete="off" placeholder="R$ 0,00">
     </label>
     <p class="sub">Confere se o caixa cobrou o que a gôndola prometia.</p>
 
@@ -125,7 +125,7 @@ function abrirFechamento(listaId) {
     <button class="btn" id="fech-ok" style="margin-top:var(--e4)">
       Encerrar compra
     </button>
-    <button class="btn btn-vazado" id="fech-voltar" style="margin-top:var(--e2)">Continuar comprando</button>`);
+    <button class="btn ghost" id="fech-voltar" style="margin-top:var(--e2)">Continuar comprando</button>`);
 
   const campo = document.querySelector('#fech-cupom');
   const mascara = UI.mascaraMoeda(campo);

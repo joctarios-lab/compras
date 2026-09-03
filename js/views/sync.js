@@ -10,7 +10,7 @@ function abrirSync(opcoes = {}) {
 
   if (!Sync.configurado()) {
     const fechar = UI.folha(`
-      <h2 class="titulo">Sincronização</h2>
+      <h2 class="sheet-title">Sincronização</h2>
       <p class="sub">Opcional. O app já funciona inteiro sem isto — a
         sincronização serve para usar o mesmo histórico em dois aparelhos.</p>
 
@@ -46,7 +46,7 @@ function abrirSync(opcoes = {}) {
 
   if (!Sync.logado()) {
     const fechar = UI.folha(`
-      <h2 class="titulo">Entrar</h2>
+      <h2 class="sheet-title">Entrar</h2>
       <p class="sub">Use a mesma conta nos dois aparelhos.</p>
       <input  id="sy-mail" type="email" placeholder="e-mail"
              autocomplete="email" style="margin-top:var(--e3)">
@@ -54,7 +54,7 @@ function abrirSync(opcoes = {}) {
              autocomplete="current-password" style="margin-top:var(--e2)">
       <div id="sy-erro" class="sub" style="color:var(--red-ink)"></div>
       <button class="btn" id="sy-entrar" style="margin-top:var(--e3)">Entrar</button>
-      <button class="btn btn-vazado" id="sy-criar" style="margin-top:var(--e2)">Criar conta</button>`);
+      <button class="btn ghost" id="sy-criar" style="margin-top:var(--e2)">Criar conta</button>`);
 
     const tentar = async criar => {
       const mail = document.querySelector('#sy-mail').value.trim();
@@ -83,7 +83,7 @@ function abrirSync(opcoes = {}) {
   if (opcoes.aoTerminar && Sync.temFamilia()) { opcoes.aoTerminar(); return; }
 
   const fechar = UI.folha(`
-    <h2 class="titulo">Sincronização</h2>
+    <h2 class="sheet-title">Sincronização</h2>
     <p class="sub">Conectado. ${Sync.pendentes()} ${Sync.pendentes() === 1
       ? 'registro ainda não enviado' : 'registros ainda não enviados'}.</p>
     <p class="sub">Último recebimento: ${DB.data.meta.lastSync
@@ -91,7 +91,7 @@ function abrirSync(opcoes = {}) {
     <button class="btn" id="sy-agora" style="margin-top:var(--e3)">
       Sincronizar agora
     </button>
-    <button class="btn btn-vazado" id="sy-sair" style="margin-top:var(--e2)">Sair desta conta</button>`);
+    <button class="btn ghost" id="sy-sair" style="margin-top:var(--e2)">Sair desta conta</button>`);
 
   document.querySelector('#sy-agora').addEventListener('click', async () => {
     try {

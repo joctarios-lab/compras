@@ -8,16 +8,16 @@ function abrirAjustes() {
   const lojas = DB.all('stores').length;
 
   const fechar = UI.folha(`
-    <h2 class="titulo">Ajustes</h2>
+    <h2 class="sheet-title">Ajustes</h2>
 
     <p class="section-title">Orçamento padrão</p>
-    <input class="campo-preco" id="cfg-orcamento" inputmode="decimal"
-           placeholder="R$ 0,00" value="${cfg.orcamento_padrao ? UI.fmt(cfg.orcamento_padrao) : ''}">
+    <input class="amount-input" id="cfg-orcamento" type="text" inputmode="numeric" autocomplete="off"
+           placeholder="R$ 0,00">
     <p class="sub">Vira o limite de cada compra nova, e o app avisa quando o
       carrinho chega perto. Em branco, ele não cobra nada.</p>
 
     <p class="section-title">Compartilhar</p>
-    <button class="btn btn-vazado" id="cfg-familia">
+    <button class="btn ghost" id="cfg-familia">
       <span data-ico="compartilhar"></span>
       ${Sync.temFamilia() ? UI.esc(Sync.cfg.family_nome || 'Minha casa') : 'Compartilhar a lista'}
     </button>
@@ -26,7 +26,7 @@ function abrirAjustes() {
       : 'Divida a lista com quem faz as compras com você.'}</p>
 
     <p class="section-title">Segurança</p>
-    <button class="btn btn-vazado" id="cfg-seguranca">
+    <button class="btn ghost" id="cfg-seguranca">
       <span data-ico="digital"></span>
       ${Auth.ligado() ? 'PIN ativo — gerenciar' : 'Proteger com PIN'}
     </button>
@@ -35,19 +35,19 @@ function abrirAjustes() {
       : 'Criptografa o histórico no aparelho. Sem o PIN, ninguém lê nada.'}</p>
 
     <p class="section-title">Seus dados</p>
-    <div class="linha-resumo" style="margin-top:0">
-      <div><span class="rotulo">Preços</span><b class="valor">${obs}</b></div>
-      <div><span class="rotulo">Produtos</span><b class="valor">${itens}</b></div>
-      <div class="direita"><span class="rotulo">Mercados</span><b class="valor">${lojas}</b></div>
+    <div class="kpi" style="margin-top:0">
+      <div><span class="kpi-label">Preços</span><b class="tx-amount">${obs}</b></div>
+      <div><span class="kpi-label">Produtos</span><b class="tx-amount">${itens}</b></div>
+      <div class="direita"><span class="kpi-label">Mercados</span><b class="tx-amount">${lojas}</b></div>
     </div>
 
-    <button class="btn btn-vazado" id="cfg-importar" style="margin-top:var(--e3)">
+    <button class="btn ghost" id="cfg-importar" style="margin-top:var(--e3)">
       Importar nota fiscal (NFC-e)
     </button>
-    <button class="btn btn-vazado" id="cfg-backup" style="margin-top:var(--e2)">
+    <button class="btn ghost" id="cfg-backup" style="margin-top:var(--e2)">
       Baixar backup
     </button>
-    <label class="btn btn-vazado" style="margin-top:var(--e2)">
+    <label class="btn ghost" style="margin-top:var(--e2)">
       Restaurar backup
       <input type="file" id="cfg-restaurar" accept=".json" hidden>
     </label>
@@ -56,21 +56,21 @@ function abrirAjustes() {
     <p class="sub">${Sync.logado()
       ? `Conectado · ${Sync.pendentes()} ${Sync.pendentes() === 1 ? 'registro não enviado' : 'registros não enviados'}`
       : 'O app funciona inteiro sem conta e sem internet. A sincronização é opcional.'}</p>
-    <button class="btn btn-vazado" id="cfg-sync" style="margin-top:var(--e2)">
+    <button class="btn ghost" id="cfg-sync" style="margin-top:var(--e2)">
       ${Sync.logado() ? 'Gerenciar sincronização' : 'Configurar sincronização'}
     </button>
 
     <p class="section-title">Sobre</p>
-    <button class="btn btn-vazado" id="cfg-ajuda">Ajuda e apresentação</button>
+    <button class="btn ghost" id="cfg-ajuda">Ajuda e apresentação</button>
 
-    <button class="btn btn-vazado" id="cfg-apagar" style="margin-top:var(--e5); color:var(--red-ink)">
+    <button class="btn ghost" id="cfg-apagar" style="margin-top:var(--e5); color:var(--red-ink)">
       Apagar tudo deste aparelho
     </button>`);
 
   pintarIcones(document.querySelector('.sheet'));
 
   const campo = document.querySelector('#cfg-orcamento');
-  const mascara = UI.mascaraMoeda(campo);
+  const mascara = UI.mascaraMoeda(campo, cfg.orcamento_padrao);
   campo.addEventListener('input', () => {
     mascara();
     DB.setCfg({ orcamento_padrao: UI.lerMoeda(campo) || null });
@@ -115,15 +115,15 @@ function abrirAjustes() {
      tudo é reversível; aqui não é. */
   document.querySelector('#cfg-apagar').addEventListener('click', () => {
     const f2 = UI.folha(`
-      <h2 class="titulo">Apagar tudo?</h2>
+      <h2 class="sheet-title">Apagar tudo?</h2>
       <p class="sub">Isto remove ${obs} preços, ${itens} produtos, todas as compras,
         as fotos de etiqueta, o seu PIN e a configuração de sincronização.
         O app volta a ser como no primeiro dia.</p>
       <p class="sub"><b>Não há como desfazer.</b> Se ainda não baixou um backup,
         feche isto e baixe primeiro.</p>
       ${Sync.temFamilia() ? '<p class="sub">O que está na nuvem continua com as outras pessoas da casa.</p>' : ''}
-      <button class="btn btn-vazado" id="ap-nao" style="margin-top:var(--e4)">Cancelar</button>
-      <button class="btn btn-vazado" id="ap-sim" style="margin-top:var(--e2); color:var(--red-ink)">
+      <button class="btn ghost" id="ap-nao" style="margin-top:var(--e4)">Cancelar</button>
+      <button class="btn ghost" id="ap-sim" style="margin-top:var(--e2); color:var(--red-ink)">
         Sim, apagar tudo
       </button>`);
     document.querySelector('#ap-nao').addEventListener('click', f2);
@@ -145,7 +145,7 @@ function abrirSeguranca() {
   const ligado = Auth.ligado();
 
   const fechar = UI.folha(`
-    <h2 class="titulo">Segurança</h2>
+    <h2 class="sheet-title">Segurança</h2>
     <p class="sub">O histórico de compras diz onde você faz mercado, quanto
       gasta e o que consome. Num aparelho perdido, isso fica legível para quem
       abrir o navegador — a menos que esteja criptografado.</p>
@@ -159,13 +159,13 @@ function abrirSeguranca() {
       <p class="sub">${Auth.bioAtiva()
         ? 'Ativa. Você entra com a digital, e o PIN continua funcionando como saída.'
         : 'Entre com a digital em vez de digitar o PIN toda vez.'}</p>
-      <button class="btn btn-vazado" id="sg-bio" style="margin-top:var(--e2)">
+      <button class="btn ghost" id="sg-bio" style="margin-top:var(--e2)">
         ${Auth.bioAtiva() ? 'Desativar digital' : 'Ativar digital'}
       </button>
 
       <p class="section-title">PIN</p>
-      <button class="btn btn-vazado" id="sg-trocar">Trocar o PIN</button>
-      <button class="btn btn-vazado" id="sg-desligar" style="margin-top:var(--e2); color:var(--red-ink)">
+      <button class="btn ghost" id="sg-trocar">Trocar o PIN</button>
+      <button class="btn ghost" id="sg-desligar" style="margin-top:var(--e2); color:var(--red-ink)">
         Desligar a proteção
       </button>
     ` : `

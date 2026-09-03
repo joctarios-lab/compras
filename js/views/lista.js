@@ -26,7 +26,7 @@ const ViewLista = {
       return `${this.cabecalho()}
         <div class="card destaque-compra">
           <p class="sub">Compra em andamento</p>
-          <h2 class="titulo">${UI.esc(emCurso.nome)}</h2>
+          <h2 class="sheet-title">${UI.esc(emCurso.nome)}</h2>
           <button class="btn" data-acao="ir-mercado" style="margin-top:var(--e3)">
             Voltar ao Modo Mercado
           </button>
@@ -64,10 +64,10 @@ const ViewLista = {
        ele nunca prometeu, e passa a não confiar nos que ele prometeu. */
     const semBase = itens.filter(li => !li.comprado && !li.nao_tinha && this.estimar(li) == null).length;
     const resumo = t.itens
-      ? `<div class="linha-resumo">
-           <div><span class="rotulo">Estimado</span>
-             <b class="valor grande">${t.total > 0 ? '≈ ' + UI.fmt(t.total) : '—'}</b></div>
-           <div class="direita"><span class="rotulo">Itens</span><b class="valor">${t.itens}</b></div>
+      ? `<div class="kpi">
+           <div><span class="kpi-label">Estimado</span>
+             <b class="kpi-value">${t.total > 0 ? '≈ ' + UI.fmt(t.total) : '—'}</b></div>
+           <div class="direita"><span class="kpi-label">Itens</span><b class="tx-amount">${t.itens}</b></div>
          </div>
          <p class="sub">${t.total > 0 ? 'Com base no seu histórico.' : 'Sem histórico ainda para estimar.'}
            ${semBase ? ` ${semBase} ${semBase === 1 ? 'item ainda não tem' : 'itens ainda não têm'} referência.` : ''}</p>`
@@ -82,7 +82,7 @@ const ViewLista = {
             <span data-ico="mais"></span>
           </button>
         </div>
-        <div id="sugestoes" class="sugestoes" hidden></div>
+        <div id="sugestoes" class="ui-list" hidden></div>
         ${resumo}
       </div>
 
@@ -98,7 +98,7 @@ const ViewLista = {
           Estou no mercado
         </button>` : ''}
 
-      <button class="btn btn-vazado" data-acao="mais-por-menos" style="margin-top:var(--e3)">
+      <button class="btn ghost" data-acao="mais-por-menos" style="margin-top:var(--e3)">
         <span data-ico="balanca"></span> Mais por Menos
       </button>`;
   },
@@ -107,12 +107,12 @@ const ViewLista = {
     const item = DB.get('items', li.item_id);
     const nome = item ? item.nome : '(item removido)';
     const est = this.estimar(li);
-    return `<div class="item-linha ${li.comprado ? 'comprado' : ''}" data-li="${li.id}">
+    return `<div class="tx ${li.comprado ? 'comprado' : ''}" data-li="${li.id}">
       <button class="item-marca" data-acao="alternar" data-li="${li.id}"
               aria-label="${li.comprado ? 'Desmarcar' : 'Marcar como comprado'} ${UI.esc(nome)}">
         <span data-ico="${li.comprado ? 'ok' : ''}"></span>
       </button>
-      <div class="item-corpo">
+      <div class="tx-info">
         <b>${UI.esc(nome)}</b>
         <span class="sub">${li.qtd} ${UI.esc(li.unidade)}${est ? ' · ≈ ' + UI.fmt(est) : ''}</span>
       </div>
@@ -157,9 +157,9 @@ const ViewLista = {
         if (!achados.length) { caixa.hidden = true; caixa.innerHTML = ''; return; }
         caixa.hidden = false;
         caixa.innerHTML = achados.map(i =>
-          `<button class="sugestao" data-nome="${UI.esc(i.nome)}">${UI.esc(i.nome)}
+          `<button class="ui-opt" data-nome="${UI.esc(i.nome)}">${UI.esc(i.nome)}
              <span class="sub">${i.qtd_habitual} ${UI.esc(i.unidade)}</span></button>`).join('');
-        for (const b of caixa.querySelectorAll('.sugestao')) {
+        for (const b of caixa.querySelectorAll('.ui-opt')) {
           b.addEventListener('click', () => adicionar(b.dataset.nome));
         }
       });

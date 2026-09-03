@@ -31,7 +31,7 @@ function abrirNovoPlano() {
   };
 
   const fechar = UI.folha(`
-    <h2 class="titulo">Marcar uma compra</h2>
+    <h2 class="sheet-title">Marcar uma compra</h2>
     <p class="sub">Com data e orçamento, o app monta a lista sozinho e avisa
       quando estiver chegando.</p>
 
@@ -54,7 +54,7 @@ function abrirNovoPlano() {
     </select>
 
     <p class="section-title">Quanto pretende gastar <span class="sub">(opcional)</span></p>
-    <input class="campo-preco" id="np-orc" inputmode="decimal" placeholder="R$ 0,00">
+    <input class="amount-input" id="np-orc" type="text" inputmode="numeric" autocomplete="off" placeholder="R$ 0,00">
     <p class="sub">Serve para o app avisar antes de estourar, não para cobrar você.</p>
 
     <button class="btn" id="np-ok" style="margin-top:var(--e4)">
@@ -101,7 +101,7 @@ function abrirRevisaoDeSugestoes(planoId) {
        quebrou, se ela fez algo errado, ou o que fazer em seguida. */
     const temHistorico = DB.all('price_obs').length > 0;
     const f = UI.folha(`
-      <h2 class="titulo">${UI.esc(plano.nome)}</h2>
+      <h2 class="sheet-title">${UI.esc(plano.nome)}</h2>
       <p class="sub">A lista está pronta para você montar.</p>
 
       <div class="ob-exemplo" style="margin-top:var(--e3)">
@@ -118,7 +118,7 @@ function abrirRevisaoDeSugestoes(planoId) {
       <button class="btn" id="ns-importar" style="margin-top:var(--e3)">
         Importar nota fiscal
       </button>
-      <button class="btn btn-vazado" id="ns-lista" style="margin-top:var(--e2)">
+      <button class="btn ghost" id="ns-lista" style="margin-top:var(--e2)">
         Montar a lista à mão
       </button>`);
 
@@ -133,12 +133,12 @@ function abrirRevisaoDeSugestoes(planoId) {
 
   const marcados = new Set();
   const fechar = UI.folha(`
-    <h2 class="titulo">O que deve entrar</h2>
+    <h2 class="sheet-title">O que deve entrar</h2>
     <p class="sub">Sugestões para <b>${UI.esc(plano.nome)}</b>, de ${ViewPlanejar.dataBR(plano.data)}.
       Marque o que quiser — o app não põe nada sozinho.</p>
 
-    <div class="linha-resumo">
-      <div><span class="rotulo">Marcados</span><b class="valor grande" id="sg-conta">0</b></div>
+    <div class="kpi">
+      <div><span class="kpi-label">Marcados</span><b class="kpi-value" id="sg-conta">0</b></div>
       <button class="btn" id="sg-todos">Marcar todos</button>
     </div>
 
@@ -159,7 +159,7 @@ function abrirRevisaoDeSugestoes(planoId) {
     <button class="btn" id="sg-ok" style="margin-top:var(--e4)">
       Pôr os marcados na lista
     </button>
-    <button class="btn btn-vazado" id="sg-pular" style="margin-top:var(--e2)">Agora não</button>`);
+    <button class="btn ghost" id="sg-pular" style="margin-top:var(--e2)">Agora não</button>`);
 
   const conta = () => { document.querySelector('#sg-conta').textContent = marcados.size; };
 
@@ -197,20 +197,20 @@ function abrirPlano(planoId) {
   const ciclo = CICLOS[plano.ciclo] || CICLOS.mensal;
 
   const fechar = UI.folha(`
-    <h2 class="titulo">${ciclo.icone} ${UI.esc(plano.nome)}</h2>
+    <h2 class="sheet-title">${ciclo.icone} ${UI.esc(plano.nome)}</h2>
     <p class="sub">${ViewPlanejar.dataBR(plano.data)} · ${itens.length} ${itens.length === 1 ? 'item' : 'itens'}
       ${custo.previsto ? '· ≈ ' + UI.fmt(custo.previsto) : ''}</p>
 
     <button class="btn" id="pl-sugestoes">
       Ver sugestões do app
     </button>
-    <button class="btn btn-vazado" id="pl-lista" style="margin-top:var(--e2)">
+    <button class="btn ghost" id="pl-lista" style="margin-top:var(--e2)">
       Abrir a lista
     </button>
-    <button class="btn btn-vazado" id="pl-mercado" style="margin-top:var(--e2)">
+    <button class="btn ghost" id="pl-mercado" style="margin-top:var(--e2)">
       Estou no mercado
     </button>
-    <button class="btn btn-vazado" id="pl-apagar" style="margin-top:var(--e5); color:var(--red-ink)">
+    <button class="btn ghost" id="pl-apagar" style="margin-top:var(--e5); color:var(--red-ink)">
       Desmarcar esta compra
     </button>`);
 
@@ -232,7 +232,7 @@ function abrirRecorrentes(ciclo) {
   const itens = DB.all('items').sort((a, b) => a.nome.localeCompare(b.nome));
 
   UI.folha(`
-    <h2 class="titulo">${c.icone} ${c.nome}</h2>
+    <h2 class="sheet-title">${c.icone} ${c.nome}</h2>
     <p class="sub">O que entra em toda compra deste tipo. Marcado aqui, o app
       sempre sugere — e você não remonta a mesma lista todo mês.</p>
 
@@ -263,7 +263,7 @@ function repetirCompra(listaId) {
   const itens = DB.itensDaLista(listaId).filter(li => li.comprado && !li.nao_tinha);
 
   const fechar = UI.folha(`
-    <h2 class="titulo">Repetir esta compra</h2>
+    <h2 class="sheet-title">Repetir esta compra</h2>
     <p class="sub">Cria uma compra nova com os ${itens.length} itens que você
       levou em ${ViewPlanejar.dataBR(antiga.data_fechamento)}.</p>
     <input  id="rp-data" type="date" value="${DB.hojeISO()}" style="margin-top:var(--e3)">
@@ -295,13 +295,13 @@ function abrirEscolhaDePrato(data) {
   const pessoas = Cozinha.pessoasDaCasa(DB);
 
   const fechar = UI.folha(`
-    <h2 class="titulo">O que fazer nesse dia</h2>
+    <h2 class="sheet-title">O que fazer nesse dia</h2>
     <p class="sub">${ViewPlanejar.dataBR(data)} · para ${pessoas} ${pessoas === 1 ? 'pessoa' : 'pessoas'}</p>
     <div class="lista-itens" style="margin-top:var(--e3)">
       ${receitas.map(r => {
         const c = Cozinha.custoDoPrato(DB, r.id, pessoas);
-        return `<button class="item-linha linha-clicavel" data-receita="${r.id}">
-          <div class="item-corpo">
+        return `<button class="tx" data-receita="${r.id}">
+          <div class="tx-info">
             <b>${UI.esc(r.nome)}</b>
             <span class="sub">${r.tempo ? r.tempo + ' min' : ''}${
               c.custo ? ' · ≈ ' + UI.fmt(c.custo) : ' · sem preço ainda'}</span>
@@ -309,7 +309,7 @@ function abrirEscolhaDePrato(data) {
         </button>`;
       }).join('')}
     </div>
-    <button class="btn btn-vazado" id="cd-limpar" style="margin-top:var(--e3)">Deixar esse dia livre</button>`);
+    <button class="btn ghost" id="cd-limpar" style="margin-top:var(--e3)">Deixar esse dia livre</button>`);
 
   for (const b of document.querySelectorAll('[data-receita]')) {
     b.addEventListener('click', () => {
@@ -357,17 +357,17 @@ function abrirEvento(tipo) {
   if (!def) return;
 
   const fechar = UI.folha(`
-    <h2 class="titulo">${def.icone} ${def.nome}</h2>
+    <h2 class="sheet-title">${def.icone} ${def.nome}</h2>
     <p class="sub">Quantas pessoas? O app calcula as quantidades e o custo pelo
       seu histórico de preços.</p>
 
     <div class="preco-campos" style="margin-top:var(--e3)">
       <label class="preco-campo">
-        <span class="rotulo">Pessoas</span>
+        <span class="kpi-label">Pessoas</span>
         <input  id="ev-pessoas" inputmode="numeric" value="10">
       </label>
       <label class="preco-campo">
-        <span class="rotulo">Quando</span>
+        <span class="kpi-label">Quando</span>
         <input  id="ev-data" type="date" value="${DB.hojeISO()}">
       </label>
     </div>
@@ -387,17 +387,17 @@ function abrirEvento(tipo) {
     const n = Number(campo.value) || 1;
     const r = Cozinha.listaDeEvento(DB, tipo, n);
     previa.innerHTML = `
-      <div class="linha-resumo" style="margin-top:0">
-        <div><span class="rotulo">Custo previsto</span>
-          <b class="valor grande">${r.custoPrevisto ? '≈ ' + UI.fmt(r.custoPrevisto) : '—'}</b></div>
-        ${r.porPessoa ? `<div class="direita"><span class="rotulo">Por pessoa</span>
-          <b class="valor">${UI.fmt(r.porPessoa)}</b></div>` : ''}
+      <div class="kpi" style="margin-top:0">
+        <div><span class="kpi-label">Custo previsto</span>
+          <b class="kpi-value">${r.custoPrevisto ? '≈ ' + UI.fmt(r.custoPrevisto) : '—'}</b></div>
+        ${r.porPessoa ? `<div class="direita"><span class="kpi-label">Por pessoa</span>
+          <b class="tx-amount">${UI.fmt(r.porPessoa)}</b></div>` : ''}
       </div>
       ${r.semPreco ? `<p class="sub">${r.semPreco} ${r.semPreco === 1 ? 'item ainda sem' : 'itens ainda sem'} histórico de preço.</p>` : ''}
       <div class="lista-itens" style="margin-top:var(--e3)">
-        ${r.linhas.map(l => `<div class="item-linha">
-          <span class="item-emoji">${Catalogo.corredor(l.item.categoria).icone}</span>
-          <div class="item-corpo">
+        ${r.linhas.map(l => `<div class="tx">
+          <span class="tx-ico">${Catalogo.corredor(l.item.categoria).icone}</span>
+          <div class="tx-info">
             <b>${UI.esc(l.item.nome)}</b>
             <span class="sub">${Despensa.fmtQtd(l.qtd, l.unidade)}</span>
           </div>
@@ -427,14 +427,14 @@ function abrirNovoAlvo() {
     .sort((a, b) => a.item.nome.localeCompare(b.item.nome));
 
   if (!itens.length) {
-    UI.folha(`<h2 class="titulo">Preço-alvo</h2>
+    UI.folha(`<h2 class="sheet-title">Preço-alvo</h2>
       <p class="sub">É preciso ter ao menos um preço registrado para definir um
         alvo — senão não haveria com o que comparar.</p>`);
     return;
   }
 
   const fechar = UI.folha(`
-    <h2 class="titulo">Definir preço-alvo</h2>
+    <h2 class="sheet-title">Definir preço-alvo</h2>
     <p class="sub">O app avisa quando o preço bater o valor que você aceita pagar.</p>
 
     <p class="section-title">Produto</p>
@@ -443,7 +443,7 @@ function abrirNovoAlvo() {
     </select>
 
     <p class="section-title">Avisar abaixo de</p>
-    <input class="campo-preco" id="al-valor" inputmode="decimal" placeholder="R$ 0,00">
+    <input class="amount-input" id="al-valor" type="text" inputmode="numeric" autocomplete="off" placeholder="R$ 0,00">
     <p class="sub" id="al-dica"></p>
 
     <button class="btn" id="al-ok" style="margin-top:var(--e3)">
@@ -484,18 +484,18 @@ function abrirOrcamentoDoMes() {
   const atual = DB.orcamentoDoMes(mes);
 
   const fechar = UI.folha(`
-    <h2 class="titulo">Orçamento do mês</h2>
+    <h2 class="sheet-title">Orçamento do mês</h2>
     <p class="sub">Quanto a casa pretende gastar com mercado neste mês. É o que
       permite ao app avisar <b>antes</b> de estourar, em vez de você descobrir no
       extrato.</p>
-    <input class="campo-preco" id="or-valor" inputmode="decimal"
-           placeholder="R$ 0,00" value="${atual ? UI.fmt(atual) : ''}" style="margin-top:var(--e3)">
+    <input class="amount-input" id="or-valor" type="text" inputmode="numeric" autocomplete="off"
+           placeholder="R$ 0,00" style="margin-top:var(--e3)">
     <p class="sub">É diferente do orçamento de cada compra: este é o do mês inteiro,
       somando o rancho, as reposições e as idas rápidas.</p>
     <button class="btn" id="or-ok" style="margin-top:var(--e3)">Salvar</button>`);
 
   const campo = document.querySelector('#or-valor');
-  const mascara = UI.mascaraMoeda(campo);
+  const mascara = UI.mascaraMoeda(campo, atual);
   campo.addEventListener('input', mascara);
 
   document.querySelector('#or-ok').addEventListener('click', () => {
@@ -514,22 +514,22 @@ function abrirOrcamentoDoMes() {
 function abrirCompraRapida() {
   const lojas = DB.all('stores');
   const fechar = UI.folha(`
-    <h2 class="titulo">Comprei agora</h2>
+    <h2 class="sheet-title">Comprei agora</h2>
     <p class="sub">Registrar sem lista e sem plano. O preço entra no histórico
       igual, e o item entra na despensa.</p>
 
     <input  id="cr-item" placeholder="O que você comprou?" autocomplete="off" style="margin-top:var(--e3)">
     <div class="preco-campos" style="margin-top:var(--e2)">
       <label class="preco-campo">
-        <span class="rotulo">Preço</span>
-        <input class="campo-preco" id="cr-preco" inputmode="decimal" placeholder="R$ 0,00">
+        <span class="kpi-label">Preço</span>
+        <input class="amount-input" id="cr-preco" type="text" inputmode="numeric" autocomplete="off" placeholder="R$ 0,00">
       </label>
       <label class="preco-campo estreito">
-        <span class="rotulo">Qtd</span>
+        <span class="kpi-label">Qtd</span>
         <input  id="cr-qtd" inputmode="decimal" value="1">
       </label>
       <label class="preco-campo estreito">
-        <span class="rotulo">Un.</span>
+        <span class="kpi-label">Un.</span>
         <select  id="cr-un">
           ${['un', 'kg', 'g', 'l', 'ml'].map(u => `<option value="${u}">${u}</option>`).join('')}
         </select>
