@@ -363,8 +363,14 @@ const claroExplicito = todos(/:root\[data-tema="light"\] \{[\s\S]*?\n\}/g);
 {
   const domiOriginal = 'D:/Projetos/meus-projetos/financas/css/styles.css';
   if (fs.existsSync(domiOriginal)) {
+    /* COMPARANDO SEM O FIM DE LINHA. O .gitattributes normaliza tudo para LF,
+       e o arquivo do app de financas usa CRLF — num clone novo a comparacao
+       byte a byte reprovaria por causa da quebra de linha, que nao muda uma
+       virgula do sistema visual. E a armadilha CRLF x LF que o RETOMADA ja
+       documenta, aparecendo num lugar novo. */
+    const semQuebra = t => t.split('\r\n').join('\n');
     check('css/domi.css e copia fiel do app de financas',
-      fs.readFileSync(domiOriginal, 'utf8') === cssDomi, true);
+      semQuebra(fs.readFileSync(domiOriginal, 'utf8')) === semQuebra(cssDomi), true);
   }
 }
 /* E a camada do CESTA nao pode redefinir o que o DOMI ja define: duas fontes de
