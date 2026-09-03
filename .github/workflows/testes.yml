@@ -1,0 +1,38 @@
+# A rede de testes roda a cada push.
+#
+# Ela existe aqui pelo mesmo motivo que existe na maquina: uma suite que so roda
+# quando alguem lembra de rodar acaba nao rodando. E o rodizio de datas
+# (tests/tempo.js) e o que impede a suite de apodrecer sem ninguem ver.
+name: testes
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  suite:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # Zero dependencias: nao ha npm install porque nao ha package.json.
+      - name: Sintaxe
+        run: |
+          for f in js/*.js js/views/*.js sw.js tests/*.js scripts/*.js; do
+            node --check "$f" || exit 1
+          done
+
+      - name: A suite
+        run: node tests/smoke.js
+
+      - name: A suite em 9 datas de calendario
+        run: node tests/tempo.js
+
+      # Prova que os testes pegam regressao. Um verde aqui vale o que a
+      # sabotagem provar que ele vale.
+      - name: Sabotagem
+        run: node tests/sabotagem.js
