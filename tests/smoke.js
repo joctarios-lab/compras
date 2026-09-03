@@ -490,8 +490,15 @@ check('embalagem multipla multiplica a quantidade', Precos.precoBase(12, 500, 'g
 /* UNIDADE DESCONHECIDA FICA DE FORA, nao vira 'un' por omissao: um palpite aqui
    envenena a mediana daquele produto para sempre, e ninguem consegue enxergar
    esse defeito depois. */
-check('unidade que nao conheco devolve nulo', Precos.precoBase(10, 1, 'bandeja'), null);
-check('e a normalizacao tambem', Precos.normalizarUnidade('bandeja'), null);
+/* "PUNHADO" não é unidade de coisa nenhuma, e é esse o ponto: o exemplo tem
+   de ser algo que o app nunca vai conhecer, senão o teste passa a guardar a
+   lista de sinônimos em vez do princípio.
+
+   Bandeja, pote, vidro e frasco JÁ SÃO conhecidos — cada mercado cadastra a
+   unidade que quer no sistema dele, e o cupom traz o que foi cadastrado. Não
+   reconhecê-las deixava oito itens de uma nota real fora de toda comparação. */
+check('unidade que nao conheco devolve nulo', Precos.precoBase(10, 1, 'punhado'), null);
+check('e a normalizacao tambem', Precos.normalizarUnidade('punhado'), null);
 check('mas PC do PDV vira unidade', Precos.normalizarUnidade('PC'), 'un');
 check('KG maiusculo tambem', Precos.normalizarUnidade('KG'), 'kg');
 check('quilo por extenso idem', Precos.normalizarUnidade('quilo'), 'kg');
@@ -808,7 +815,7 @@ check('o EAN reconhece sem depender de texto', linhas2[0].confianca, 'ean');
 
 /* UNIDADE DESCONHECIDA FICA DE FORA. */
 const notaTorta = { chave: null, loja: 'X', data: '2026-08-01', itens: [
-  { descricao: 'ALGO ESTRANHO', ean: null, qtd: 2, unidade: 'BANDEJA', valorTotal: 10 }] };
+  { descricao: 'ALGO ESTRANHO', ean: null, qtd: 2, unidade: 'PUNHADO', valorTotal: 10 }] };
 const linhasTortas = Importar.preparar(notaTorta, lojaImp.id);
 check('linha com unidade desconhecida e marcada como problema', linhasTortas[0].problema, 'unidade desconhecida');
 check('e nao pode ser incluida', linhasTortas[0].incluir, false);
@@ -1069,7 +1076,7 @@ DB.apagarTudo();
 const itX = DB.upsert('items', { nome: 'Bandeja de ovos' });
 const antesDeTentar = DB.all('price_obs').length;
 const recusada = Precos.registrar(DB, {
-  item_id: itX.id, data: DB.hojeISO(), preco_total: 18, qtd: 1, unidade: 'BANDEJA',
+  item_id: itX.id, data: DB.hojeISO(), preco_total: 18, qtd: 1, unidade: 'PUNHADO',
 });
 check('registrar recusa a unidade que nao conhece', recusada, null);
 check('e NAO grava nada com palpite', DB.all('price_obs').length, antesDeTentar);

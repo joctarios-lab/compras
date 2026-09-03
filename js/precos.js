@@ -42,6 +42,25 @@ const Precos = {
     un: 'un', und: 'un', unid: 'un', unidade: 'un', unidades: 'un',
     pc: 'un', pct: 'un', pacote: 'un', cx: 'un', caixa: 'un',
     dz: 'un', duzia: 'un', 'dúzia': 'un',
+    /* AS EMBALAGENS QUE O CUPOM CHAMA PELO NOME. Cada mercado cadastra a
+       unidade que quer no sistema dele, e o cupom traz o que foi cadastrado:
+       um mesmo iogurte é UND num mercado e PTE (pote) no outro.
+
+       Todas contam como UMA unidade — que é o que são. O tamanho da embalagem
+       vem da descrição do produto ("510G"), não daqui, e é o app que o lê
+       depois para comparar preço por quilo. */
+    bdj: 'un', bandeja: 'un',
+    vdo: 'un', vidro: 'un',
+    pte: 'un', pote: 'un',
+    frc: 'un', frasco: 'un',
+    sc: 'un', saco: 'un', sch: 'un', sache: 'un', 'sachê': 'un',
+    fd: 'un', fardo: 'un',
+    bd: 'un', bl: 'un', blister: 'un',
+    rl: 'un', rolo: 'un',
+    tb: 'un', tubo: 'un',
+    lta: 'un', lata: 'un',
+    gf: 'un', garrafa: 'un',
+    par: 'un', pr: 'un',
   },
 
   normalizarUnidade(u) {

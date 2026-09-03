@@ -101,7 +101,7 @@ const casos = [
    'a camada do CESTA nao introduz gradiente'],
 
   ['a versao do sw anda sozinha, sem as tags do index', 'sw.js',
-   `const VERSAO = '10';`,
+   `const VERSAO = '12';`,
    `const VERSAO = '99';`,
    'TODAS batem com a versao do sw.js'],
 
@@ -286,7 +286,7 @@ const casos = [
   // ---------------- catalogo, abertura e seguranca ----------------
   ['um item do catalogo nasce com unidade que o motor nao entende', 'js/catalogo.js',
    `  ['Café', 'mercearia', 'g', 500],`,
-   `  ['Café', 'mercearia', 'pote', 500],`,
+   `  ['Café', 'mercearia', 'punhado', 500],`,
    'todas as unidades do catalogo sao conversiveis'],
 
   ['os corredores perdem a ordem do mercado e viram alfabeticos', 'js/catalogo.js',

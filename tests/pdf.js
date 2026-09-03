@@ -134,6 +134,145 @@ function comoArquivo(buf) {
     Math.round((soma - (nota.desconto || 50.90)) * 100) / 100,
     Math.round(nota.total * 100) / 100);
 
+  /* ---- OUTROS ESTADOS, OUTRAS COLUNAS ----------------------------------
+
+     O parser estava preso ao layout do Rio Grande do Norte: quantidade em i-1,
+     descrição em i-5, unitário em i+1, total em i+5. Bastava abrir a nota de
+     outro estado para achar zero itens e o app dizer "não consegui ler este
+     arquivo" sobre uma nota perfeita.
+
+     Cada Sefaz monta a tabela com as colunas que quer. Os três layouts abaixo
+     são inventados de propósito — o ponto não é acertar os 27 estados, é o
+     parser não depender de conhecê-los: ele encontra os papéis pela igualdade
+     `quantidade × unitário = total`, que vale em toda nota fiscal do país. */
+  const cabecalho = [
+    'DANFE NFC-e - Documento Auxiliar da Nota Fiscal do Consumidor Eletrônica',
+    'RAZÃO SOCIAL: Mercado Teste Ltda',
+    'Data de Emissão: 15/03/2026',
+  ];
+
+  const LAYOUTS = [
+    {
+      nome: 'colunas do RN (unitário, base, alíquota, ICMS, total)',
+      /* código, descrição, CFOP, NCM, CST, qtd, UN, unit, base, alíq, ICMS, total */
+      linhas: ['14421', 'ARROZ BRANCO TIPO 1 5KG', '5102', '10063021', '000',
+        '2', 'UN', '25,00', '50,00', '20,00', '10,00', '50,00'],
+    },
+    {
+      nome: 'sem colunas de ICMS (qtd, UN, unitário, total)',
+      linhas: ['998877', 'FEIJAO CARIOCA 1KG', '3', 'KG', '8,50', '25,50'],
+    },
+    {
+      nome: 'descrição em duas linhas, com desconto de centavos',
+      linhas: ['5501', 'LEITE INTEGRAL LONGA VIDA',
+        'CAIXA COM 12 UNIDADES', '12', 'UN', '5,49', '65,85'],
+    },
+  ];
+
+  for (const l of LAYOUTS) {
+    const nota = NFCe.lerPDF(cabecalho.concat(l.linhas).join('\n'));
+    check('le o layout: ' + l.nome, !!(nota && nota.itens.length === 1), true);
+    if (nota && nota.itens.length === 1) {
+      const it = nota.itens[0];
+      check('  e o nome nao e um numero', /^[A-Z]/.test(it.descricao), true);
+      check('  e a conta fecha',
+        Math.abs(it.qtd * it.valorUnitario - it.valorTotal) < 0.06, true);
+    }
+  }
+
+  /* A descrição em duas linhas: o nome pego é a linha mais próxima da
+     quantidade, que é onde o DANFE continua o texto comprido. */
+  const duasLinhas = NFCe.lerPDF(cabecalho.concat(LAYOUTS[2].linhas).join('\n'));
+  check('descrição em duas linhas pega a mais proxima da quantidade',
+    duasLinhas.itens[0].descricao, 'CAIXA COM 12 UNIDADES');
+
+  /* ---- O QUE NÃO FECHA NÃO ENTRA ---------------------------------------
+
+     A mesma prova aritmética que descobre o layout é a que impede o parser de
+     inventar. Sem ela, uma coluna deslocada viraria preço errado no histórico —
+     e preço errado no histórico envenena todo diagnóstico depois. */
+  const torto = NFCe.lerPDF(cabecalho.concat(
+    ['777', 'PRODUTO QUALQUER', '2', 'UN', '10,00', '999,99']).join('\n'));
+  check('coluna que nao fecha na conta NAO vira item', torto, null);
+
+  /* Cabeçalho de tabela não é produto: sem esta guarda, "Descrição" e
+     "Valor Total" entrariam na despensa como coisas compradas. */
+  const soCabecalho = NFCe.lerPDF(cabecalho.concat(
+    ['Código', 'Descrição', '1', 'UN', '1,00', '1,00']).join('\n'));
+  check('cabecalho de tabela nao vira item', soCabecalho, null);
+
+  /* Sem o total declarado, a soma dos itens é o melhor que se sabe — e é
+     honesto, porque é exatamente o que foi lido. */
+  const semTotal = NFCe.lerPDF(cabecalho.concat(LAYOUTS[1].linhas).join('\n'));
+  check('sem total declarado, usa a soma dos itens', semTotal.total, 25.50);
+
+  /* ---- A UNIDADE NÃO É UM CAMPO PADRONIZADO ----------------------------
+
+     A falha que o usuário encontrou: duas notas do MESMO estado, com o MESMO
+     layout, e a segunda não era lida. A diferença era o mercado — a coluna de
+     unidade traz o que o supermercado cadastrou no sistema dele, não um código
+     da Sefaz. Onde um cupom diz UN, o outro diz UND9; e aparecem BDJ9
+     (bandeja), VDO9 (vidro), PTE9 (pote), FRC9 (frasco), PCT9 (pacote).
+
+     Eu tinha uma lista fechada de unidades como âncora — o que é prometer
+     conhecer o cadastro de todo mercado do país. Agora a âncora é a FORMA:
+     texto curto entre dois números. */
+  for (const [un, esperada] of [['UND9', 'UND'], ['KG9', 'KG'], ['BDJ9', 'BDJ'],
+    ['VDO9', 'VDO'], ['PTE9', 'PTE'], ['FRC9', 'FRC'], ['PCT9', 'PCT'], ['UN', 'UN']]) {
+    const nota = NFCe.lerPDF(cabecalho.concat(
+      ['AR085019', 'MILHO VERDE BONARE', '5102', '20058000', '0',
+        '2', un, '2,89', '5,78', '20,00', '1,16', '5,78']).join('\n'));
+    check('le a unidade ' + un, nota && nota.itens.length === 1
+      && nota.itens[0].unidade === esperada, true);
+  }
+
+  /* E toda unidade lida tem de significar algo para o motor de preços: uma
+     unidade que ele não conhece deixa o item fora de toda comparação, que é o
+     app inteiro. Bandeja, pote e vidro são UMA unidade — o tamanho vem da
+     descrição do produto, não daqui. */
+  const { Precos } = carregar('js/precos.js');
+  for (const un of ['UND', 'KG', 'BDJ', 'VDO', 'PTE', 'FRC', 'PCT', 'UN', 'SCH', 'LTA']) {
+    check('o motor de precos entende ' + un, !!Precos.normalizarUnidade(un), true);
+  }
+
+  /* ---- O CST NÃO É NOME DE PRODUTO -------------------------------------
+
+     O CST/CSOSN vem como "0/60" — não é número puro por causa da barra, e por
+     isso passava pela busca da descrição e virava o NOME do item. Quarenta
+     produtos de uma nota entraram na despensa chamados "0/60". */
+  const comCST = NFCe.lerPDF(cabecalho.concat(
+    ['AR001632', 'ABACATE', '5102', '08044000', '0/40',
+      '0,75', 'KG9', '3,39', '0,00', '0,00', '0,00', '2,54']).join('\n'));
+  check('o CST 0/40 nao vira nome de produto',
+    comCST && comCST.itens[0].descricao, 'ABACATE');
+
+  /* ---- CFOP E NCM NÃO SÃO QUANTIDADE -----------------------------------
+
+     Quando afrouxei a busca da quantidade "por robustez", o CFOP (5102) e o
+     NCM (04022110) viraram candidatos, e combinações absurdas passaram na folga
+     de 2% — apertada em reais, larguíssima em dezenas de milhares. Um item saiu
+     com quantidade 5.102 e total de R$ 260.886.
+
+     A quantidade e o unitário CERCAM a unidade: é o layout do DANFE
+     (`Qtde | Un | Vl. unid.`), e não há o que procurar. */
+  const comCodigos = NFCe.lerPDF(cabecalho.concat(
+    ['14421', 'LEITE PO ITAMBE 200G SCH INTEGRAL', '5102', '04022110', '0',
+      '1', 'UN', '8,99', '8,99', '20,00', '1,80', '8,99']).join('\n'));
+  check('o CFOP nao vira quantidade', comCodigos && comCodigos.itens[0].qtd, 1);
+  check('e o valor fica em reais, nao em dezenas de milhares',
+    comCodigos && comCodigos.itens[0].valorTotal, 8.99);
+
+  /* ---- O TOTAL É A ÚLTIMA COLUNA, NÃO A BASE DE ICMS --------------------
+
+     Sem redução de base as duas são iguais e ambas fecham a conta; com redução
+     de base, escolher a mais próxima traz um preço menor que o pago — e preço
+     errado no histórico envenena todo diagnóstico depois, sem sinal nenhum. */
+  const baseReduzida = NFCe.lerPDF(cabecalho.concat(
+    ['99', 'PRODUTO COM BASE REDUZIDA', '5102', '10063021', '20',
+      '2', 'UN', '10,00', '12,00', '20,00', '2,40', '20,00']).join('\n'));
+  check('pega o valor total, nao a base de ICMS reduzida',
+    baseReduzida && baseReduzida.itens[0].valorTotal, 20.00);
+
   console.log('\n' + ok + ' passaram, ' + fail + ' falharam');
   process.exit(fail ? 1 : 0);
 })();

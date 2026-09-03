@@ -56,8 +56,72 @@ function abrirImportacao() {
               : 'Tente baixar o arquivo de novo pelo portal.'}</p>`;
         return;
       }
-      processar(NFCe.ler(r.texto, f.name));
+      const nota = NFCe.ler(r.texto, f.name);
+      if (!nota) {
+        /* O PDF ABRIU E O TEXTO SAIU — só as linhas de itens não foram
+           reconhecidas. Dizer "não consegui ler este arquivo" aqui joga fora
+           tudo o que se sabe e deixa a pessoa sem passo seguinte.
+
+           Cada Sefaz monta a tabela do DANFE com as colunas que quer. O parser
+           descobre o layout pela aritmética, mas nenhuma heurística cobre 27
+           estados às cegas — então quando falha, ele MOSTRA o que encontrou e
+           entrega o texto extraído. É o que transforma um beco sem saída em um
+           relato que conserta a próxima versão. */
+        diagnosticarPdf(r.texto);
+        return;
+      }
+      processar(nota);
       return;
+    }
+
+    /* O que o app reconheceu, e o que não — em vez de um "não consegui". */
+    function diagnosticarPdf(texto) {
+      const linhas = texto.split('\n').map(l => l.trim());
+      const ancoras = linhas.filter((l, k) => NFCe.pareceUnidade(l)
+        && NFCe.soNumero(linhas[k - 1]) != null
+        && NFCe.soNumero(linhas[k + 1]) != null).length;
+      const achou = [];
+      const faltou = [];
+      const chave = NFCe.extrairChave(texto);
+      (chave ? achou : faltou).push('a chave de acesso');
+      (/RAZ[ÃA]O SOCIAL|Raz[ãa]o Social/i.test(texto) ? achou : faltou).push('o nome da loja');
+      (/\d{2}\/\d{2}\/\d{4}/.test(texto) ? achou : faltou).push('a data');
+      (ancoras ? achou : faltou).push('a coluna de unidade (UN, KG…)');
+
+      area.innerHTML = `<div class="diag b-amber">
+          <span>🟡 Li o PDF, mas não reconheci a tabela de itens</span></div>
+        <p class="diag-nota">Cada estado monta o DANFE com colunas diferentes.
+          Neste arquivo eu encontrei <b>${achou.join(', ') || 'nada do cabeçalho'}</b>${
+            faltou.length ? ` e não encontrei <b>${faltou.join(', ')}</b>` : ''}.
+          ${ancoras
+            ? `Havia <b>${ancoras}</b> linha${ancoras === 1 ? '' : 's'} de unidade, mas as
+               contas de quantidade × valor não fecharam com nenhuma coluna de total.`
+            : 'Sem a coluna de unidade não há por onde ancorar a leitura.'}</p>
+        <p class="diag-nota">O texto lido está aqui. Ele não sai deste aparelho —
+          copiar serve para você me mandar e eu ensinar o app a ler este layout.</p>
+        <div class="btn-row">
+          <button class="btn ghost" id="pdf-copiar">Copiar o texto lido</button>
+          <button class="btn ghost" id="pdf-baixar">Salvar como arquivo</button>
+        </div>`;
+
+      const copiar = document.querySelector('#pdf-copiar');
+      if (copiar) copiar.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(texto);
+          UI.toast('Texto copiado. Cole numa mensagem para eu ver o layout.', 5000);
+        } catch (_) {
+          UI.toast('Este navegador não deixou copiar — use "Salvar como arquivo".', 5000);
+        }
+      });
+      const baixar = document.querySelector('#pdf-baixar');
+      if (baixar) baixar.addEventListener('click', () => {
+        const url = URL.createObjectURL(new Blob([texto], { type: 'text/plain' }));
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'nota-lida.txt';
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 4000);
+      });
     }
 
     const leitor = new FileReader();
