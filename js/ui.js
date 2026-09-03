@@ -107,6 +107,12 @@ const UI = {
     /* Todo campo de data da folha ganha o seletor ao ser criado — em UM lugar,
        porque ligar isso folha a folha garante que alguma fique de fora. */
     this.ligarDatas(fundo);
+    /* E todo <select> vira o componente do DOMI, para os dois apps terem o
+       MESMO dropdown — não um parecido. O select nativo tem a cara do sistema
+       operacional, e num app de tema escuro isso salta aos olhos. */
+    if (typeof UIForm !== 'undefined' && UIForm.enhance) {
+      try { UIForm.enhance(fundo); } catch (_) {}
+    }
     return fechar;
   },
 

@@ -486,7 +486,10 @@ const Onboarding = {
         if (this.escolhidos.has(nome)) this.escolhidos.delete(nome);
         else this.escolhidos.add(nome);
         chip.setAttribute('aria-pressed', this.escolhidos.has(nome) ? 'true' : 'false');
-        chip.classList.toggle('ativo', this.escolhidos.has(nome));
+        /* .active é a classe que o CSS do DOMI pinta. Com 'ativo' o item ficava
+           escolhido no estado e sem nenhum sinal na tela — foi o relatado
+           "não está mostrando os itens marcados". */
+        chip.classList.toggle('active', this.escolhidos.has(nome));
         const conta = document.getElementById('ob-conta');
         if (conta) {
           const n = this.escolhidos.size;

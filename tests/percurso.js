@@ -353,5 +353,90 @@ for (const [nome, render] of [
   check(`${nome} vazia explica o que fazer`, explica, true);
 }
 
+
+/* ============ OS COMPONENTES SAO OS MESMOS DO DOMI ===
+
+   Tres relatos, uma causa: eu inventei estruturas onde o DOMI ja tinha as dele,
+   e o CSS herdado nao casava com nenhuma.
+
+     · o teclado do PIN nao respondia
+     · os chips do "o que costuma comprar" nao mostravam o que estava marcado
+     · os dropdowns tinham a cara do sistema, nao a do app
+
+   Nao adianta imitar cada peca: o certo e HERDAR, e e isso que se mede aqui. */
+
+console.log('\n=== Os componentes vieram do DOMI ===');
+
+/* O ui.js do DOMI e herdado como o css: copia fiel, com um envelope de duas
+   linhas no fim para nao colidir com o UI do CESTA. */
+{
+  const herdado = fs.readFileSync(BASE + 'js/domi-ui.js', 'utf8');
+  const origem = 'D:/Projetos/meus-projetos/financas/js/ui.js';
+  if (fs.existsSync(origem)) {
+    const semQuebra = t => t.split('\r\n').join('\n');
+    const corpo = semQuebra(herdado).split('ENVELOPE DO CESTA')[0];
+    check('js/domi-ui.js e copia fiel do app de financas',
+      semQuebra(fs.readFileSync(origem, 'utf8')).startsWith(corpo.slice(0, 2000)), true);
+  }
+  check('e o herdado atende por UIForm', /window\.UIForm = UI/.test(herdado), true);
+  check('sem colidir com o UI do CESTA',
+    fs.readFileSync(BASE + 'js/ui.js', 'utf8').includes('const UI = {'), true);
+}
+
+/* O TECLADO DO PIN, peca por peca. Cada diferenca abaixo era uma razao para ele
+   nao funcionar: o CSS do DOMI desenha exatamente estas formas. */
+{
+  const b = fs.readFileSync(BASE + 'js/bloqueio.js', 'utf8');
+  check('as bolinhas sao <i> com .on', /<i class="\$\{i < pin\.length \? 'on' : ''\}"/.test(b), true);
+  check('as teclas usam data-k', /data-k="\$\{n\}"/.test(b), true);
+  check('apagar e uma tecla', /data-k="del"/.test(b), true);
+  /* O CONFIRMAR E UMA TECLA DO GRID, nao um botao solto embaixo: era isso que
+     deixava o teclado com cara e comportamento diferentes. */
+  check('e confirmar tambem', /data-k="ok"/.test(b), true);
+  check('o confirmar esta dentro do teclado', /pin-key pin-ok/.test(b), true);
+  check('e nao ha botao solto embaixo', /id="lk-ok"/.test(b), false);
+  /* Uma regra so trata as tres: digito, apagar e confirmar. */
+  check('uma regra trata todas as teclas', /const k = t\.dataset\.k/.test(b), true);
+
+  /* E o CSS que desenha tudo isso vem do DOMI, nao da camada do CESTA. */
+  const domi = fs.readFileSync(BASE + 'css/domi.css', 'utf8');
+  check('o CSS do teclado vem do herdado', /\.pin-key \{/.test(domi), true);
+  check('inclusive as bolinhas acesas', /\.pin-dots i\.on/.test(domi), true);
+}
+
+/* OS CHIPS. Uma letra de diferenca — 'ativo' contra 'active' — e o item
+   escolhido nao mostrava que estava escolhido. */
+{
+  const ob = fs.readFileSync(BASE + 'js/onboarding.js', 'utf8');
+  check("o chip marcado usa .active", /classList\.toggle\('active'/.test(ob), true);
+  check('e nao a classe inventada', /classList\.toggle\('ativo'/.test(ob), false);
+  const domi = fs.readFileSync(BASE + 'css/domi.css', 'utf8');
+  check('que e a classe que o DOMI pinta', /\.chip\.active/.test(domi), true);
+}
+
+/* OS DROPDOWNS. O DOMI embrulha o <select> nativo num componente proprio; sem
+   isso o campo fica com a cara do sistema operacional, que num app de tema
+   escuro salta aos olhos. */
+{
+  const ui = fs.readFileSync(BASE + 'js/ui.js', 'utf8');
+  check('toda folha embrulha os selects', /UIForm\.enhance\(fundo\)/.test(ui), true);
+  const app = fs.readFileSync(BASE + 'js/app.js', 'utf8');
+  check('e as telas tambem', /UIForm\.enhance\(tela\)/.test(app), true);
+  const shell2 = fs.readFileSync(BASE + 'index.html', 'utf8');
+  /* A ORDEM IMPORTA: os dois arquivos declaram `UI`, e o envelope do herdado o
+     guarda como UIForm antes de o do CESTA sobrescrever o nome. */
+  check('e o herdado carrega antes do UI do CESTA',
+    shell2.indexOf('domi-ui.js') < shell2.indexOf('js/ui.js?'), true);
+}
+
+/* A classe que o app PROCURA tem de ser a que o HTML GERA. O caso concreto: o
+   roteador procurava '.dock-item' num seletor composto enquanto o shell ja
+   gerava '.tab' — e a aba ativa nunca era marcada, sem erro nenhum. */
+{
+  const app = fs.readFileSync(BASE + 'js/app.js', 'utf8');
+  check('o roteador procura a aba pela classe do DOMI', /'\.tab, \.side-item/.test(app), true);
+  check('e nao pela antiga', /dock-item/.test(app), false);
+}
+
 console.log(`\n${ok} passaram, ${fail} falharam`);
 process.exit(fail ? 1 : 0);

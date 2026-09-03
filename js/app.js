@@ -82,7 +82,12 @@ function irPara(aba) {
   }
 
   pintarIcones(tela);
-  for (const b of document.querySelectorAll('.dock-item, .side-item[data-aba]')) {
+  /* Os componentes do DOMI valem nas telas tambem, nao so nas folhas: a busca
+     de produtos e os filtros de analise vivem fora de folha. */
+  if (typeof UIForm !== 'undefined' && UIForm.enhance) {
+    try { UIForm.enhance(tela); } catch (_) {}
+  }
+  for (const b of document.querySelectorAll('.tab, .side-item[data-aba]')) {
     if (b.dataset.aba === aba) b.setAttribute('aria-current', 'page');
     else b.removeAttribute('aria-current');
   }
@@ -136,7 +141,7 @@ async function entrarNoMercado(lista) {
 /* ----------------------------------------------------------------- boot --- */
 
 function ligarNavegacao() {
-  for (const b of document.querySelectorAll('.dock-item, .side-item[data-aba]')) {
+  for (const b of document.querySelectorAll('.tab, .side-item[data-aba]')) {
     b.addEventListener('click', () => irPara(b.dataset.aba));
   }
 

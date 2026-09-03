@@ -165,9 +165,32 @@ console.log('\n=== O vocabulário é o do DOMI ===');
 const antigas = ['folha-fundo', 'folha-alca', 'dock-item', 'topbar-acao',
   'linha-acao', 'sub-abas ativa'];
 for (const c of antigas) {
-  const onde = arquivosJs.filter(a => fontes[a].includes(`'.${c}'`) || fontes[a].includes(`class="${c}"`));
+  /* A classe pode aparecer sozinha (`'.dock-item'`), num atributo
+     (`class="dock-item"`) ou dentro de um SELETOR COMPOSTO
+     (`'.dock-item, .side-item'`) — e era a terceira forma que escapava.
+     Por causa dela o app procurava uma classe que o HTML não gerava mais, e a
+     aba ativa nunca era marcada, sem nenhuma suíte reclamar. */
+  const usa = src => new RegExp('[.\'"`]' + c + '[\\s,\'"`\\[]').test(src);
+  const onde = arquivosJs.filter(a => usa(fontes[a]));
   check(`ninguém usa .${c} (vocabulário antigo)`,
     onde.length ? onde.join(', ') : true, true);
+}
+
+/* E o contrário, que é o que fecha a armadilha: toda classe que o app PROCURA
+   precisa existir no HTML que ele mesmo gera. Um seletor que não casa com nada
+   não dá erro — ele só não faz nada, e é o modo de falhar mais silencioso que
+   existe numa tela. */
+{
+  const gerado = tudo + shell;
+  const procuradas = new Set();
+  for (const arq of arquivosJs) {
+    for (const m of fontes[arq].matchAll(/querySelectorAll?\('\.([a-z][a-z0-9-]*)/g)) procuradas.add(m[1]);
+  }
+  const semGeracao = [...procuradas].filter(c =>
+    !gerado.includes('class="' + c) && !gerado.includes(' ' + c + '"') &&
+    !gerado.includes(c + ' ') && !gerado.includes('"' + c + '"'));
+  check('toda classe procurada é gerada por alguém',
+    semGeracao.length ? semGeracao.join(', ') : true, true);
 }
 
 /* O caso concreto que quebra: UI.folha cria .sheet-backdrop, e quem fecha a

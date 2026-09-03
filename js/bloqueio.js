@@ -108,25 +108,26 @@ const Bloqueio = {
         <img src="icons/icon.svg" alt="" class="lock-ico">
         <h1>${UI.esc(titulo)}</h1>
         <p class="lock-txt">${texto}</p>
-        <div class="pin-dots" id="lk-bolas" aria-label="PIN"></div>
+        <div class="pin-dots" id="lk-bolas" role="status" aria-label="dígitos informados"></div>
         <p class="lock-err" id="lk-erro" role="alert"></p>
         <div class="pin-pad">
-          ${[1,2,3,4,5,6,7,8,9].map(n => `<button class="pin-key" data-n="${n}">${n}</button>`).join('')}
-          <button class="pin-key pin-vazia" disabled></button>
-          <button class="pin-key" data-n="0">0</button>
-          <button class="pin-key" data-apaga aria-label="Apagar">⌫</button>
+          ${[1,2,3,4,5,6,7,8,9].map(n => `<button type="button" class="pin-key" data-k="${n}">${n}</button>`).join('')}
+          <button type="button" class="pin-key pin-aux" data-k="del" aria-label="Apagar">⌫</button>
+          <button type="button" class="pin-key" data-k="0">0</button>
+          <button type="button" class="pin-key pin-ok" data-k="ok" aria-label="Confirmar">✓</button>
         </div>
-        <button class="btn pin-ok" id="lk-ok" disabled>Entrar</button>
         ${rodape}
       </div>`;
 
     const bolas = document.getElementById('lk-bolas');
     const erro = document.getElementById('lk-erro');
-    const ok = document.getElementById('lk-ok');
+    const ok = el.querySelector('.pin-ok');
 
     const pintar = () => {
+      /* <i> com .on: é o que o CSS do DOMI desenha. Com <span class="cheia">
+         as bolinhas existiam e nunca acendiam — o seletor não casava. */
       bolas.innerHTML = Array.from({ length: Math.max(min, pin.length) },
-        (_, i) => `<span class="${i < pin.length ? 'cheia' : ''}"></span>`).join('');
+        (_, i) => `<i class="${i < pin.length ? 'on' : ''}"></i>`).join('');
       ok.disabled = pin.length < min;
     };
 
@@ -137,15 +138,19 @@ const Bloqueio = {
       if (!deu) { pin = ''; pintar(); }
     };
 
+    /* UMA regra para todas as teclas, como no DOMI: dígito, apagar e confirmar
+       saem do mesmo data-k. Tratar o confirmar à parte foi o que o deixou fora
+       do teclado, num botão solto embaixo. */
     for (const t of el.querySelectorAll('.pin-key')) {
       t.addEventListener('click', () => {
+        const k = t.dataset.k;
         erro.textContent = '';
-        if (t.dataset.apaga !== undefined) pin = pin.slice(0, -1);
-        else if (pin.length < max) pin += t.dataset.n;
+        if (k === 'del') pin = pin.slice(0, -1);
+        else if (k === 'ok') { confirmar(); return; }
+        else if (pin.length < max) pin += k;
         pintar();
       });
     }
-    ok.addEventListener('click', confirmar);
 
     // Teclado físico: no desktop ninguém vai clicar em nove botões com o mouse
     document.onkeydown = e => {

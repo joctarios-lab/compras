@@ -9,7 +9,7 @@
    isso aparece como defeito onde não há nenhum. */
 'use strict';
 
-const VERSAO = '7';
+const VERSAO = '8';
 const CACHE = 'cesta-' + VERSAO;
 const SHELL = [
   './',
@@ -18,6 +18,7 @@ const SHELL = [
   'css/cesta.css?v=' + VERSAO,
   'js/config.js?v=' + VERSAO,
   'js/icons.js?v=' + VERSAO,
+  'js/domi-ui.js?v=' + VERSAO,
   'js/ui.js?v=' + VERSAO,
   'js/catalogo.js?v=' + VERSAO,
   'js/db.js?v=' + VERSAO,
