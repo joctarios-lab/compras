@@ -13,28 +13,64 @@ function abrirImportacao() {
     <div class="passos">
       <p><b>1.</b> Abra a nota no portal do seu estado — pelo QR Code do cupom ou
          digitando a chave de 44 dígitos.</p>
-      <p><b>2.</b> Salve a página (no celular: compartilhar → salvar; no
-         computador: Ctrl+S). Se conseguir o <b>XML</b>, melhor ainda.</p>
+      <p><b>2.</b> Baixe ou salve o que o portal oferecer: <b>PDF</b>, <b>XML</b>
+         ou a página salva. Os três funcionam.</p>
       <p><b>3.</b> Escolha o arquivo aqui embaixo.</p>
     </div>
 
     <p class="sub nota-cors">O app não consulta o portal sozinho: cada estado tem
       um site diferente, vários pedem captcha e o navegador bloqueia a leitura de
-      outro domínio. Por isso é o arquivo que entra — e assim funciona offline.</p>
+      outro domínio. Por isso é o arquivo que entra — e assim funciona offline.
+      Em vários estados, como o Rio Grande do Norte, o PDF é o <b>único</b>
+      formato oferecido; ele é lido aqui mesmo, sem enviar nada para lugar
+      nenhum.</p>
 
-    <input type="file" id="arq-nfce" accept=".xml,.html,.htm,.csv,.txt,text/*"
+    <input type="file" id="arq-nfce" accept=".pdf,.xml,.html,.htm,.csv,.txt,application/pdf,text/*"
            style="margin-top:var(--e4)">
     <div id="imp-resultado" style="margin-top:var(--e3)"></div>`);
 
   const arq = document.querySelector('#arq-nfce');
   const area = document.querySelector('#imp-resultado');
 
-  arq.addEventListener('change', () => {
+  arq.addEventListener('change', async () => {
     const f = arq.files && arq.files[0];
     if (!f) return;
+
+    /* O PDF é lido como BYTES e descomprimido antes de virar texto — é trabalho
+       de outra natureza, e por isso mora em js/pdf.js. Daqui em diante todos os
+       formatos seguem o mesmo caminho. */
+    const ehPdf = /\.pdf$/i.test(f.name) || f.type === 'application/pdf';
+    if (ehPdf) {
+      area.innerHTML = '<p class="sub">Lendo o PDF…</p>';
+      const r = await PDF.texto(f);
+      if (r.erro) {
+        area.innerHTML = `<div class="diag b-red"><span>🔴 ${
+          r.erro === 'sem_texto' ? 'Este PDF é uma imagem'
+          : r.erro === 'sem_suporte' ? 'Este navegador não abre PDF'
+          : 'Não consegui ler este PDF'}</span></div>
+          <p class="diag-nota">${
+            r.erro === 'sem_texto'
+              ? 'Ele foi escaneado ou gerado como foto, e não tem texto para extrair. Baixe o PDF direto do portal da nota, ou use o XML.'
+              : r.erro === 'sem_suporte'
+              ? 'Atualize o navegador, ou traga a nota em XML, HTML salvo ou planilha.'
+              : 'Tente baixar o arquivo de novo pelo portal.'}</p>`;
+        return;
+      }
+      processar(NFCe.ler(r.texto, f.name));
+      return;
+    }
+
     const leitor = new FileReader();
     leitor.onload = () => {
-      const nota = NFCe.ler(String(leitor.result || ''), f.name);
+      processar(NFCe.ler(String(leitor.result || ''), f.name));
+    };
+    leitor.readAsText(f, 'utf-8');
+  });
+
+  /* Daqui para baixo é igual para todos os formatos: o parser já entregou a
+     estrutura canônica, e o resto do caminho é um só. */
+  function processar(nota) {
+    {
       if (!nota) {
         area.innerHTML = `<div class="diag b-red"><span>🔴 Não consegui ler este arquivo</span></div>
           <p class="diag-nota">Tente salvar a página completa da nota, ou exporte
@@ -50,9 +86,8 @@ function abrirImportacao() {
       _lojaEmRevisao = Importar.lojaDaNota(nota);
       _linhasEmRevisao = Importar.preparar(nota, _lojaEmRevisao ? _lojaEmRevisao.id : null);
       abrirRevisao();
-    };
-    leitor.readAsText(f, 'utf-8');
-  });
+    }
+  }
 }
 
 /* A TELA DE REVISÃO. O casamento por texto SUGERE; quem aplica é a pessoa.

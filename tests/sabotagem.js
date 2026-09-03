@@ -101,8 +101,8 @@ const casos = [
    'a camada do CESTA nao introduz gradiente'],
 
   ['a versao do sw anda sozinha, sem as tags do index', 'sw.js',
-   `const VERSAO = '8';`,
    `const VERSAO = '9';`,
+   `const VERSAO = '99';`,
    'TODAS batem com a versao do sw.js'],
 
   ['o shell lista um arquivo que nao existe', 'sw.js',
@@ -557,6 +557,14 @@ try {
     if (original[caminho] === undefined) original[caminho] = fs.readFileSync(caminho, 'utf8');
     const src = original[caminho];
 
+    /* SABOTAGEM QUE NAO SABOTA e pior que nenhuma: com 'de' igual a 'para' ela
+       troca o codigo por ele mesmo, a suite passa, e o relatorio anuncia
+       'ninguem pegou' sobre um teste que nunca foi desafiado. */
+    if (de === para) {
+      obsoletos.push(nome + ' (a troca e identica ao original)');
+      console.log(' ERRO   | ' + nome + ' — a troca nao muda nada');
+      continue;
+    }
     if (!src.includes(de)) {
       obsoletos.push(nome);
       console.log(` ERRO   | ${nome}`);

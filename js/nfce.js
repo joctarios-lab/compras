@@ -22,7 +22,22 @@ const NFCe = {
   /* A chave de acesso: 44 dígitos. É o identificador único da nota — o `fitid`
      deste app —, e é o que impede reimportar a mesma nota duas vezes. */
   extrairChave(texto) {
-    const s = String(texto || '').replace(/\D/g, '');
+    const bruto = String(texto || '');
+
+    /* O RÓTULO VEM PRIMEIRO. Varrer o texto atrás dos primeiros 44 dígitos
+       devolvia, no DANFE em PDF, o número + a série + o CNPJ + a IE + o CEP
+       colados — 44 dígitos por coincidência, e a chave errada quebra o dedupe
+       de um jeito invisível: duas notas da mesma loja gerariam a mesma chave
+       falsa, e o app recusaria a segunda dizendo "já importada". */
+    const comRotulo = bruto.match(
+      /CHAVE\s*(?:DE\s*)?ACESSO[^0-9]{0,40}((?:\d[\s.]*){44})/i);
+    if (comRotulo) {
+      const so = comRotulo[1].replace(/\D/g, '');
+      if (so.length === 44) return so;
+    }
+
+    /* Sem rótulo — o XML traz a chave no atributo Id — vale a varredura livre. */
+    const s = bruto.replace(/\D/g, '');
     const m = s.match(/\d{44}/);
     return m ? m[0] : null;
   },
@@ -205,15 +220,124 @@ const NFCe = {
     return { chave: null, loja: null, data, total: null, itens, formato: 'csv' };
   },
 
+  /* ------------------------------------------------------------- PDF ---
+
+     VÁRIOS ESTADOS SÓ ENTREGAM PDF. O Rio Grande do Norte é um deles: não há
+     XML para baixar, e a página de consulta é uma aplicação que não se salva de
+     forma útil. Sem ler PDF, quem mora nesses estados não tem como trazer o
+     histórico — e o app volta a ser "use por três meses e depois fica bom".
+
+     O DANFE é uma TABELA, e o PDF não guarda tabela: guarda pedaços de texto
+     com coordenadas. Extraído, cada célula vira uma linha, e o item fica assim,
+     sempre nesta ordem:
+
+         6                                  ← número do item
+         43515                              ← código
+         PRESUNTO PERU PERDIGAO KG          ← descrição
+         5102                               ← CFOP
+         16024900                           ← NCM
+         0                                  ← CST/CSOSN
+         0,286                              ← quantidade
+         KG                                 ← unidade      ← A ÂNCORA
+         28,99                              ← valor unitário
+         8,29                               ← base de ICMS
+         20,00                              ← alíquota
+         1,66                               ← ICMS
+         8,29                               ← valor total
+
+     A ÂNCORA É A UNIDADE (UN/KG). Ela é o único campo com valor fechado e
+     inconfundível: contar a partir do número do item quebraria no primeiro
+     produto cuja descrição tem quebra de linha, e ancorar no valor quebraria em
+     qualquer item com desconto. */
+
+  /* Os textos que o DANFE usa na coluna de unidade. Deliberadamente curto: uma
+     unidade que não estiver aqui faz a linha ser IGNORADA, e não adivinhada —
+     a mesma regra do resto do app. */
+  UNIDADES_DANFE: ['UN', 'KG', 'L', 'ML', 'G', 'PC', 'CX', 'DZ', 'LT', 'MT', 'M'],
+
+  numeroBR(t) {
+    if (t == null) return null;
+    const limpo = String(t).replace(/[^\d,.-]/g, '').trim();
+    if (!limpo) return null;
+    // 1.234,56 (br) — a vírgula manda quando existe
+    const n = limpo.includes(',')
+      ? Number(limpo.split('.').join('').replace(',', '.'))
+      : Number(limpo);
+    return isFinite(n) ? n : null;
+  },
+
+  lerPDF(texto) {
+    const linhas = String(texto || '').split('\n').map(l => l.trim());
+    if (!linhas.some(l => /DANFE|NFC-?e/i.test(l))) return null;
+
+    const itens = [];
+    const ehNumero = i => this.numeroBR(linhas[i]) != null && /[\d]/.test(linhas[i] || '');
+
+    for (let i = 0; i < linhas.length; i++) {
+      if (!this.UNIDADES_DANFE.includes(linhas[i])) continue;
+
+      /* Da âncora para trás: quantidade, CST, NCM, CFOP, descrição.
+         Da âncora para frente: unitário, base, alíquota, ICMS, total. */
+      const qtd = this.numeroBR(linhas[i - 1]);
+      const descricao = linhas[i - 5];
+      const valorUnitario = this.numeroBR(linhas[i + 1]);
+      const valorTotal = this.numeroBR(linhas[i + 5]);
+
+      if (qtd == null || valorUnitario == null || valorTotal == null) continue;
+      if (!descricao || descricao.length < 3) continue;
+      // A descrição não pode ser um número: se for, o alinhamento saiu do lugar
+      if (this.numeroBR(descricao) != null && /^[\d.,]+$/.test(descricao)) continue;
+
+      /* A PROVA ARITMÉTICA: quantidade × unitário tem de dar o total. É ela que
+         impede o parser de produzir lixo em silêncio quando o layout mudar —
+         sem isto, um deslocamento de uma linha viraria preços errados entrando
+         no histórico, e ninguém perceberia. A folga de 2% cobre arredondamento
+         de peso variável e desconto de centavos. */
+      const esperado = qtd * valorUnitario;
+      const desvio = esperado > 0 ? Math.abs(valorTotal - esperado) / esperado : 1;
+      if (desvio > 0.02 && Math.abs(valorTotal - esperado) > 0.05) continue;
+
+      itens.push({
+        descricao,
+        codigo: linhas[i - 6] || null,
+        ean: null,             // o DANFE não traz GTIN
+        qtd,
+        unidade: linhas[i],
+        valorUnitario,
+        valorTotal,
+      });
+    }
+
+    if (!itens.length) return null;
+
+    const tudo = linhas.join('\n');
+    const chave = this.extrairChave(tudo);
+    const dataTxt = (tudo.match(/Data de Emiss[ãa]o:\s*(\d{2}\/\d{2}\/\d{4})/i) || [])[1];
+    const loja = (tudo.match(/RAZ[ÃA]O SOCIAL:\s*(.+)/i) || [])[1];
+    const total = this.numeroBR((tudo.match(/Valor Total da Nota \(R\$\)\s*\n\s*R\$\s*([\d.,]+)/i) || [])[1]);
+
+    return {
+      chave,
+      loja: loja ? loja.trim() : null,
+      data: dataTxt ? dataTxt.split('/').reverse().join('-') : null,
+      total,
+      itens,
+      formato: 'pdf',
+    };
+  },
+
   /* ---------------------------------------------------------- entrada --- */
 
   /* A porta única. Descobre o formato pelo conteúdo, não pela extensão: um
      arquivo salvo como .txt continua sendo o que é por dentro. */
   ler(texto, nomeArquivo) {
     const t = String(texto || '');
+    /* O PDF chega aqui já como TEXTO — js/pdf.js o extrai antes, porque abrir
+       PDF é trabalho de outra natureza (bytes, zlib) e não cabe num leitor de
+       nota fiscal. */
     const tentativas = /\.csv$/i.test(nomeArquivo || '')
-      ? ['lerCSV', 'lerXML', 'lerHTML']
-      : ['lerXML', 'lerHTML', 'lerCSV'];
+      ? ['lerCSV', 'lerPDF', 'lerXML', 'lerHTML']
+      : ['lerXML', 'lerHTML', 'lerPDF', 'lerCSV'];
     for (const metodo of tentativas) {
       try {
         const r = this[metodo](t);

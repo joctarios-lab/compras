@@ -9,7 +9,7 @@
    isso aparece como defeito onde não há nenhum. */
 'use strict';
 
-const VERSAO = '8';
+const VERSAO = '9';
 const CACHE = 'cesta-' + VERSAO;
 const SHELL = [
   './',
@@ -26,6 +26,7 @@ const SHELL = [
   'js/despensa.js?v=' + VERSAO,
   'js/decisoes.js?v=' + VERSAO,
   'js/cozinha.js?v=' + VERSAO,
+  'js/pdf.js?v=' + VERSAO,
   'js/nfce.js?v=' + VERSAO,
   'js/importar.js?v=' + VERSAO,
   'js/fotos.js?v=' + VERSAO,

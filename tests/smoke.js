@@ -2514,6 +2514,93 @@ check('a migracao pula tabela que ainda nao existe', /to_regclass/.test(sql), tr
   check('e o contador de versao nas tabelas de dados', /'rev'/.test(v), true);
 }
 
+
+/* ================== A NFC-e EM PDF, CONTRA UMA NOTA DE VERDADE ===
+
+   VARIOS ESTADOS SO ENTREGAM PDF — o Rio Grande do Norte entre eles. Sem ler
+   PDF, quem mora nesses estados nao tem como trazer o historico, e o app volta
+   a ser "use por tres meses e depois fica bom".
+
+   O fixture e uma nota REAL de 132 itens, com CPF e endereco trocados. Testar
+   contra o formato de verdade e o unico jeito de saber se o parser funciona: um
+   arquivo inventado por mim provaria a minha imaginacao, nao o DANFE. */
+
+console.log('\n=== NFC-e em PDF ===');
+
+{
+  const danfe = fs.readFileSync(BASE + 'tests/fixtures/danfe-rn.txt', 'utf8');
+  const nota = NFCe.lerPDF(danfe);
+
+  check('le a nota em PDF', !!nota, true);
+  check('com os 132 itens', nota.itens.length, 132);
+  check('a loja', nota.loja, 'G Mira Ltda');
+  check('a data de emissao', nota.data, '2026-08-03');
+  check('e o total', nota.total, 1312.04);
+
+  /* A CHAVE PELO ROTULO, e nao pelos primeiros 44 digitos do texto: no DANFE,
+     numero + serie + CNPJ + IE + CEP colados dao 44 digitos por coincidencia, e
+     era ISSO que o parser devolvia. Chave errada quebra o dedupe de um jeito
+     invisivel — duas notas da mesma loja gerariam a mesma chave falsa, e a
+     segunda seria recusada como "ja importada". */
+  check('a chave de acesso e a de verdade',
+    nota.chave, '24260807973007000309655080000237311316627040');
+  check('e nao a colagem de numero + CNPJ + IE',
+    nota.chave === '23731508079730070003092022282405917300009372', false);
+
+  /* PESO VARIAVEL: e o caso que separa um parser que funciona de um que parece
+     funcionar. Frios e hortifruti sao a maior parte do valor de um mercado. */
+  const presunto = nota.itens.find(i => /PRESUNTO PERU/.test(i.descricao));
+  check('le peso variavel', presunto.qtd, 0.286);
+  check('na unidade certa', presunto.unidade, 'KG');
+  check('com o preco por quilo', presunto.valorUnitario, 28.99);
+  check('e o valor da linha', presunto.valorTotal, 8.29);
+
+  /* A PROVA ARITMETICA em TODOS os itens. E ela que impede o parser de produzir
+     lixo em silencio quando o layout mudar: um deslocamento de uma linha viraria
+     precos errados entrando no historico, e ninguem perceberia. */
+  const divergentes = nota.itens.filter(i =>
+    Math.abs(i.valorTotal - i.qtd * i.valorUnitario) > 0.05);
+  check('todo item fecha: qtd x unitario = total',
+    divergentes.length ? divergentes[0].descricao : true, true);
+
+  /* A soma das linhas menos o desconto tem de dar o total da nota. E a
+     conferencia que prova que nenhum item foi perdido nem duplicado. */
+  const soma = nota.itens.reduce((s, i) => s + i.valorTotal, 0);
+  check('a soma dos itens menos o desconto da o total',
+    Math.round((soma - 50.90) * 100) / 100, nota.total);
+
+  /* A porta unica reconhece o formato sozinha. */
+  const pelaPorta = NFCe.ler(danfe, 'nota.pdf');
+  check('a porta unica reconhece o DANFE', pelaPorta && pelaPorta.formato, 'pdf');
+  check('e devolve os mesmos itens', pelaPorta.itens.length, 132);
+}
+
+/* UNIDADE DESCONHECIDA NAO E ADIVINHADA: uma linha com unidade fora da lista e
+   ignorada, e nao chutada como 'un'. */
+{
+  const inventado = ['DANFE NFC-e', '1', '999', 'COISA ESTRANHA', '5102', '12345678',
+                     '0', '2', 'BANDEJA', '10,00', '20,00', '20,00', '4,00', '20,00'].join('\n');
+  check('linha com unidade desconhecida e ignorada', NFCe.lerPDF(inventado), null);
+}
+
+/* E o parser recusa um texto que nao e DANFE, em vez de inventar itens. */
+check('texto que nao e nota devolve nulo', NFCe.lerPDF('bom dia\n1\n2\n3'), null);
+
+/* O LEITOR DE PDF em si: ele existe, nao usa biblioteca, e diz quando nao da. */
+{
+  const pdf = fs.readFileSync(BASE + 'js/pdf.js', 'utf8');
+  check('o leitor de PDF nao usa biblioteca', /require\(|import /.test(pdf), false);
+  check('usa o descompressor do proprio navegador', pdf.includes('DecompressionStream'), true);
+  /* PDF escaneado nao tem texto: dizer isso e melhor que devolver vazio — a
+     pessoa precisa saber que o problema e o arquivo, nao o app. */
+  check('e avisa quando o PDF e imagem', pdf.includes("'sem_texto'"), true);
+  check('e quando o navegador nao suporta', pdf.includes("'sem_suporte'"), true);
+
+  const tela = fs.readFileSync(BASE + 'js/views/importar.js', 'utf8');
+  check('a tela aceita PDF', /accept="[^"]*\.pdf/.test(tela), true);
+  check('e explica o que fazer com PDF de imagem', /escaneado|foto/.test(tela), true);
+}
+
   console.log(`
 ${ok} passaram, ${fail} falharam`);
   process.exit(fail ? 1 : 0);
