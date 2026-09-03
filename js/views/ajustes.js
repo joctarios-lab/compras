@@ -116,9 +116,11 @@ function abrirAjustes() {
   document.querySelector('#cfg-apagar').addEventListener('click', () => {
     const f2 = UI.folha(`
       <h2 class="titulo">Apagar tudo?</h2>
-      <p class="sub">Isto remove ${obs} preços, ${itens} produtos e todas as compras
-        deste aparelho. <b>Não há como desfazer.</b> Se ainda não baixou um
-        backup, feche isto e baixe primeiro.</p>
+      <p class="sub">Isto remove ${obs} preços, ${itens} produtos, todas as compras,
+        as fotos de etiqueta, o seu PIN e a configuração de sincronização.
+        O app volta a ser como no primeiro dia.</p>
+      <p class="sub"><b>Não há como desfazer.</b> Se ainda não baixou um backup,
+        feche isto e baixe primeiro.</p>
       ${Sync.temFamilia() ? '<p class="sub">O que está na nuvem continua com as outras pessoas da casa.</p>' : ''}
       <button class="btn btn-vazado" id="ap-nao" style="margin-top:var(--e4)">Cancelar</button>
       <button class="btn btn-vazado" id="ap-sim" style="margin-top:var(--e2); color:var(--red-ink)">
@@ -127,9 +129,11 @@ function abrirAjustes() {
     document.querySelector('#ap-nao').addEventListener('click', f2);
     document.querySelector('#ap-sim').addEventListener('click', () => {
       DB.apagarTudo();
-      f2(); fechar();
-      irPara('lista');
-      UI.toast('Tudo apagado deste aparelho');
+      /* RECARREGA A PÁGINA. Sem isto, o app continua rodando com Sync.cfg, Auth.cfg
+         e o estado das telas ainda em memória — apagado no armazenamento e vivo
+         na tela, que é o pior dos dois mundos: a próxima gravação ressuscitaria
+         parte do que a pessoa acabou de mandar apagar. */
+      location.reload();
     });
   });
 }

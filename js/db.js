@@ -469,10 +469,42 @@ const DB = {
     return this.data;
   },
 
-  apagarTudo() {
-    localStorage.removeItem(DB_KEY);
+  /* Apaga TUDO o que este app guardou no aparelho — não só os dados.
+
+     Varre por PREFIXO em vez de remover uma lista de chaves: a lista fica
+     desatualizada na primeira chave nova que alguém criar, e ninguém lembra de
+     voltar aqui para acrescentá-la. O prefixo pega as que existem hoje e as que
+     vierem amanhã.
+
+     Fica de fora, de propósito, só o tema: ele é preferência de aparelho, não
+     dado de ninguém, e forçar a tela a piscar do escuro para o claro seria uma
+     surpresa gratuita no meio de uma ação já delicada. */
+  apagarTudo({ manterTema = true } = {}) {
+    const apagadas = [];
+    try {
+      // De trás para a frente: remover encurta a lista e pularia chaves
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const k = localStorage.key(i);
+        if (!k || !k.startsWith('cesta')) continue;
+        if (manterTema && k === 'cesta.tema') continue;
+        localStorage.removeItem(k);
+        apagadas.push(k);
+      }
+    } catch (_) {}
+    try { sessionStorage.removeItem('cesta.sessao'); } catch (_) {}
+
+    /* As fotos vivem no IndexedDB e sobreviveriam a tudo isto. São imagens de
+       etiqueta com preço, data e lugar — o mesmo dado que a base guarda. */
+    try {
+      if (typeof indexedDB !== 'undefined') indexedDB.deleteDatabase('cesta-fotos');
+    } catch (_) {}
+
     this.data = null;
-    return this.load();
+    this.chave = null;
+    this.trancado = false;
+    this._blob = null;
+    this.load();
+    return apagadas;
   },
 };
 

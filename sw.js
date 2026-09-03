@@ -9,7 +9,7 @@
    isso aparece como defeito onde não há nenhum. */
 'use strict';
 
-const VERSAO = '5';
+const VERSAO = '6';
 const CACHE = 'cesta-' + VERSAO;
 const SHELL = [
   './',
@@ -72,10 +72,32 @@ self.addEventListener('fetch', e => {
 
   const url = new URL(req.url);
 
-  /* Navegação: responde o shell do cache primeiro. Esperar a rede aqui é a
-     tela branca de dois segundos na entrada do mercado. */
+  /* NAVEGAÇÃO: a rede tem 2 segundos para responder; depois disso o cache
+     assume. É o único lugar do app onde se espera por rede, e o prazo é curto
+     de propósito.
+
+     Cache-first aqui prendia o app numa versão antiga: o navegador só confere o
+     sw.js quando ele mesmo decide, e até lá a correção não chega a ninguém —
+     foi o que aconteceu com quem apagou os dados e continuou vendo o app velho.
+
+     No mercado nada muda: sem rede, o fetch falha na hora; com 4G ruim, o prazo
+     estoura e o cache responde. O documento é UM arquivo — os outros 34
+     continuam cache-first, que é onde a velocidade realmente mora. */
   if (req.mode === 'navigate') {
-    e.respondWith(caches.match('index.html').then(r => r || fetch(req)));
+    e.respondWith((async () => {
+      try {
+        const daRede = await Promise.race([
+          fetch(req),
+          new Promise((_, falha) => setTimeout(() => falha(new Error('lento')), 2000)),
+        ]);
+        if (daRede && daRede.ok) {
+          const copia = daRede.clone();
+          caches.open(CACHE).then(c => c.put('index.html', copia)).catch(() => {});
+          return daRede;
+        }
+      } catch (_) { /* sem rede, ou rede lenta demais: o cache resolve */ }
+      return (await caches.match('index.html')) || fetch(req);
+    })());
     return;
   }
 

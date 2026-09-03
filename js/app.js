@@ -184,7 +184,7 @@ function abrirApp() {
   /* A PRIMEIRA VEZ É A APRESENTAÇÃO. Sem isto, quem abre encontra um campo
      ui-empty e três abas, sem saber o que o app faz nem por onde começar — e
      fecha. Foi o que aconteceu no primeiro teste real. */
-  if (!Onboarding.jaFez()) {
+  if (Onboarding.precisaConfigurar()) {
     Onboarding.abrir();
   } else {
     // Abre onde a pessoa parou: quem está no meio de uma compra volta ao corredor
@@ -203,7 +203,27 @@ function abrirApp() {
   });
 
   if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+    window.addEventListener('load', async () => {
+      try {
+        const reg = await navigator.serviceWorker.register('sw.js');
+        // Pergunta se há versão nova AGORA, em vez de esperar o navegador decidir
+        reg.update().catch(() => {});
+
+        /* Quando um service worker novo assume o controle, o app em execução é o
+           antigo: os arquivos já carregados não se trocam sozinhos. Recarregar
+           uma vez é o que faz a versão nova valer de verdade.
+
+           A guarda contra laço não é zelo excessivo: sem ela, um SW que assuma a
+           cada carga põe o app num ciclo de recarga infinito, e a pessoa não
+           consegue nem usar nem fechar. */
+        let jaRecarregou = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (jaRecarregou) return;
+          jaRecarregou = true;
+          location.reload();
+        });
+      } catch (_) { /* sem service worker o app funciona igual, só sem offline */ }
+    });
   }
 }
 

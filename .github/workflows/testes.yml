@@ -29,6 +29,12 @@ jobs:
       - name: A suite
         run: node tests/smoke.js
 
+      # A auditoria das LIGACOES: botao sem tratador, id que ninguem cria,
+      # funcao chamada que nao existe. A suite testa as REGRAS; esta testa se da
+      # para chegar ate elas — um botao morto monta perfeitamente.
+      - name: Ligacoes entre telas e codigo
+        run: node tests/ligacoes.js
+
       - name: A suite em 9 datas de calendario
         run: node tests/tempo.js
 

@@ -79,7 +79,7 @@ const UI = {
      direta, sem diálogo. Folha é para o que acontece fora do corredor. */
   folha(html, { aoFechar } = {}) {
     const fundo = document.createElement('div');
-    fundo.className = 'folha-fundo';
+    fundo.className = 'sheet-backdrop';
     fundo.innerHTML = `<div class="sheet" role="dialog" aria-modal="true">
       <div class="sheet-handle"></div>${html}</div>`;
     const fechar = () => {
