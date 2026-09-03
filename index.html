@@ -79,6 +79,10 @@
           </div>
         </div>
         <div class="topbar-actions">
+          <button class="icon-btn" id="btn-sync" title="Sincronizar" aria-label="Sincronizar agora" hidden>
+            <span data-ico="sincronizar"></span>
+            <i class="sync-dot" id="sync-dot" aria-hidden="true"></i>
+          </button>
           <button class="icon-btn" id="btn-ajuda" title="Ajuda" aria-label="Ajuda">
             <span data-ico="ajuda"></span>
           </button>
@@ -93,6 +97,7 @@
     </header>
 
     <div class="content">
+      <p id="sync-status" class="sync-status" role="status" hidden></p>
       <main id="tela" class="view">
         <!-- As telas são montadas por js/app.js. Nada de conteúdo estático:
              HTML de exemplo esquecido no shell vira dado fantasma na primeira

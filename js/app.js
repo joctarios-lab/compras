@@ -157,6 +157,66 @@ function ligarNavegacao() {
   }
 }
 
+/* ==================================== O INDICADOR DE SINCRONIA ===
+
+   Duas peças com papéis diferentes: o PONTO responde "estou em dia?" de relance
+   e o TEXTO responde "o que acabou de acontecer?". O botão que os carrega é uma
+   ação — tocar sincroniza agora —, porque um indicador que só avisa obriga a
+   pessoa a ir procurar onde se resolve o problema que ele anunciou. */
+function ligarIndicadorDeSync() {
+  const btn = document.getElementById('btn-sync');
+  const linha = document.getElementById('sync-status');
+  if (!btn || !linha) return;
+
+  /* O ponto. 'ok' e 'off' não acendem nada: nos dois casos não há o que
+     resolver agora, e um indicador permanente de "nada acontecendo" é ruído. */
+  Sync.onState = (estado, pendentes) => {
+    btn.hidden = estado === 'off';
+    const acende = { sync: 'sync', pendente: 'pendente', offline: 'offline', erro: 'erro' }[estado];
+    if (acende) btn.dataset.sync = acende;
+    else delete btn.dataset.sync;
+
+    /* A COR NUNCA INFORMA SOZINHA: o mesmo estado, em palavras, para quem passa
+       o mouse e para leitor de tela. E as palavras dizem que NADA SE PERDEU,
+       porque é verdade — o que não subiu continua guardado aqui. */
+    const dito = {
+      ok: 'Tudo sincronizado',
+      sync: 'Sincronizando…',
+      pendente: `${pendentes} ${pendentes === 1 ? 'alteração aguardando' : 'alterações aguardando'} envio`,
+      offline: `Sem conexão · ${pendentes} ${pendentes === 1 ? 'alteração guardada' : 'alterações guardadas'} aqui`,
+      erro: 'A última tentativa falhou — nada se perdeu',
+      off: 'Sincronização não configurada',
+    }[estado] || '';
+    btn.title = dito ? `Sincronizar agora · ${dito}` : 'Sincronizar agora';
+    btn.setAttribute('aria-label', dito || 'Sincronizar agora');
+  };
+
+  /* O texto: aparece, diz, e some. Erro fica mais tempo na tela porque exige
+     leitura, não só um relance. */
+  Sync.onStatus = (msg, ok = true) => {
+    linha.textContent = msg;
+    linha.hidden = false;
+    linha.classList.toggle('err', !ok);
+    clearTimeout(linha._t);
+    linha._t = setTimeout(() => { linha.hidden = true; }, ok ? 2500 : 6000);
+  };
+
+  /* Chegou coisa do outro aparelho: a tela se refaz sozinha — mas NUNCA com uma
+     folha aberta, senão o que a pessoa está digitando some no meio da frase. */
+  Sync.onChanged = () => {
+    if (document.querySelector('.sheet-backdrop')) return;
+    irPara(state.aba);
+  };
+
+  /* TOCAR SINCRONIZA AGORA. `agora: true` não desiste por estar offline: tenta,
+     e o erro vira mensagem em vez de silêncio. */
+  btn.addEventListener('click', () => {
+    Sync.sincronizar({ agora: true }).catch(() => {});
+  });
+
+  Sync.avisarEstado();
+}
+
 /* Mostra na sidebar quem está usando e com quem a lista é dividida. Sem isso, o
    app compartilhado não dá nenhum sinal de que é compartilhado. */
 function pintarIdentidade() {
@@ -191,16 +251,11 @@ function abrirApp() {
     irPara(DB.listaEmCurso() ? 'mercado' : 'hoje');
   }
 
-  /* Sincroniza ao abrir e ao voltar do bolso, sem nunca segurar a tela: o app
-     desenha primeiro e conversa com a rede depois. */
-  const sincronizarQuieto = () => {
-    if (!Sync.logado()) return;
-    Sync.sincronizar().then(r => { if (r && r.recebidos) irPara(state.aba); }).catch(() => {});
-  };
-  sincronizarQuieto();
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') sincronizarQuieto();
-  });
+  ligarIndicadorDeSync();
+  /* A sincronização automática cuida de si: ao abrir, ao voltar do bolso e ao
+     voltar a conexão. Nenhuma delas segura a tela — o app desenha primeiro e
+     conversa com a rede depois. */
+  Sync.ligarAutomatico();
 
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', async () => {

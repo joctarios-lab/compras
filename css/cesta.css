@@ -597,3 +597,58 @@ body.em-abertura .ajuda summary::-webkit-details-marker { display: none; }
    demais — foi o que deixou o app com cara de protótipo. */
 .btn-grande { min-height: 46px; }
 .modo-mercado .btn-grande { min-height: var(--toque-mercado); font-size: 15px; }
+
+/* ================================================ INDICADOR DE SINCRONIA ===
+
+   O ponto vive na quina do botão de sincronizar e SÓ APARECE QUANDO HÁ ALGO A
+   DIZER: fila esperando, sem conexão com fila, erro, ou envio em curso. Um
+   indicador permanente de "tudo em dia" é ruído — e ruído constante deixa de
+   ser lido justamente quando passa a importar.
+
+   As cores saem dos tokens do DOMI, e cada estado tem também uma palavra no
+   `title` do botão: a cor nunca informa sozinha. */
+
+#btn-sync { position: relative; overflow: visible; }
+
+.sync-dot {
+  position: absolute; right: -2px; bottom: -2px;
+  width: 10px; height: 10px; border-radius: 50%;
+  border: 2px solid var(--ink-4);
+  background: transparent;
+  opacity: 0;
+  transition: opacity .2s ease, background .2s ease;
+  pointer-events: none;
+}
+
+/* Âmbar: há fila esperando, e ela vai sozinha. Não é erro. */
+#btn-sync[data-sync="pendente"] .sync-dot { background: var(--amber); opacity: 1; }
+/* Cinza: sem conexão, com coisa esperando. Também não é erro — é o app
+   fazendo o que promete, offline. */
+#btn-sync[data-sync="offline"] .sync-dot { background: var(--paper-faint); opacity: 1; }
+/* Vermelho: a última tentativa falhou. Nada se perdeu, mas alguém precisa
+   saber — pode ser chave errada, conta trocada, banco fora do ar. */
+#btn-sync[data-sync="erro"] .sync-dot { background: var(--red); opacity: 1; }
+/* Cobalto pulsando: acontecendo agora. */
+#btn-sync[data-sync="sync"] .sync-dot {
+  background: var(--gold); opacity: 1;
+  animation: pulsoSync 1s ease-in-out infinite;
+}
+@keyframes pulsoSync { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
+
+/* Enquanto sincroniza, o próprio ícone gira: o ponto diz o estado, o giro diz
+   que há trabalho em curso agora. */
+#btn-sync[data-sync="sync"] span[data-ico] { animation: giroSync 1.4s linear infinite; }
+@keyframes giroSync { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  #btn-sync[data-sync="sync"] .sync-dot,
+  #btn-sync[data-sync="sync"] span[data-ico] { animation: none; }
+}
+
+/* A linha de texto: aparece, diz o que aconteceu, e some. Ela responde "o que
+   acabou de acontecer?", enquanto o ponto responde "estou em dia?". */
+.sync-status {
+  font-size: 12px; color: var(--paper-dim);
+  padding: 10px 2px 0; margin: 0;
+}
+.sync-status.err { color: var(--red-ink); }

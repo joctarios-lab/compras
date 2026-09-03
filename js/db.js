@@ -185,12 +185,16 @@ const DB = {
     if (obj.id) {
       const i = lista.findIndex(r => r.id === obj.id);
       if (i >= 0) {
-        lista[i] = { ...lista[i], ...obj, updated_at: agora, dirty: true };
+        /* `rev` sobe a cada gravação e é o que a sincronização compara para
+           saber se o registro mudou desde o envio. O carimbo de tempo não serve
+           para isso: duas edições no mesmo milissegundo têm o MESMO
+           updated_at, e no mercado o app grava a cada tecla. */
+        lista[i] = { ...lista[i], ...obj, updated_at: agora, rev: (lista[i].rev || 0) + 1, dirty: true };
         this.save();
         return lista[i];
       }
     }
-    const novo = { id: obj.id || this.uid(), ...obj, updated_at: agora, deleted: false, dirty: true };
+    const novo = { id: obj.id || this.uid(), ...obj, updated_at: agora, rev: 1, deleted: false, dirty: true };
     lista.push(novo);
     this.save();
     return novo;
@@ -203,6 +207,7 @@ const DB = {
     if (!r) return false;
     r.deleted = true;
     r.updated_at = this.agora();
+    r.rev = (r.rev || 0) + 1;
     r.dirty = true;
     this.save();
     return true;

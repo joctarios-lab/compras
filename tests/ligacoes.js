@@ -277,5 +277,24 @@ console.log('\n=== O app abre configurando quando precisa ===');
     app.includes('jaRecarregou'), true);
 }
 
+/* ============ O RESUMO É A ÚLTIMA COISA DA SUÍTE ===
+
+   Um bloco de testes inserido DEPOIS do console.log roda, conta, e não
+   aparece: a suíte anunciava 771 enquanto 848 asserções tinham rodado. Nada
+   reprovava — os 77 testes novos simplesmente não eram vistos por ninguém.
+
+   É o mesmo modo de falhar do runner de sabotagem que anunciava "7/87": o
+   número final estava certo para o que ele contou, e errado sobre o que
+   aconteceu. Um teste que ninguém lê é um teste que não existe. */
+{
+  const suite = fs.readFileSync(BASE + 'tests/smoke.js', 'utf8');
+  const posResumo = suite.indexOf('passaram, ' + '${fail}' + ' falharam');
+  const posExit = suite.indexOf('process.exit(fail ? 1 : 0)');
+  const depoisDoResumo = suite.slice(posResumo, posExit);
+  check('nenhum teste roda depois do resumo',
+    (depoisDoResumo.match(/^check\(/gm) || []).length, 0);
+  check('e o resumo vem antes do exit', posResumo > 0 && posResumo < posExit, true);
+}
+
 console.log(`\n${ok} passaram, ${fail} falharam`);
 process.exit(fail ? 1 : 0);

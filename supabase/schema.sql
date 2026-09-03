@@ -62,6 +62,7 @@ create table if not exists public.stores (
   bairro text,
   cnpj text,
   updated_at timestamptz not null default now(),
+  rev int not null default 1,
   deleted boolean not null default false
 );
 
@@ -73,6 +74,7 @@ create table if not exists public.items (
   unidade text,
   qtd_habitual numeric,
   updated_at timestamptz not null default now(),
+  rev int not null default 1,
   deleted boolean not null default false
 );
 
@@ -86,6 +88,7 @@ create table if not exists public.products (
   ean text,
   descricao_pdv text,
   updated_at timestamptz not null default now(),
+  rev int not null default 1,
   deleted boolean not null default false
 );
 
@@ -100,6 +103,7 @@ create table if not exists public.lists (
   data_fechamento date,
   total_cupom numeric,
   updated_at timestamptz not null default now(),
+  rev int not null default 1,
   deleted boolean not null default false
 );
 
@@ -119,6 +123,7 @@ create table if not exists public.list_items (
   -- mesma coisa duas vezes — o ganho concreto da lista compartilhada.
   pegou_por text,
   updated_at timestamptz not null default now(),
+  rev int not null default 1,
   deleted boolean not null default false
 );
 
@@ -142,6 +147,7 @@ create table if not exists public.price_obs (
   foto_id text,
   nfce_chave text,
   updated_at timestamptz not null default now(),
+  rev int not null default 1,
   deleted boolean not null default false
 );
 
@@ -155,6 +161,7 @@ create table if not exists public.nfce_docs (
   itens_importados int,
   formato text,
   updated_at timestamptz not null default now(),
+  rev int not null default 1,
   deleted boolean not null default false
 );
 
@@ -170,6 +177,7 @@ create table if not exists public.aliases (
   texto_pdv text not null,
   product_id uuid,
   updated_at timestamptz not null default now(),
+  rev int not null default 1,
   deleted boolean not null default false
 );
 

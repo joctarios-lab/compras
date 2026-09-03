@@ -2108,8 +2108,6 @@ check('o plano aparece na tela', /Próxima compra/.test(htmlHoje), true);
 check('mas sem historico o previsto e um traco', /<b class="valor grande">—<\/b>/.test(htmlHoje), true);
 check('e nunca R$ 0,00', /R\$ 0,00/.test(htmlHoje), false);
 
-  console.log(`
-${ok} passaram, ${fail} falharam`);
 
 /* ================== O APP DECIDE PELA REALIDADE, NAO POR UM FLAG ===
 
@@ -2232,5 +2230,224 @@ for (const arq of fs.readdirSync(BASE + 'js/views').map(f => 'js/views/' + f)) {
   check(`${arq.replace('js/views/', '')} nao empilha dois botoes cheios`, empilhados, 0);
 }
 
+
+/* ============ A SINCRONIZACAO NAO PERDE PACOTE ===
+
+   O defeito que estava aqui: o push tirava um retrato dos registros sujos,
+   esperava o servidor, e depois marcava TODOS como limpos. Uma edicao feita
+   DURANTE a espera era apagada — o registro subia com o valor velho e ficava
+   marcado como enviado.
+
+   No mercado isso nao e hipotese: a pessoa digita um preco atras do outro
+   enquanto o envio anterior ainda esta no ar. */
+
+console.log('\n=== Sincronizacao: nada se perde ===');
+
+DB.apagarTudo();
+Sync.cfg = { url: 'https://x.supabase.co', anonKey: 'k', user_id: 'u1',
+             access_token: 't', family_id: 'f1' };
+Sync.ocupado = false;
+Sync.pedidoPendente = false;
+Sync.ultimoErro = null;
+navigator.onLine = true;
+
+/* A JANELA DE PERDA, reproduzida: o fetch demora, e a pessoa edita no meio. */
+{
+  const item = DB.itemPorNome('Arroz', { unidade: 'kg' });
+  check('o item nasce sujo, esperando envio', DB.get('items', item.id).dirty, true);
+
+  const fetchAntes = global.fetch;
+  let editouNoMeio = false;
+  global.fetch = async () => {
+    /* Enquanto o servidor "responde", a pessoa muda o item — exatamente o que
+       acontece quando se digita o proximo preco no corredor. */
+    if (!editouNoMeio) {
+      editouNoMeio = true;
+      DB.upsert('items', { id: item.id, nome: 'Arroz integral' });
+    }
+    return { ok: true, json: async () => [], text: async () => '' };
+  };
+
+  await Sync.push();
+  global.fetch = fetchAntes;
+
+  const depois = DB.get('items', item.id);
+  check('a edicao feita durante o envio sobrevive', depois.nome, 'Arroz integral');
+  /* E O QUE IMPORTA: ela continua SUJA. Marcada como enviada, a edicao nunca
+     subiria — o servidor teria o nome velho para sempre, e o app acharia que
+     estava tudo em dia. */
+  check('e continua marcada para enviar', depois.dirty, true);
+}
+
+/* O caminho feliz: quem NAO mudou durante o envio e marcado como enviado. */
+{
+  DB.apagarTudo();
+  const it = DB.itemPorNome('Feijão', { unidade: 'kg' });
+  const fetchAntes = global.fetch;
+  global.fetch = async () => ({ ok: true, json: async () => [], text: async () => '' });
+  await Sync.push();
+  global.fetch = fetchAntes;
+  check('o que nao mudou fica marcado como enviado', DB.get('items', it.id).dirty, false);
+  check('e a fila esvazia', Sync.pendentes(), 0);
+}
+
+/* FALHA NAO PERDE NADA: o que nao subiu continua sujo e vai na proxima. */
+{
+  DB.apagarTudo();
+  const it = DB.itemPorNome('Café', { unidade: 'g' });
+  const fetchAntes = global.fetch;
+  global.fetch = async () => ({ ok: false, json: async () => ({}), text: async () => 'sem rede' });
+  let falhou = false;
+  try { await Sync.push(); } catch (_) { falhou = true; }
+  global.fetch = fetchAntes;
+  check('o envio que falha avisa', falhou, true);
+  check('e o registro continua na fila', DB.get('items', it.id).dirty, true);
+}
+
+/* ENVIO EM LOTES: um POST com mil linhas estoura limite de corpo e leva tudo
+   junto. Em lotes, uma falha custa 200 registros que voltam na proxima. */
+{
+  DB.apagarTudo();
+  for (let i = 0; i < 450; i++) DB.itemPorNome('Item ' + i, { unidade: 'un' });
+  const fetchAntes = global.fetch;
+  const tamanhos = [];
+  global.fetch = async (url, opcoes) => {
+    tamanhos.push(JSON.parse(opcoes.body).length);
+    return { ok: true, json: async () => [], text: async () => '' };
+  };
+  await Sync.push();
+  global.fetch = fetchAntes;
+  check('450 registros vao em mais de um lote', tamanhos.length >= 3, true);
+  check('e nenhum lote passa de 200', Math.max(...tamanhos) <= 200, true);
+  check('mas todos foram enviados', tamanhos.reduce((a, b) => a + b, 0), 450);
+}
+
+/* ============ SINCRONIZAR AGORA FUNCIONA ===
+
+   Um botao "sincronizar agora" que nao sincroniza e pior que botao nenhum. */
+
+console.log('\n=== Sincronizar agora ===');
+
+DB.apagarTudo();
+Sync.ocupado = false;
+Sync.pedidoPendente = false;
+
+/* OFFLINE, O AUTOMATICO ESPERA — mas o MANUAL tenta. Quem tocou o botao quer
+   uma resposta, nem que seja "nao consegui". */
+{
+  navigator.onLine = false;
+  const fetchAntes = global.fetch;
+  let tocou = 0;
+  global.fetch = async () => { tocou++; return { ok: true, json: async () => [], text: async () => '' }; };
+
+  await Sync.sincronizar();
+  check('offline, o automatico nao tenta', tocou, 0);
+
+  await Sync.sincronizar({ agora: true });
+  check('mas o manual tenta assim mesmo', tocou > 0, true);
+
+  global.fetch = fetchAntes;
+  navigator.onLine = true;
+}
+
+/* PEDIDO DURANTE UM ENVIO NAO SE PERDE: fica marcado e roda ao fim. Descartar
+   seria engolir em silencio o toque de quem esta esperando. */
+{
+  Sync.ocupado = true;
+  Sync.pedidoPendente = false;
+  const r = await Sync.sincronizar({ agora: true });
+  check('pedido durante o envio nao roda na hora', r, null);
+  check('mas fica marcado para rodar ao fim', Sync.pedidoPendente, true);
+  Sync.ocupado = false;
+  Sync.pedidoPendente = false;
+}
+
+/* ============ O INDICADOR DIZ A VERDADE ===
+
+   O ponto so acende quando ha algo a dizer: um indicador permanente de "nada
+   acontecendo" e ruido, e ruido constante deixa de ser lido. */
+
+console.log('\n=== O indicador de sincronia ===');
+
+DB.apagarTudo();
+navigator.onLine = true;
+Sync.ocupado = false;
+Sync.ultimoErro = null;
+
+check('sem fila e online, esta tudo ok', Sync.calcularEstado(), 'ok');
+
+DB.itemPorNome('Arroz');
+check('com fila, fica pendente', Sync.calcularEstado(), 'pendente');
+
+navigator.onLine = false;
+check('sem conexao e com fila, fica offline', Sync.calcularEstado(), 'offline');
+
+/* SEM CONEXAO E SEM FILA NAO E PROBLEMA: e um app offline-first fazendo o que
+   promete. Acender ali ensinaria a pessoa a ignorar o ponto. */
+DB.apagarTudo();
+check('sem conexao e sem fila, nao acende nada', Sync.calcularEstado(), 'ok');
+navigator.onLine = true;
+
+Sync.ocupado = true;
+check('durante o envio, mostra que esta sincronizando', Sync.calcularEstado(), 'sync');
+Sync.ocupado = false;
+
+Sync.ultimoErro = 'falhou';
+check('depois de um erro, avisa', Sync.calcularEstado(), 'erro');
+Sync.ultimoErro = null;
+
+const cfgAntes = Sync.cfg;
+Sync.cfg = {};
+check('sem configuracao, nao ha o que indicar', Sync.calcularEstado(), 'off');
+Sync.cfg = cfgAntes;
+
+/* O ESTADO CHEGA NA TELA. Sem o gancho, o indicador seria um objeto que sabe de
+   tudo e nao conta nada a ninguem. */
+{
+  let recebido = null;
+  Sync.onState = (estado, pendentes) => { recebido = { estado, pendentes }; };
+  DB.itemPorNome('Leite');
+  Sync.avisarEstado();
+  check('a tela e avisada do estado', recebido && recebido.estado, 'pendente');
+  check('e de quantos estao esperando', recebido.pendentes > 0, true);
+  Sync.onState = null;
+}
+
+/* A TELA LIGA AS DUAS PECAS. */
+{
+  const app = fs.readFileSync(BASE + 'js/app.js', 'utf8');
+  check('o app liga o ponto', app.includes('Sync.onState ='), true);
+  check('e a linha de texto', app.includes('Sync.onStatus ='), true);
+  check('e refaz a tela quando chega coisa nova', app.includes('Sync.onChanged ='), true);
+  /* NUNCA com uma folha aberta: refazer a tela apagaria o que a pessoa esta
+     digitando no meio da frase. */
+  check('mas nunca com uma folha aberta',
+    /onChanged[\s\S]{0,200}sheet-backdrop[\s\S]{0,60}return/.test(app), true);
+  check('o botao sincroniza agora ao ser tocado',
+    /btn\.addEventListener\('click'[\s\S]{0,120}agora: true/.test(app), true);
+
+  const shell2 = fs.readFileSync(BASE + 'index.html', 'utf8');
+  check('o botao existe no header', shell2.includes('id="btn-sync"'), true);
+  check('com o ponto dentro dele', shell2.includes('id="sync-dot"'), true);
+  check('e a linha de status acima do conteudo', shell2.includes('id="sync-status"'), true);
+
+  /* A COR NUNCA INFORMA SOZINHA: cada estado tem uma palavra no title. */
+  check('todo estado tem palavra, nao so cor',
+    app.includes("ok: 'Tudo sincronizado'") && app.includes('Sem conexão'), true);
+  /* E as palavras dizem que nada se perdeu, porque e verdade. */
+  check('e o erro diz que nada se perdeu', /nada se perdeu/.test(app), true);
+}
+
+/* A sincronizacao automatica acontece nos tres momentos que importam. */
+{
+  const sync = fs.readFileSync(BASE + 'js/sync.js', 'utf8');
+  check('sincroniza ao voltar a conexao', sync.includes("addEventListener('online'"), true);
+  check('e ao voltar do bolso', sync.includes("visibilitychange"), true);
+  check('e o app liga isso no boot',
+    fs.readFileSync(BASE + 'js/app.js', 'utf8').includes('Sync.ligarAutomatico()'), true);
+}
+
+  console.log(`
+${ok} passaram, ${fail} falharam`);
   process.exit(fail ? 1 : 0);
 })();
