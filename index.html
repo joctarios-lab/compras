@@ -21,8 +21,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <!-- O sistema visual do DOMI, herdado sem alteração, e a camada do CESTA por
      cima. A ordem importa: a camada só acrescenta o que é de compras. -->
-<link rel="stylesheet" href="css/domi.css?v=9">
-<link rel="stylesheet" href="css/cesta.css?v=9">
+<link rel="stylesheet" href="css/domi.css?v=10">
+<link rel="stylesheet" href="css/cesta.css?v=10">
 <script>
   /* TEMA ANTES DA PRIMEIRA PINTURA.
 
@@ -35,6 +35,73 @@
     var _t = localStorage.getItem('cesta.tema');
     if (_t === 'dark' || _t === 'light') document.documentElement.dataset.tema = _t;
   } catch (e) {}
+</script>
+<script>
+  /* RECUPERAÇÃO, FORA DO APP.
+
+     Este bloco não depende de módulo nenhum, e é de propósito: quando o app
+     quebra — um erro de sintaxe, um arquivo que não carregou — o boot não roda,
+     e um mecanismo de atualização que viva lá dentro morre junto com o que ele
+     deveria consertar. Foi o que aconteceu: uma correção publicada não chegava
+     a quem estava com a versão quebrada, e a única saída era apagar os dados do
+     domínio inteiro — levando junto os do app de finanças, que mora na mesma
+     origem.
+
+     Aqui ele pergunta por uma versão nova a cada abertura, e recarrega uma vez
+     quando ela assume. A guarda contra laço não é zelo: sem ela, um service
+     worker que reassuma a cada carga põe a página num ciclo infinito. */
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').then(function (reg) {
+      reg.update().catch(function () {});
+    }).catch(function () {});
+
+    var _recarregou = false;
+    navigator.serviceWorker.addEventListener('controllerchange', function () {
+      if (_recarregou) return;
+      _recarregou = true;
+      location.reload();
+    });
+  }
+
+  /* A TELA BRANCA PASSA A SE EXPLICAR.
+
+     Um erro de sintaxe em qualquer script deixava a página em branco, sem ícone
+     e sem texto — nada dizia à pessoa o que houve nem o que fazer. Agora o erro
+     é capturado e vira uma tela com o motivo e um botão que limpa APENAS o
+     cache deste app: sem tocar nos dados, e sem tocar no app vizinho. */
+  window.addEventListener('error', function (ev) {
+    if (document.body && document.body.dataset.montado === '1') return;
+    var alvo = document.getElementById('tela') || document.body;
+    if (!alvo || alvo.dataset.erroMostrado === '1') return;
+    alvo.dataset.erroMostrado = '1';
+    alvo.innerHTML =
+      '<div style="max-width:420px;margin:40px auto;padding:20px;text-align:center;' +
+      'font-family:system-ui,sans-serif;color:#EDEFF4">' +
+      '<h1 style="font-size:19px;margin:0 0 8px">O app não abriu</h1>' +
+      '<p style="font-size:13px;color:#A2A9B8;line-height:1.5;margin:0 0 16px">' +
+      'Alguma coisa falhou ao carregar. Seus dados estão salvos — isto não os apaga.</p>' +
+      '<p style="font-size:11px;color:#757D8E;word-break:break-word;margin:0 0 16px">' +
+      String(ev.message || ev.error || '').slice(0, 200) + '</p>' +
+      '<button id="_limpar" style="width:100%;min-height:46px;border:0;border-radius:999px;' +
+      'background:#8FA8FF;color:#070A12;font-size:14px;font-weight:600;cursor:pointer">' +
+      'Baixar a versão nova e tentar de novo</button></div>';
+    var b = document.getElementById('_limpar');
+    if (b) b.onclick = function () {
+      /* Apaga SÓ os caches deste app e o service worker dele. Os dados no
+         localStorage ficam, e o app de finanças não é tocado. */
+      var fim = function () { location.reload(true); };
+      if (!window.caches) return fim();
+      caches.keys().then(function (ks) {
+        return Promise.all(ks.filter(function (k) { return k.indexOf('cesta-') === 0; })
+                             .map(function (k) { return caches.delete(k); }));
+      }).then(function () {
+        if (!navigator.serviceWorker) return;
+        return navigator.serviceWorker.getRegistrations().then(function (rs) {
+          return Promise.all(rs.map(function (r) { return r.unregister(); }));
+        });
+      }).then(fim).catch(fim);
+    };
+  });
 </script>
 </head>
 <body>
@@ -128,41 +195,41 @@
 
 </div>
 
-<script src="js/config.js?v=9"></script>
-<script src="js/icons.js?v=9"></script>
-<script src="js/domi-ui.js?v=9"></script>
-<script src="js/ui.js?v=9"></script>
-<script src="js/catalogo.js?v=9"></script>
-<script src="js/db.js?v=9"></script>
-<script src="js/precos.js?v=9"></script>
-<script src="js/despensa.js?v=9"></script>
-<script src="js/decisoes.js?v=9"></script>
-<script src="js/cozinha.js?v=9"></script>
-<script src="js/pdf.js?v=9"></script>
-<script src="js/nfce.js?v=9"></script>
-<script src="js/importar.js?v=9"></script>
-<script src="js/fotos.js?v=9"></script>
-<script src="js/leitura.js?v=9"></script>
-<script src="js/auth.js?v=9"></script>
-<script src="js/bloqueio.js?v=9"></script>
-<script src="js/sync.js?v=9"></script>
-<script src="js/onboarding.js?v=9"></script>
-<script src="js/views/historico.js?v=9"></script>
-<script src="js/views/produtos.js?v=9"></script>
-<script src="js/planejar.js?v=9"></script>
-<script src="js/views/hoje.js?v=9"></script>
-<script src="js/views/planejar.js?v=9"></script>
-<script src="js/views/despensa.js?v=9"></script>
-<script src="js/views/analise.js?v=9"></script>
-<script src="js/views/dialogos.js?v=9"></script>
-<script src="js/views/lista.js?v=9"></script>
-<script src="js/views/mercado.js?v=9"></script>
-<script src="js/views/ferramentas.js?v=9"></script>
-<script src="js/views/importar.js?v=9"></script>
-<script src="js/views/ajustes.js?v=9"></script>
-<script src="js/views/sync.js?v=9"></script>
-<script src="js/views/familia.js?v=9"></script>
-<script src="js/views/camera.js?v=9"></script>
-<script src="js/app.js?v=9"></script>
+<script src="js/config.js?v=10"></script>
+<script src="js/icons.js?v=10"></script>
+<script src="js/domi-ui.js?v=10"></script>
+<script src="js/ui.js?v=10"></script>
+<script src="js/catalogo.js?v=10"></script>
+<script src="js/db.js?v=10"></script>
+<script src="js/precos.js?v=10"></script>
+<script src="js/despensa.js?v=10"></script>
+<script src="js/decisoes.js?v=10"></script>
+<script src="js/cozinha.js?v=10"></script>
+<script src="js/pdf.js?v=10"></script>
+<script src="js/nfce.js?v=10"></script>
+<script src="js/importar.js?v=10"></script>
+<script src="js/fotos.js?v=10"></script>
+<script src="js/leitura.js?v=10"></script>
+<script src="js/auth.js?v=10"></script>
+<script src="js/bloqueio.js?v=10"></script>
+<script src="js/sync.js?v=10"></script>
+<script src="js/onboarding.js?v=10"></script>
+<script src="js/views/historico.js?v=10"></script>
+<script src="js/views/produtos.js?v=10"></script>
+<script src="js/planejar.js?v=10"></script>
+<script src="js/views/hoje.js?v=10"></script>
+<script src="js/views/planejar.js?v=10"></script>
+<script src="js/views/despensa.js?v=10"></script>
+<script src="js/views/analise.js?v=10"></script>
+<script src="js/views/dialogos.js?v=10"></script>
+<script src="js/views/lista.js?v=10"></script>
+<script src="js/views/mercado.js?v=10"></script>
+<script src="js/views/ferramentas.js?v=10"></script>
+<script src="js/views/importar.js?v=10"></script>
+<script src="js/views/ajustes.js?v=10"></script>
+<script src="js/views/sync.js?v=10"></script>
+<script src="js/views/familia.js?v=10"></script>
+<script src="js/views/camera.js?v=10"></script>
+<script src="js/app.js?v=10"></script>
 </body>
 </html>

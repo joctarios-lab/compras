@@ -373,10 +373,23 @@ console.log('\n=== Os componentes vieram do DOMI ===');
   const herdado = fs.readFileSync(BASE + 'js/domi-ui.js', 'utf8');
   const origem = 'D:/Projetos/meus-projetos/financas/js/ui.js';
   if (fs.existsSync(origem)) {
+    /* Compara o CORPO, sem o embrulho.
+
+       A IIFE existe porque os dois apps declaram `const UI`, e duas
+       declarações do mesmo nome no escopo global deixam a página EM BRANCO.
+       Mas o miolo tem de continuar idêntico ao do DOMI, senão os componentes
+       se afastam na próxima alteração de um dos lados — e "os apps são
+       iguais" vira uma frase no README. */
     const semQuebra = t => t.split('\r\n').join('\n');
-    const corpo = semQuebra(herdado).split('ENVELOPE DO CESTA')[0];
-    check('js/domi-ui.js e copia fiel do app de financas',
-      semQuebra(fs.readFileSync(origem, 'utf8')).startsWith(corpo.slice(0, 2000)), true);
+    const miolo = semQuebra(herdado)
+      .split('const UIForm = (function () {')[1]
+      .split('\n  return UI;')[0]
+      .trim();
+    const original = semQuebra(fs.readFileSync(origem, 'utf8'))
+      .replace(/^\/\*[\s\S]*?\*\//, '')
+      .replace(/'use strict';/, '')
+      .trim();
+    check('o corpo de js/domi-ui.js e o do app de financas', miolo === original, true);
   }
   check('e o herdado atende por UIForm', /window\.UIForm = UI/.test(herdado), true);
   check('sem colidir com o UI do CESTA',

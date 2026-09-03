@@ -101,7 +101,7 @@ const casos = [
    'a camada do CESTA nao introduz gradiente'],
 
   ['a versao do sw anda sozinha, sem as tags do index', 'sw.js',
-   `const VERSAO = '9';`,
+   `const VERSAO = '10';`,
    `const VERSAO = '99';`,
    'TODAS batem com a versao do sw.js'],
 

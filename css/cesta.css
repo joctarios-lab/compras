@@ -17,6 +17,22 @@
    ============================================================================ */
 
 
+/* ---------------------------------------------------------- a marca ---
+
+   O nome do app no header. O DOMI o esconde acima de 900px porque lá a marca
+   vive na sidebar — mas no celular, onde não há sidebar, ele é a única
+   identidade da tela. Sem isto o header ficava com três botões e nada mais. */
+.topbar-logo { display: flex; align-items: center; gap: var(--e2); min-width: 0; }
+.topbar-logo img { width: 26px; height: 26px; border-radius: 7px; flex: none; }
+.topbar-logo span {
+  font-size: 15px; font-weight: 800; letter-spacing: .06em;
+  color: var(--paper); white-space: nowrap;
+}
+@media (min-width: 900px) {
+  /* No desktop a sidebar já mostra a marca: repetir seria ruído. */
+  .topbar-logo { display: none; }
+}
+
 /* ------------------------------------------------------- alvo de toque ---
 
    O DOMI não precisa destes tokens: as telas dele são usadas sentado, e o alvo

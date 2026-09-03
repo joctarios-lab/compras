@@ -292,12 +292,12 @@ console.log('\n=== O app abre configurando quando precisa ===');
     app.includes('Onboarding.precisaConfigurar()'), true);
   check('e a pergunta olha identidade e dados',
     /temIdentidade/.test(ob) && /temDados/.test(ob), true);
-  check('o service worker procura versão nova',
-    app.includes('reg.update()'), true);
-  check('e o app recarrega quando ela assume',
-    app.includes('controllerchange'), true);
-  check('com guarda contra laço de recarga',
-    app.includes('jaRecarregou'), true);
+  /* O registro do service worker VIVE NO SHELL, não no app: quando o app
+     quebra, o boot não roda, e um mecanismo de atualização que more lá dentro
+     morre junto com aquilo que ele deveria consertar. */
+  check('o service worker procura versão nova', shell.includes('reg.update()'), true);
+  check('e a página recarrega quando ela assume', shell.includes('controllerchange'), true);
+  check('com guarda contra laço de recarga', /_recarregou/.test(shell), true);
 }
 
 /* ============ O RESUMO É A ÚLTIMA COISA DA SUÍTE ===
@@ -317,6 +317,71 @@ console.log('\n=== O app abre configurando quando precisa ===');
   check('nenhum teste roda depois do resumo',
     (depoisDoResumo.match(/^check\(/gm) || []).length, 0);
   check('e o resumo vem antes do exit', posResumo > 0 && posResumo < posExit, true);
+}
+
+/* ============ NENHUM NOME COLIDE NO ESCOPO GLOBAL ===
+
+   Scripts clássicos compartilham o escopo global do documento. Dois arquivos
+   declarando `const X` no topo dão SyntaxError — e o SyntaxError não fica
+   contido no arquivo: derruba a análise inteira, o boot nunca roda, e a
+   página fica EM BRANCO, sem ícone e sem texto.
+
+   Foi exatamente o que aconteceu quando o js/ui.js do DOMI foi herdado: ele
+   e o js/ui.js do CESTA declaravam `const UI`.
+
+   As outras suítes não pegam isto porque carregam os módulos por eval
+   isolado, e ali não há escopo compartilhado. Aqui se simula o navegador. */
+{
+  /* PERGUNTA AO MOTOR, em vez de adivinhar com regex.
+
+     Tentar deduzir escopo lendo texto é sempre uma aposta: `const UI` na coluna
+     zero pode estar dentro de uma IIFE e não vazar para lugar nenhum. O
+     `new Function` compila os scripts concatenados e lança exatamente o
+     SyntaxError que o navegador lançaria — inclusive o
+     "Identifier 'UI' has already been declared" que deixou a tela em branco. */
+  const scripts = [...shell.matchAll(/<script src="([^"?]+)/g)].map(m => m[1]);
+  const junto = scripts.map(a => fs.readFileSync(BASE + a, 'utf8')).join('\n;\n');
+  let erroDeCompilacao = null;
+  try { new Function(junto); } catch (e) { erroDeCompilacao = e.message; }
+  check('os scripts do shell compilam juntos, como no navegador',
+    erroDeCompilacao || true, true);
+}
+
+/* ============ A RECUPERAÇÃO NÃO DEPENDE DO APP ===
+
+   Quando o app quebra, o boot não roda — e um mecanismo de atualização que
+   viva lá dentro morre junto com aquilo que deveria consertar. Foi o que
+   prendeu o usuário numa versão quebrada, sem saída além de apagar os dados
+   do domínio inteiro (levando junto os do app de finanças, que mora na mesma
+   origem). */
+{
+  check('o service worker e registrado no shell', shell.includes("serviceWorker.register('sw.js')"), true);
+  check('e nao dentro do app', fontes['js/app.js'].includes('serviceWorker.register'), false);
+  check('o shell procura versao nova', /reg\.update\(\)/.test(shell), true);
+  check('e recarrega quando ela assume', shell.includes('controllerchange'), true);
+  check('com guarda contra laco', /_recarregou/.test(shell), true);
+
+  /* A tela branca passa a se explicar, em vez de deixar a pessoa no escuro. */
+  check('erro no carregamento mostra uma saida', /O app não abriu/.test(shell), true);
+  check('e a saida limpa so o cache deste app', /indexOf\('cesta-'\) === 0/.test(shell), true);
+  check('sem prometer que apaga os dados', /isto não os apaga/.test(shell), true);
+}
+
+/* ============ OS DOIS APPS NÃO SE ATRAPALHAM ===
+
+   Eles moram na MESMA ORIGEM (…github.io/compras e …github.io/finances), e
+   tanto o localStorage quanto o cache são por origem, não por caminho. */
+{
+  const sw = fs.readFileSync(BASE + 'sw.js', 'utf8');
+  /* `activate` apagava tudo o que não fosse o cache dele — inclusive o do app
+     de finanças. Cada abertura deixava o outro sem offline. */
+  check('o service worker so apaga os caches deste app', /startsWith\('cesta-'\)/.test(sw), true);
+
+  /* E toda chave de armazenamento leva o prefixo do app. */
+  const chaves = [...new Set([...tudo.matchAll(/(?:local|session)Storage\.(?:get|set|remove)Item\('([^']+)'/g)].map(m => m[1]))];
+  const semPrefixo = chaves.filter(k => !k.startsWith('cesta'));
+  check('toda chave guardada leva o prefixo do app',
+    semPrefixo.length ? semPrefixo.join(', ') : true, true);
 }
 
 console.log(`\n${ok} passaram, ${fail} falharam`);

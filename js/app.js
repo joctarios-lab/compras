@@ -262,29 +262,15 @@ function abrirApp() {
      conversa com a rede depois. */
   Sync.ligarAutomatico();
 
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', async () => {
-      try {
-        const reg = await navigator.serviceWorker.register('sw.js');
-        // Pergunta se há versão nova AGORA, em vez de esperar o navegador decidir
-        reg.update().catch(() => {});
+  /* O app avisa que montou: o tratador de erro do shell usa isto para não
+     mostrar a tela de recuperação por um erro qualquer DEPOIS de o app já estar
+     de pé — ali o erro é de uma tela, não do carregamento. */
+  document.body.dataset.montado = '1';
 
-        /* Quando um service worker novo assume o controle, o app em execução é o
-           antigo: os arquivos já carregados não se trocam sozinhos. Recarregar
-           uma vez é o que faz a versão nova valer de verdade.
+  /* O registro do service worker mora no index.html, num script inline: ele
+     precisa rodar mesmo quando este arquivo não carrega. Duplicar aqui criaria
+     dois ouvintes de controllerchange — e dois reloads. */
 
-           A guarda contra laço não é zelo excessivo: sem ela, um SW que assuma a
-           cada carga põe o app num ciclo de recarga infinito, e a pessoa não
-           consegue nem usar nem fechar. */
-        let jaRecarregou = false;
-        navigator.serviceWorker.addEventListener('controllerchange', () => {
-          if (jaRecarregou) return;
-          jaRecarregou = true;
-          location.reload();
-        });
-      } catch (_) { /* sem service worker o app funciona igual, só sem offline */ }
-    });
-  }
 }
 
 function boot() {

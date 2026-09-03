@@ -1,14 +1,22 @@
-/* Finanças da Família — componentes de formulário no estilo Metronic (Select2 e datepicker).
+/* CESTA — embrulho do js/ui.js do app de finanças.
 
-   Por que não jQuery + Select2: o app é offline-first e sem build. Puxar jQuery (~90KB)
-   e Select2 (~70KB) por CDN quebraria o uso sem rede, e embutir os arquivos triplicaria
-   o peso do app por causa de dois campos. Estes componentes têm a mesma aparência e o
-   mesmo comportamento (busca, teclado, grupos), em ~6KB.
+   O CORPO ABAIXO É CÓPIA FIEL do js/ui.js do DOMI — é o que garante que os
+   componentes de formulário (select, calendário, busca) sejam OS MESMOS nos
+   dois apps, e não apenas parecidos.
 
-   Estratégia: melhoria progressiva. O <select> e o <input type="date"> originais
-   continuam no DOM como fonte da verdade — todo código que lê `.value` segue funcionando.
-   A interface bonita só reflete e escreve neles, disparando 'change' normalmente. */
+   O EMBRULHO EXISTE POR UM MOTIVO CONCRETO: os dois apps declaram `const UI`,
+   e duas declarações do mesmo nome no escopo global dão
+
+       SyntaxError: Identifier 'UI' has already been declared
+
+   que não falha só num arquivo — derruba a página inteira, em branco. A IIFE
+   mantém o `const UI` do herdado dentro dela e o entrega como UIForm.
+
+   NÃO EDITE O CORPO. Para atualizar, copie o js/ui.js do DOMI de novo e
+   reaplique este embrulho: há teste conferindo que a cópia é fiel. */
 'use strict';
+
+const UIForm = (function () {
 
 const UI = {
   aberto: null,   // painel atualmente aberto
@@ -575,15 +583,10 @@ const UI = {
 };
 
 
-/* ============================================================================
-   ENVELOPE DO CESTA — a única linha acrescentada a este arquivo.
 
-   Tudo acima é o js/ui.js do app de finanças, copiado sem alteração: é o que
-   garante que os componentes de formulário sejam OS MESMOS nos dois apps, e não
-   apenas parecidos.
 
-   O CESTA já tem um objeto `UI` (moeda, folha, toast), então o herdado atende
-   por UIForm. Renomear no corpo quebraria a cópia fiel.
-   ============================================================================ */
-if (typeof window !== 'undefined') window.UIForm = UI;
-if (typeof module !== 'undefined' && module.exports) module.exports = { UIForm: UI };
+  return UI;
+})();
+
+if (typeof window !== 'undefined') window.UIForm = UIForm;
+if (typeof module !== 'undefined' && module.exports) module.exports = { UIForm };

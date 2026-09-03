@@ -9,7 +9,7 @@
    isso aparece como defeito onde não há nenhum. */
 'use strict';
 
-const VERSAO = '9';
+const VERSAO = '10';
 const CACHE = 'cesta-' + VERSAO;
 const SHELL = [
   './',
@@ -63,7 +63,14 @@ self.addEventListener('install', e => {
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
+      /* SÓ OS CACHES DESTE APP. Os dois apps da casa moram na MESMA ORIGEM
+         (…github.io/compras e …github.io/finances), e o armazenamento de cache
+         é por origem, não por caminho. Apagar tudo o que "não é o meu" levava
+         junto o cache do app de finanças, e cada abertura deixava o outro sem
+         offline — os dois se sabotando sem nenhum sinal. */
+      .then(keys => Promise.all(keys
+        .filter(k => k.startsWith('cesta-') && k !== CACHE)
+        .map(k => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
