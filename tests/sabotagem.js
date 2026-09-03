@@ -100,7 +100,7 @@ const casos = [
    'nenhum gradiente'],
 
   ['a versao do sw anda sozinha, sem as tags do index', 'sw.js',
-   `const VERSAO = '2';`,
+   `const VERSAO = '3';`,
    `const VERSAO = '9';`,
    'TODAS batem com a versao do sw.js'],
 
@@ -267,10 +267,95 @@ const casos = [
    ``,
    'o schema tem todas as colunas enviadas'],
 
-  ['o schema perde o RLS', 'supabase/schema.sql',
-   `                    for all using (user_id = auth.uid()) with check (user_id = auth.uid())',`,
-   `                    for all using (true) with check (true)',`,
-   'RLS por dono'],
+  ['o RLS abre a base inteira para qualquer um', 'supabase/schema.sql',
+   `                    for all using (family_id = public.minha_familia())`,
+   `                    for all using (true)`,
+   'as tabelas de dados sao filtradas pela familia'],
+
+  ['minha_familia() deixa de ser security definer, e o RLS entra em recursao', 'supabase/schema.sql',
+   `security definer`,
+   ``,
+   'minha_familia() e security definer'],
+
+  ['o codigo da familia deixa de ser unico', 'supabase/schema.sql',
+   `codigo text not null unique`,
+   `codigo text not null`,
+   'o codigo da familia e unico'],
+
+  // ---------------- catalogo, abertura e seguranca ----------------
+  ['um item do catalogo nasce com unidade que o motor nao entende', 'js/catalogo.js',
+   `  ['Café', 'mercearia', 'g', 500],`,
+   `  ['Café', 'mercearia', 'pote', 500],`,
+   'todas as unidades do catalogo sao conversiveis'],
+
+  ['os corredores perdem a ordem do mercado e viram alfabeticos', 'js/catalogo.js',
+   `  { id: 'limpeza',    nome: 'Limpeza',    icone: '🧽', ordem: 8 },`,
+   `  { id: 'limpeza',    nome: 'Limpeza',    icone: '🧽', ordem: 0 },`,
+   'o hortifruti vem antes da limpeza'],
+
+  ['o palpite do catalogo passa a chutar qualquer coisa', 'js/catalogo.js',
+   `      if (n.toLowerCase() === limpo) return { corredor, unidade, qtd, exato: true };`,
+   `      if (n) return { corredor, unidade, qtd, exato: true };`,
+   'o que nao conhece devolve nulo'],
+
+  ['a apresentacao deixa de dizer o que o app faz', 'js/onboarding.js',
+   `Esse preço tá bom?`,
+   `Bem-vindo`,
+   'a primeira tela faz a pergunta do corredor'],
+
+  ['a apresentacao deixa de ser pulavel', 'js/onboarding.js',
+   `<button class="btn-texto" data-ob="pular">Já entendi, quero usar</button>`,
+   ``,
+   'da para pular'],
+
+  ['o que se escolhe na apresentacao nao vira lista', 'js/onboarding.js',
+   `      DB.addNaLista(lista.id, { item_id: item.id, qtd: item.qtd_habitual, unidade: item.unidade });`,
+   ``,
+   'com os itens escolhidos'],
+
+  ['a apresentacao duplica os itens quando se volta uma tela', 'js/onboarding.js',
+   `      if (jaNaLista.has(item.id)) continue;`,
+   ``,
+   'voltar e avancar nao duplica os itens'],
+
+  ['o bloqueio progressivo some e o PIN vira forca bruta', 'js/auth.js',
+   `    if (this.cfg.erros >= 5) {`,
+   `    if (false) {`,
+   'o quinto bloqueia'],
+
+  ['a espera do bloqueio para de crescer', 'js/auth.js',
+   `      this.cfg.bloqueadoAte = Date.now() + 30000 * Math.pow(2, rodadas - 1);`,
+   `      this.cfg.bloqueadoAte = Date.now() + 30000;`,
+   'a espera aumenta a cada rodada'],
+
+  ['a base trancada abre vazia em vez de esperar o PIN', 'js/db.js',
+   `      this._blob = lido;
+      this.trancado = true;
+      this.data = null;
+      return null;`,
+   `      this.data = null;`,
+   'a base abre TRANCADA'],
+
+  ['os dados sao gravados em claro mesmo com o PIN ligado', 'js/db.js',
+   `      if (this.chave) {`,
+   `      if (false) {`,
+   'o que fica gravado esta cifrado'],
+
+  ['o codigo da familia passa a ter letras que se confundem', 'js/sync.js',
+   `    const alfabeto = 'BCDFGHJKMNPQRTVWXYZ23467894';`,
+   `    const alfabeto = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';`,
+   'sem caracteres que se confundem ao ditar'],
+
+  ['sincronizar sem familia passa a ser permitido', 'js/sync.js',
+   `    if (!this.configurado() || !this.logado() || !this.temFamilia() || this.ocupado) return null;`,
+   `    if (!this.configurado() || !this.logado() || this.ocupado) return null;`,
+   'a sincronizacao nao toca a rede'],
+
+  ['a lista do mercado volta a ignorar a ordem da loja', 'js/views/mercado.js',
+   `      return oa - ob || String(ia && ia.nome).localeCompare(String(ib && ib.nome));`,
+   `      return 0;`,
+   'o hortifruti vem antes da mercearia'],
+
 
   // ---------------- as telas ----------------
   ['a estimativa da lista conta item sem historico como zero', 'js/views/lista.js',

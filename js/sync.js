@@ -17,7 +17,7 @@ const SYNC_TABELAS = {
   items:      ['nome', 'categoria', 'unidade', 'qtd_habitual'],
   products:   ['item_id', 'marca', 'embalagem_qtd', 'embalagem_unidade', 'ean', 'descricao_pdv'],
   lists:      ['nome', 'status', 'store_id', 'orcamento', 'data_abertura', 'data_fechamento', 'total_cupom'],
-  list_items: ['list_id', 'item_id', 'product_id', 'qtd', 'unidade', 'comprado', 'nao_tinha', 'preco_total', 'obs_id'],
+  list_items: ['list_id', 'item_id', 'product_id', 'qtd', 'unidade', 'comprado', 'nao_tinha', 'preco_total', 'obs_id', 'pegou_por'],
   price_obs:  ['product_id', 'item_id', 'store_id', 'data', 'preco_total', 'qtd', 'unidade',
                'qtd_canonica', 'unidade_base', 'preco_base', 'origem', 'foto_id', 'nfce_chave'],
   nfce_docs:  ['chave', 'store_id', 'data', 'total', 'itens_importados', 'formato'],
@@ -46,6 +46,91 @@ const Sync = {
 
   configurado() { return !!(this.cfg && this.cfg.url && this.cfg.anonKey); },
   logado() { return !!(this.cfg && this.cfg.access_token); },
+  temFamilia() { return !!(this.cfg && this.cfg.family_id); },
+  meuNome() { return (this.cfg && this.cfg.nome) || 'Eu'; },
+
+  /* ------------------------------------------------------------ família --- */
+
+  /* O CÓDIGO DA FAMÍLIA é o que liga dois aparelhos. Seis caracteres, sem as
+     letras e números que se confundem quando alguém dita por telefone: sem
+     O/0, I/1/L, S/5. Um código ambíguo vira suporte técnico. */
+  gerarCodigo() {
+    const alfabeto = 'BCDFGHJKMNPQRTVWXYZ23467894';
+    let saida = '';
+    for (const n of crypto.getRandomValues(new Uint8Array(6))) saida += alfabeto[n % alfabeto.length];
+    return saida;
+  },
+
+  async criarFamilia(nome, meuNome) {
+    const codigo = this.gerarCodigo();
+    const r = await fetch(`${this.cfg.url}/rest/v1/families`, {
+      method: 'POST',
+      headers: this.cabecalhos({ Prefer: 'return=representation' }),
+      body: JSON.stringify({ nome: nome || 'Minha casa', codigo, criada_por: this.cfg.user_id }),
+    });
+    if (!r.ok) throw new Error(await r.text());
+    const familia = (await r.json())[0];
+    await this.entrarNaFamilia(familia.id, familia.codigo, familia.nome, meuNome);
+    return familia;
+  },
+
+  /* Entrar por código: acha a família e se cadastra como membro. */
+  async entrarPorCodigo(codigo, meuNome) {
+    const limpo = String(codigo || '').trim().toUpperCase().replace(/\s/g, '');
+    const url = `${this.cfg.url}/rest/v1/families?codigo=eq.${encodeURIComponent(limpo)}&select=*`;
+    const r = await fetch(url, { headers: this.cabecalhos() });
+    if (!r.ok) throw new Error(await r.text());
+    const achadas = await r.json();
+    if (!achadas.length) throw new Error('Código não encontrado. Confira as seis letras.');
+    await this.entrarNaFamilia(achadas[0].id, achadas[0].codigo, achadas[0].nome, meuNome);
+    return achadas[0];
+  },
+
+  async entrarNaFamilia(familyId, codigo, nome, meuNome) {
+    const r = await fetch(`${this.cfg.url}/rest/v1/family_members?on_conflict=user_id`, {
+      method: 'POST',
+      headers: this.cabecalhos({ Prefer: 'resolution=merge-duplicates,return=minimal' }),
+      body: JSON.stringify({
+        user_id: this.cfg.user_id,
+        family_id: familyId,
+        nome: meuNome || this.meuNome(),
+      }),
+    });
+    if (!r.ok) throw new Error(await r.text());
+
+    this.cfg.family_id = familyId;
+    this.cfg.family_codigo = codigo;
+    this.cfg.family_nome = nome;
+    if (meuNome) this.cfg.nome = meuNome;
+    this.saveCfg();
+
+    /* O family_id entra em TODO registro local que ainda não tem. Sem isso, o
+       que foi criado antes de entrar na família nunca subiria — e a pessoa
+       concluiria que a sincronização perdeu os dados dela, que é o pior que
+       uma sincronização pode fazer com a confiança de alguém. */
+    for (const tabela of Object.keys(SYNC_TABELAS)) {
+      for (const reg of DB.data[tabela] || []) {
+        if (!reg.family_id) { reg.family_id = familyId; reg.dirty = true; }
+      }
+    }
+    DB.setCfg({ familia_nome: nome });
+    DB.save();
+  },
+
+  sairDaFamilia() {
+    delete this.cfg.family_id;
+    delete this.cfg.family_codigo;
+    delete this.cfg.family_nome;
+    this.saveCfg();
+    DB.setCfg({ familia_nome: null });
+  },
+
+  async membros() {
+    if (!this.temFamilia()) return [];
+    const url = `${this.cfg.url}/rest/v1/family_members?family_id=eq.${this.cfg.family_id}&select=*`;
+    const r = await fetch(url, { headers: this.cabecalhos() });
+    return r.ok ? r.json() : [];
+  },
 
   /* ------------------------------------------------------------- rede --- */
 
@@ -105,7 +190,7 @@ const Sync = {
   linhaDe(tabela, r) {
     const linha = {
       id: r.id,
-      user_id: this.cfg.user_id,
+      family_id: this.cfg.family_id,
       updated_at: r.updated_at,
       deleted: !!r.deleted,
     };
@@ -159,7 +244,7 @@ const Sync = {
         if (local && local.dirty && local.updated_at > linha.updated_at) continue;
 
         const registro = { ...linha, dirty: false };
-        delete registro.user_id;
+        delete registro.family_id;
         delete registro.server_at;
         if (local) Object.assign(local, registro);
         else DB.data[tabela].push(registro);
@@ -175,7 +260,7 @@ const Sync = {
   /* ------------------------------------------------------------ ciclo --- */
 
   async sincronizar() {
-    if (!this.configurado() || !this.logado() || this.ocupado) return null;
+    if (!this.configurado() || !this.logado() || !this.temFamilia() || this.ocupado) return null;
     if (typeof navigator !== 'undefined' && navigator.onLine === false) return null;
     this.ocupado = true;
     try {

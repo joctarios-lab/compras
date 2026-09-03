@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>CESTA — Compras de Mercado</title>
-<meta name="description" content="O preço é bom? A resposta no corredor, com o seu próprio histórico — offline.">
+<meta name="description" content="Esse preço tá bom? A resposta no corredor, comparando com o que você já pagou — offline.">
 <!-- A cor da barra do sistema acompanha o tema. Sem os dois, um app instalado em
      tema claro abre com a faixa preta do escuro. -->
 <meta name="theme-color" content="#070A12" media="(prefers-color-scheme: dark)">
@@ -19,7 +19,7 @@
 <!-- Figtree nos títulos e na marca; Inter nos valores, onde dígito de largura
      fixa importa mais que personalidade. As mesmas do DOMI. -->
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css?v=2">
+<link rel="stylesheet" href="css/styles.css?v=3">
 <script>
   /* TEMA ANTES DA PRIMEIRA PINTURA.
 
@@ -27,9 +27,7 @@
      significaria pintar a tela clara e trocar para escura no quadro seguinte —
      o "flash branco" que todo app de tema duplo tem quando essa decisão desce
      para o fim da fila. Este bloco é minúsculo e síncrono de propósito: ele
-     precisa rodar antes de o body existir.
-
-     Sem escolha gravada, nada é marcado e o CSS segue o prefers-color-scheme. */
+     precisa rodar antes de o body existir. */
   try {
     var _t = localStorage.getItem('cesta.tema');
     if (_t === 'dark' || _t === 'light') document.documentElement.dataset.tema = _t;
@@ -38,28 +36,62 @@
 </head>
 <body>
 
+<!-- A TELA DE BLOQUEIO vive FORA do #app e cobre tudo: enquanto os dados estão
+     cifrados, nada do app pode ser desenhado por baixo dela. -->
+<div id="lock" hidden></div>
+
 <div id="app">
 
-  <header class="topbar">
-    <div class="topbar-marca">
+  <!-- SIDEBAR (desktop). No celular ela some e a navegação vira a barra de
+       baixo: é o mesmo app com duas ergonomias, não dois layouts. -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
       <img src="icons/icon.svg" alt="">
-      <span>CESTA</span>
+      <div><b>CESTA</b><small id="side-familia">Suas compras</small></div>
     </div>
-    <div class="topbar-espaco"></div>
-    <button class="topbar-acao" id="btn-tema" title="Alternar tema" aria-label="Alternar tema">
-      <span data-ico="tema"></span>
-    </button>
-    <button class="topbar-acao" id="btn-ajustes" title="Ajustes" aria-label="Ajustes">
-      <span data-ico="ajustes"></span>
-    </button>
-  </header>
 
-  <main id="tela">
-    <!-- As telas são montadas por js/app.js. Nada de conteúdo estático aqui:
-         HTML de exemplo esquecido no shell vira dado fantasma na primeira
-         abertura, e ninguém entende de onde ele veio. -->
-  </main>
+    <nav class="sidebar-menu">
+      <p class="sidebar-secao">Comprar</p>
+      <button class="side-item" data-aba="lista"><span class="tab-ico" data-ico="lista"></span>Minha lista</button>
+      <button class="side-item" data-aba="mercado"><span class="tab-ico" data-ico="carrinho"></span>Modo Mercado</button>
+      <p class="sidebar-secao">Acompanhar</p>
+      <button class="side-item" data-aba="historico"><span class="tab-ico" data-ico="historico"></span>Histórico</button>
+      <button class="side-item" data-aba="produtos"><span class="tab-ico" data-ico="etiqueta"></span>Meus produtos</button>
+    </nav>
 
+    <div class="sidebar-rodape">
+      <button class="side-item" id="side-ajuda"><span class="tab-ico" data-ico="ajuda"></span>Ajuda</button>
+      <button class="side-item" id="side-ajustes"><span class="tab-ico" data-ico="ajustes"></span>Ajustes</button>
+    </div>
+  </aside>
+
+  <div class="conteudo">
+    <header class="topbar">
+      <div class="topbar-marca">
+        <img src="icons/icon.svg" alt="">
+        <span>CESTA</span>
+      </div>
+      <div class="topbar-espaco"></div>
+      <button class="topbar-acao" id="btn-ajuda" title="Ajuda" aria-label="Ajuda">
+        <span data-ico="ajuda"></span>
+      </button>
+      <button class="topbar-acao" id="btn-tema" title="Alternar tema" aria-label="Alternar tema">
+        <span data-ico="tema"></span>
+      </button>
+      <button class="topbar-acao" id="btn-ajustes" title="Ajustes" aria-label="Ajustes">
+        <span data-ico="ajustes"></span>
+      </button>
+    </header>
+
+    <main id="tela">
+      <!-- As telas são montadas por js/app.js. Nada de conteúdo estático aqui:
+           HTML de exemplo esquecido no shell vira dado fantasma na primeira
+           abertura, e ninguém entende de onde ele veio. -->
+    </main>
+  </div>
+
+  <!-- BARRA INFERIOR (celular). Fica na zona do polegar, a única parte da tela
+       alcançável com uma mão enquanto a outra segura o carrinho. -->
   <nav class="dock" aria-label="Navegação principal">
     <button class="dock-item" data-aba="lista" aria-current="page">
       <span class="dock-ico" data-ico="lista"></span>Lista
@@ -74,24 +106,30 @@
 
 </div>
 
-<script src="js/config.js?v=2"></script>
-<script src="js/icons.js?v=2"></script>
-<script src="js/ui.js?v=2"></script>
-<script src="js/db.js?v=2"></script>
-<script src="js/precos.js?v=2"></script>
-<script src="js/nfce.js?v=2"></script>
-<script src="js/importar.js?v=2"></script>
-<script src="js/fotos.js?v=2"></script>
-<script src="js/leitura.js?v=2"></script>
-<script src="js/sync.js?v=2"></script>
-<script src="js/views/lista.js?v=2"></script>
-<script src="js/views/mercado.js?v=2"></script>
-<script src="js/views/ferramentas.js?v=2"></script>
-<script src="js/views/historico.js?v=2"></script>
-<script src="js/views/importar.js?v=2"></script>
-<script src="js/views/ajustes.js?v=2"></script>
-<script src="js/views/sync.js?v=2"></script>
-<script src="js/views/camera.js?v=2"></script>
-<script src="js/app.js?v=2"></script>
+<script src="js/config.js?v=3"></script>
+<script src="js/icons.js?v=3"></script>
+<script src="js/ui.js?v=3"></script>
+<script src="js/catalogo.js?v=3"></script>
+<script src="js/db.js?v=3"></script>
+<script src="js/precos.js?v=3"></script>
+<script src="js/nfce.js?v=3"></script>
+<script src="js/importar.js?v=3"></script>
+<script src="js/fotos.js?v=3"></script>
+<script src="js/leitura.js?v=3"></script>
+<script src="js/auth.js?v=3"></script>
+<script src="js/bloqueio.js?v=3"></script>
+<script src="js/sync.js?v=3"></script>
+<script src="js/onboarding.js?v=3"></script>
+<script src="js/views/lista.js?v=3"></script>
+<script src="js/views/mercado.js?v=3"></script>
+<script src="js/views/ferramentas.js?v=3"></script>
+<script src="js/views/historico.js?v=3"></script>
+<script src="js/views/produtos.js?v=3"></script>
+<script src="js/views/importar.js?v=3"></script>
+<script src="js/views/ajustes.js?v=3"></script>
+<script src="js/views/sync.js?v=3"></script>
+<script src="js/views/familia.js?v=3"></script>
+<script src="js/views/camera.js?v=3"></script>
+<script src="js/app.js?v=3"></script>
 </body>
 </html>

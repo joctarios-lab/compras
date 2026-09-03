@@ -49,7 +49,7 @@ const ESPERADO = {
   items:      ['nome', 'categoria', 'unidade', 'qtd_habitual'],
   products:   ['item_id', 'marca', 'embalagem_qtd', 'embalagem_unidade', 'ean', 'descricao_pdv'],
   lists:      ['nome', 'status', 'store_id', 'orcamento', 'data_abertura', 'data_fechamento', 'total_cupom'],
-  list_items: ['list_id', 'item_id', 'product_id', 'qtd', 'unidade', 'comprado', 'nao_tinha', 'preco_total', 'obs_id'],
+  list_items: ['list_id', 'item_id', 'product_id', 'qtd', 'unidade', 'comprado', 'nao_tinha', 'preco_total', 'obs_id', 'pegou_por'],
   price_obs:  ['product_id', 'item_id', 'store_id', 'data', 'preco_total', 'qtd', 'unidade',
                'qtd_canonica', 'unidade_base', 'preco_base', 'origem', 'foto_id', 'nfce_chave'],
   nfce_docs:  ['chave', 'store_id', 'data', 'total', 'itens_importados', 'formato'],
@@ -57,7 +57,7 @@ const ESPERADO = {
 };
 
 // Colunas que TODA tabela sincronizada precisa ter
-const COMUNS = ['id', 'user_id', 'updated_at', 'deleted', 'server_at'];
+const COMUNS = ['id', 'family_id', 'updated_at', 'deleted', 'server_at'];
 
 /* --------------------------------------------------------- verificação --- */
 

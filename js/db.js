@@ -29,8 +29,32 @@ const STORES = [
   'settings',
 ];
 
+/* Criptografia em repouso: AES-256-GCM com a chave derivada do PIN.
+   Quem manda no ciclo é js/auth.js; aqui ficam só a leitura e a escrita. */
+const Cofre = {
+  b64(buf) {
+    const bytes = new Uint8Array(buf);
+    let s = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    return btoa(s);
+  },
+  unb64(s) { return Uint8Array.from(atob(s), c => c.charCodeAt(0)); },
+  async cifrar(chave, texto) {
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, chave, new TextEncoder().encode(texto));
+    return { cifrado: true, iv: this.b64(iv), ct: this.b64(ct) };
+  },
+  async decifrar(chave, blob) {
+    const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: this.unb64(blob.iv) }, chave, this.unb64(blob.ct));
+    return new TextDecoder().decode(pt);
+  },
+};
+
 const DB = {
   data: null,
+  chave: null,          // CryptoKey ativa (criptografia em repouso ligada)
+  trancado: false,      // true quando os dados estão cifrados esperando o PIN
+  _blob: null,
   _fila: Promise.resolve(),
 
   /* ------------------------------------------------------------ ciclo --- */
@@ -38,6 +62,17 @@ const DB = {
   load() {
     let lido = null;
     try { lido = JSON.parse(localStorage.getItem(DB_KEY)) || null; } catch (_) { lido = null; }
+
+    /* Dados cifrados: NÃO seguir adiante. Criar uma base vazia aqui faria o app
+       parecer novo em folha e, na primeira gravação, apagaria por cima do que
+       estava cifrado — perda total e silenciosa. */
+    if (lido && lido.cifrado === true) {
+      this._blob = lido;
+      this.trancado = true;
+      this.data = null;
+      return null;
+    }
+
     this.data = lido;
     if (!this.data) {
       this.data = { meta: { criado_em: new Date().toISOString(), lastSync: null } };
@@ -50,9 +85,48 @@ const DB = {
     return this.data;
   },
 
+  /* Abre a base cifrada com a chave dada. Lança se a chave for errada — e é
+     esse "lançar" que serve de prova do PIN, sem guardar hash nenhum. */
+  async abrirCom(chave) {
+    if (!this.trancado) {
+      // Já aberta: a chave ainda precisa ser provada contra o que está gravado
+      if (this._blob) {
+        const texto = await Cofre.decifrar(chave, this._blob);
+        JSON.parse(texto);
+      }
+      return this.data;
+    }
+    const texto = await Cofre.decifrar(chave, this._blob);
+    this.data = JSON.parse(texto);
+    for (const s of STORES) if (!this.data[s]) this.data[s] = [];
+    this.chave = chave;
+    this.trancado = false;
+    return this.data;
+  },
+
+  /* Liga (chave) ou desliga (null) a criptografia em repouso e regrava. */
+  setChave(chave) {
+    this.chave = chave || null;
+    this.save();
+  },
+
   save() {
     try {
-      localStorage.setItem(DB_KEY, JSON.stringify(this.data));
+      const texto = JSON.stringify(this.data);
+      if (this.chave) {
+        /* A gravação cifrada é ASSÍNCRONA e a fila mantém a ordem: duas
+           gravações rápidas (digitar preço no mercado) podem terminar fora de
+           ordem e a segunda gravaria por cima da primeira, perdendo o item. */
+        this._fila = this._fila
+          .then(() => Cofre.cifrar(this.chave, texto))
+          .then(blob => { this._blob = blob; localStorage.setItem(DB_KEY, JSON.stringify(blob)); })
+          .catch(e => {
+            console.error('CESTA: falha ao cifrar', e);
+            if (typeof window !== 'undefined' && window.avisarFalhaDeGravacao) window.avisarFalhaDeGravacao(e);
+          });
+        return true;
+      }
+      localStorage.setItem(DB_KEY, texto);
       return true;
     } catch (e) {
       /* QuotaExceededError. No mercado isto seria perder o carrinho em curso, que

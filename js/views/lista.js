@@ -131,7 +131,13 @@ const ViewLista = {
       if (!texto) return;
       let lista = DB.listaEmCurso() || DB.listasPlanejadas()[0];
       if (!lista) lista = DB.novaLista({});
-      const item = DB.itemPorNome(texto);
+      /* O catálogo dá um palpite de corredor e unidade. Palpite entra no
+         cadastro, nunca no preço: errar a unidade aqui envenenaria a mediana
+         daquele produto para sempre. */
+      const palpite = Catalogo.palpitar(texto);
+      const item = DB.itemPorNome(texto, palpite ? {
+        categoria: palpite.corredor, unidade: palpite.unidade, qtd_habitual: palpite.qtd,
+      } : {});
       DB.addNaLista(lista.id, { item_id: item.id, qtd: item.qtd_habitual, unidade: item.unidade });
       recarregar();
       /* O FOCO VOLTA PARA O CAMPO. É o que permite despejar a lista inteira sem

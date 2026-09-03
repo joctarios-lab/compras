@@ -46,7 +46,15 @@ const Mercado = {
     if (!lista) return '<div class="vazio"><b>Compra não encontrada</b></div>';
 
     const itens = DB.itensDaLista(lista.id);
-    const pendentes = itens.filter(li => !li.comprado && !li.nao_tinha);
+    /* A ORDEM É A DO MERCADO: hortifrúti na entrada, limpeza no fundo. É o
+       ganho de tempo mais concreto que uma lista pode dar, e sai de graça do
+       corredor que cada item já tem. */
+    const pendentes = itens.filter(li => !li.comprado && !li.nao_tinha).sort((a, b) => {
+      const ia = DB.get('items', a.item_id), ib = DB.get('items', b.item_id);
+      const oa = Catalogo.corredor(ia ? ia.categoria : 'outros').ordem;
+      const ob = Catalogo.corredor(ib ? ib.categoria : 'outros').ordem;
+      return oa - ob || String(ia && ia.nome).localeCompare(String(ib && ib.nome));
+    });
     const feitos = itens.filter(li => li.comprado);
     const t = DB.totalDoCarrinho(lista.id, li => ViewLista.estimar(li));
     const loja = lista.store_id ? DB.get('stores', lista.store_id) : null;
@@ -65,7 +73,7 @@ const Mercado = {
       ${this.barraOrcamento(lista, t)}
 
       ${pendentes.length ? `<div class="card lista-mercado">
-        ${pendentes.map(li => this.linha(li)).join('')}
+        ${this.comCorredores(pendentes)}
       </div>` : `<div class="card"><div class="vazio">
         <b>Tudo pego</b>
         Toque em “Finalizar compra” para conferir o total no caixa.
@@ -103,6 +111,19 @@ const Mercado = {
       <div class="orcamento-trilho"><div class="orcamento-barra ${selo}" style="width:${Math.min(100, usado * 100).toFixed(1)}%"></div></div>
       <span class="selo ${selo}">${texto}</span>
     </div>`;
+  },
+
+  /* Insere o nome do corredor quando ele muda. Só quando muda: repetir o
+     cabeçalho a cada item viraria ruído numa lista de quarenta. */
+  comCorredores(pendentes) {
+    let atual = null;
+    return pendentes.map(li => {
+      const item = DB.get('items', li.item_id);
+      const c = Catalogo.corredor(item ? item.categoria : 'outros');
+      const cabecalho = c.id !== atual ? `<p class="corredor-titulo">${c.icone} ${c.nome}</p>` : '';
+      atual = c.id;
+      return cabecalho + this.linha(li);
+    }).join('');
   },
 
   linha(li) {
@@ -206,6 +227,7 @@ const Mercado = {
         <span class="sub">${li.qtd} ${UI.esc(li.unidade)}</span>
       </div>
       <div class="direita">
+        ${li.pegou_por ? `<span class="pegou-por">${UI.esc(li.pegou_por)}</span>` : ''}
         <b class="valor">${li.preco_total != null ? UI.fmt(li.preco_total) : '—'}</b>
         <button class="btn-desfazer" data-acao="desfazer" data-li="${li.id}">desfazer</button>
       </div>
@@ -313,6 +335,10 @@ const Mercado = {
       id: liId, comprado: true, nao_tinha: false,
       preco_total: preco, qtd, unidade,
       obs_id: obs ? obs.id : null,
+      /* QUEM PEGOU. Numa lista compartilhada, é o que impede as duas pessoas
+         no mesmo mercado de pegarem a mesma coisa — e é o motivo prático de
+         compartilhar a lista, mais que ver a lista igual. */
+      pegou_por: Sync.temFamilia() ? Sync.meuNome() : null,
     });
 
     /* PULA PARA O PRÓXIMO PENDENTE. Sem isso a pessoa precisa procurar onde

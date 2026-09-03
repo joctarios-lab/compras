@@ -9,7 +9,7 @@
    isso aparece como defeito onde não há nenhum. */
 'use strict';
 
-const VERSAO = '2';
+const VERSAO = '3';
 const CACHE = 'cesta-' + VERSAO;
 const SHELL = [
   './',
@@ -18,20 +18,26 @@ const SHELL = [
   'js/config.js?v=' + VERSAO,
   'js/icons.js?v=' + VERSAO,
   'js/ui.js?v=' + VERSAO,
+  'js/catalogo.js?v=' + VERSAO,
   'js/db.js?v=' + VERSAO,
   'js/precos.js?v=' + VERSAO,
   'js/nfce.js?v=' + VERSAO,
   'js/importar.js?v=' + VERSAO,
   'js/fotos.js?v=' + VERSAO,
   'js/leitura.js?v=' + VERSAO,
+  'js/auth.js?v=' + VERSAO,
+  'js/bloqueio.js?v=' + VERSAO,
   'js/sync.js?v=' + VERSAO,
+  'js/onboarding.js?v=' + VERSAO,
   'js/views/lista.js?v=' + VERSAO,
   'js/views/mercado.js?v=' + VERSAO,
   'js/views/ferramentas.js?v=' + VERSAO,
   'js/views/historico.js?v=' + VERSAO,
+  'js/views/produtos.js?v=' + VERSAO,
   'js/views/importar.js?v=' + VERSAO,
   'js/views/ajustes.js?v=' + VERSAO,
   'js/views/sync.js?v=' + VERSAO,
+  'js/views/familia.js?v=' + VERSAO,
   'js/views/camera.js?v=' + VERSAO,
   'js/app.js?v=' + VERSAO,
   'manifest.webmanifest',

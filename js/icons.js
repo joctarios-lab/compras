@@ -15,6 +15,12 @@ const ICONES = {
   ok: '<path d="M20 6L9 17l-5-5"/>',
   camera: '<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>',
   voltar: '<path d="M19 12H5M12 19l-7-7 7-7"/>',
+  etiqueta: '<path d="M20.6 13.4L11 3.8A2 2 0 0 0 9.6 3H4a1 1 0 0 0-1 1v5.6a2 2 0 0 0 .6 1.4l9.6 9.6a2 2 0 0 0 2.8 0l4.6-4.6a2 2 0 0 0 0-2.6z"/><circle cx="7.5" cy="7.5" r="1.5"/>',
+  ajuda: '<circle cx="12" cy="12" r="9"/><path d="M9.2 9a2.8 2.8 0 0 1 5.5.9c0 1.9-2.8 2.8-2.8 2.8"/><path d="M12 17h.01"/>',
+  digital: '<path d="M12 11v3a9 9 0 0 1-.6 3.2"/><path d="M8.5 12a3.5 3.5 0 0 1 7 0v2a13 13 0 0 1-.5 3.6"/><path d="M5 12a7 7 0 0 1 14 0v2"/><path d="M2 10a10 10 0 0 1 17-5.6"/><path d="M18.5 19a17 17 0 0 0 .5-4"/>',
+  compartilhar: '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/>',
+  repetir: '<path d="M17 2l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>',
+  pessoa: '<circle cx="12" cy="8" r="4"/><path d="M4 21v-1a7 7 0 0 1 16 0v1"/>',
   balanca: '<path d="M12 3v18M7 7h10M5 12a3 3 0 0 0 6 0L8 6zM13 12a3 3 0 0 0 6 0l-3-6zM8 21h8"/>',
 };
 

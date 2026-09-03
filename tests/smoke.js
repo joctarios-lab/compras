@@ -88,7 +88,7 @@ global.document = {
 };
 global.window = global;
 // navigator tambem e getter no Node moderno — mesma razao do crypto acima.
-Object.defineProperty(global, 'navigator', { configurable: true, value: { onLine: false } });
+Object.defineProperty(global, 'navigator', { configurable: true, writable: true, value: { onLine: false } });
 global.scrollTo = () => {};
 global.addEventListener = () => {};
 global.setTimeout = global.setTimeout;
@@ -97,6 +97,7 @@ global.setTimeout = global.setTimeout;
 eval(fs.readFileSync(BASE + 'js/db.js', 'utf8') + '; global.DB = DB; global.STORES = STORES;');
 eval(fs.readFileSync(BASE + 'js/ui.js', 'utf8') + '; global.UI = UI;');
 eval(fs.readFileSync(BASE + 'js/icons.js', 'utf8') + '; global.ICONES = ICONES; global.pintarIcones = pintarIcones;');
+eval(fs.readFileSync(BASE + 'js/catalogo.js', 'utf8') + '; global.Catalogo = Catalogo; global.CORREDORES = CORREDORES; global.ITENS_COMUNS = ITENS_COMUNS;');
 eval(fs.readFileSync(BASE + 'js/precos.js', 'utf8') + '; global.Precos = Precos;');
 eval(fs.readFileSync(BASE + 'js/nfce.js', 'utf8') + '; global.NFCe = NFCe;');
 eval(fs.readFileSync(BASE + 'js/importar.js', 'utf8') + '; global.Importar = Importar;');
@@ -784,10 +785,10 @@ check('e o raro vem depois', DB.buscarItens('a')[1].id, raro.id);
 console.log('\n=== Sincronizacao (F8) ===');
 
 DB.apagarTudo();
-Sync.cfg = { url: 'https://x.supabase.co', anonKey: 'k', user_id: 'u1' };
+Sync.cfg = { url: 'https://x.supabase.co', anonKey: 'k', user_id: 'u1', family_id: 'f1' };
 check('nao esta logado sem token', Sync.logado(), false);
 check('nem configurado sem url', (Sync.cfg = { anonKey: 'k' }, Sync.configurado()), false);
-Sync.cfg = { url: 'https://x.supabase.co', anonKey: 'k', user_id: 'u1', access_token: 't' };
+Sync.cfg = { url: 'https://x.supabase.co', anonKey: 'k', user_id: 'u1', access_token: 't', family_id: 'f1' };
 check('configurado com url e chave', Sync.configurado(), true);
 
 /* TODA STORE SINCRONIZADA precisa estar declarada: uma que fique de fora nunca
@@ -798,7 +799,12 @@ for (const s of ['stores', 'items', 'products', 'lists', 'list_items', 'price_ob
 
 const obsSync = Precos.registrar(DB, { item_id: DB.itemPorNome('Teste').id, data: DB.hojeISO(), preco_total: 10, qtd: 1, unidade: 'kg' });
 const linhaEnviada = Sync.linhaDe('price_obs', DB.get('price_obs', obsSync.id));
-check('a linha enviada leva o dono', linhaEnviada.user_id, 'u1');
+/* O ESCOPO É FAMILIAR, não pessoal. Se a lista é compartilhada, o histórico
+   de precos tambem precisa ser: senao quem esta no mercado nao veria o
+   diagnostico baseado nas compras que a outra pessoa da casa fez, e o app
+   perderia metade do valor justamente para quem divide as compras. */
+check('a linha enviada leva a familia', linhaEnviada.family_id, 'f1');
+check('e nao o usuario, que e so quem entrou', linhaEnviada.user_id, undefined);
 check('e o carimbo do cliente para resolver conflito', !!linhaEnviada.updated_at, true);
 check('e a marca de apagado', linhaEnviada.deleted, false);
 check('o preco por unidade vai junto', linhaEnviada.preco_base, 10);
@@ -808,6 +814,10 @@ check('mas o controle local NAO e enviado', linhaEnviada.dirty, undefined);
 
 /* O schema tem de cobrir o que o app envia: coluna faltando derruba o lote. */
 const schema = fs.readFileSync(BASE + 'supabase/schema.sql', 'utf8');
+/* O SQL SEM OS COMENTARIOS. Um teste que procura um literal casa com o
+   comentario que FALA sobre o literal, e passa (ou reprova) sem olhar para o
+   SQL de verdade — ja aconteceu aqui, com o 'create index'. */
+const sql = schema.split(/\r?\n/).filter(l => !l.trim().startsWith('--')).join('\n');
 for (const [tabela, colunas] of Object.entries(SYNC_TABELAS)) {
   const bloco = (schema.match(new RegExp('create table if not exists public\\.' + tabela + '[\\s\\S]*?\\);')) || [''])[0];
   const faltando = colunas.filter(c => !bloco.includes(c));
@@ -817,6 +827,11 @@ for (const [tabela, colunas] of Object.entries(SYNC_TABELAS)) {
 /* server_at e o marcador do pull: sem o gatilho, um aparelho offline perde
    registros em silencio. */
 check('o schema cria o carimbo do servidor', schema.includes('server_at'), true);
+check('e a tabela de familias', sql.includes('create table if not exists public.families'), true);
+check('e a de membros', sql.includes('create table if not exists public.family_members'), true);
+/* O codigo da familia e UNICO: dois iguais fariam alguem entrar na casa errada,
+   e o erro so apareceria quando a pessoa visse as compras de um estranho. */
+check('o codigo da familia e unico', /codigo text not null unique/.test(sql), true);
 check('com gatilho em toda escrita', schema.includes('trg_server_at'), true);
 check('e RLS por dono', schema.includes('auth.uid()'), true);
 
@@ -834,7 +849,6 @@ check('e RLS por dono', schema.includes('auth.uid()'), true);
    FALA sobre o literal — e passa (ou reprova) sem olhar para o SQL de verdade.
    Aconteceu aqui: o comentario que explica o defeito do 'create index' fez o
    teste de idempotencia reprovar. */
-const sql = schema.split(/\r?\n/).filter(l => !l.trim().startsWith('--')).join('\n');
 const posPrimeiraTabela = sql.search(/create table if not exists/);
 const posIndice = sql.search(/create index if not exists/);
 const posTrigger = sql.search(/create trigger trg_server_at/);
@@ -1000,7 +1014,7 @@ global.fetch = async (url) => {
   pedidos.push(String(url));
   return { ok: true, json: async () => [], text: async () => '' };
 };
-Sync.cfg = { url: 'https://x.supabase.co', anonKey: 'k', user_id: 'u1', access_token: 't' };
+Sync.cfg = { url: 'https://x.supabase.co', anonKey: 'k', user_id: 'u1', access_token: 't', family_id: 'f1' };
 DB.data.meta.lastSync = '2026-01-01T00:00:00Z';
 await Sync.pull();
 global.fetch = fetchOriginal;
@@ -1016,11 +1030,24 @@ check('e ordenou por ele tambem', pedidos.every(u => u.includes('order=server_at
    aparece em outros lugares, entao a sabotagem que abriu a politica para `true`
    passou batido. Sem RLS de verdade, a chave anon (que e publica por natureza)
    daria a qualquer pessoa acesso a base inteira. */
-const politica = (schema.match(/create policy[\s\S]*?with check \([^)]*\)/) || [''])[0];
-check('a politica compara com o dono da linha', politica.includes('user_id = auth.uid()'), true);
-check('na leitura', /using \(user_id = auth\.uid\(\)\)/.test(schema), true);
-check('e na escrita', /with check \(user_id = auth\.uid\(\)\)/.test(schema), true);
-check('e nunca libera para todos', /using \(true\)|with check \(true\)/.test(schema), false);
+check('as tabelas de dados sao filtradas pela familia',
+  /using \(family_id = public\.minha_familia\(\)\)/.test(sql), true);
+check('e na escrita tambem', /with check \(family_id = public\.minha_familia\(\)\)/.test(sql), true);
+/* A funcao que descobre a familia precisa ser SECURITY DEFINER com search_path
+   fixo: sem isso a politica de family_members consultaria a tabela que ela
+   mesma protege, e o Postgres entra em recursao infinita — o banco para de
+   responder e ninguem entende por que. */
+check('minha_familia() e security definer', /security definer/i.test(sql), true);
+check('com o search_path preso', /set search_path = public/i.test(sql), true);
+/* families e LEGIVEL por qualquer autenticado, e de proposito: e o que permite
+   ENTRAR numa familia pelo codigo. Por isso o codigo tem seis caracteres
+   aleatorios em vez de um numero sequencial — e por isso a leitura livre vale
+   so para families, nunca para uma tabela de dados. */
+check('so families tem leitura aberta', (sql.match(/using \(true\)/g) || []).length, 1);
+check('e nenhuma tabela de dados libera escrita', /with check \(true\)/.test(sql), false);
+/* Entrar numa familia e um ato de quem entra: ninguem pode inscrever outra
+   pessoa, nem tirar. */
+check('so o proprio usuario se inscreve', /with check \(user_id = auth\.uid\(\)\)/.test(sql), true);
 // A politica e criada em laco: a lista do laco tem de conter TODA tabela
 // sincronizada, senao uma delas fica sem protecao nenhuma
 const listaRLS = (schema.match(/tabelas text\[\] := array\[([\s\S]*?)\]/) || [])[1] || '';
@@ -1183,6 +1210,271 @@ check('mas outra loja no mesmo dia conta normalmente',
      data: mesG + '-20', total: 60, itens_importados: 1 }), ViewHistorico.gastoDoMes(mesG)), 410);
 
 
+
+
+/* ====================== O CATALOGO E A ORDEM DO MERCADO === */
+
+console.log('\n=== Catalogo semente ===');
+
+check('ha corredores definidos', CORREDORES.length >= 8, true);
+check('e itens comuns de verdade', ITENS_COMUNS.length >= 40, true);
+
+/* A ORDEM DOS CORREDORES E A DO MERCADO, nao a do alfabeto: hortifruti na
+   entrada, limpeza no fundo. E o que faz a lista parar de mandar a pessoa
+   andar em ziguezague — o ganho de tempo mais concreto de um app de lista. */
+const ordens = CORREDORES.map(c => c.ordem);
+check('cada corredor tem uma ordem unica', new Set(ordens).size, CORREDORES.length);
+check('o hortifruti vem antes da limpeza',
+  Catalogo.corredor('hortifruti').ordem < Catalogo.corredor('limpeza').ordem, true);
+check('e "outros" fica por ultimo',
+  Catalogo.corredor('outros').ordem, Math.max(...ordens));
+/* Corredor desconhecido nao pode quebrar a tela: cai em "outros". */
+check('corredor que nao existe cai em outros', Catalogo.corredor('inventado').id, 'outros');
+check('e corredor nulo tambem', Catalogo.corredor(null).id, 'outros');
+
+/* TODO ITEM COMUM PRECISA DE UNIDADE QUE O MOTOR ENTENDA. Um item semeado com
+   unidade desconhecida entraria no catalogo e nunca produziria diagnostico —
+   o defeito ficaria escondido ate a pessoa registrar o preco. */
+for (const [nome, corredor, unidade] of ITENS_COMUNS) {
+  const canonica = Precos.normalizarUnidade(unidade);
+  if (!canonica) check(`"${nome}" tem unidade que o motor entende`, unidade, 'uma unidade valida');
+}
+check('todas as unidades do catalogo sao conversiveis',
+  ITENS_COMUNS.every(([, , u]) => !!Precos.normalizarUnidade(u)), true);
+check('e todo item aponta para um corredor que existe',
+  ITENS_COMUNS.every(([, c]) => CORREDORES.some(x => x.id === c)), true);
+check('sem nomes repetidos no catalogo',
+  new Set(ITENS_COMUNS.map(i => i[0].toLowerCase())).size, ITENS_COMUNS.length);
+
+/* O PALPITE preenche o cadastro, nunca o preco. */
+const p1 = Catalogo.palpitar('Arroz');
+check('acha o item pelo nome exato', p1.unidade, 'kg');
+check('e marca que foi exato', p1.exato, true);
+const p2 = Catalogo.palpitar('leite integral');
+check('acha pela primeira palavra', p2 && p2.unidade, 'l');
+check('mas avisa que nao foi exato', p2.exato, false);
+check('e o que nao conhece devolve nulo', Catalogo.palpitar('caviar beluga'), null);
+check('nome vazio tambem', Catalogo.palpitar(''), null);
+
+/* ========================================= A PRIMEIRA VEZ === */
+
+console.log('\n=== Abertura (onboarding) ===');
+
+eval(fs.readFileSync(BASE + 'js/onboarding.js', 'utf8') + '; global.Onboarding = Onboarding;');
+
+localStorage.removeItem('cesta.abertura');
+check('na primeira abertura, a apresentacao aparece', Onboarding.jaFez(), false);
+Onboarding.marcarFeito();
+check('e depois de vista, nao volta sozinha', Onboarding.jaFez(), true);
+
+/* TODA TELA DA APRESENTACAO PRECISA MONTAR. Uma que quebre deixa quem abriu o
+   app pela primeira vez numa tela em branco — e essa pessoa nao volta. */
+DB.apagarTudo();
+Onboarding.passo = 0;
+Onboarding.escolhidos = new Set();
+for (let i = 0; i < Onboarding.telas.length; i++) {
+  Onboarding.passo = i;
+  const html = Onboarding.telas[i].call(Onboarding);
+  check(`a tela ${i + 1} da apresentacao monta`, typeof html === 'string' && html.length > 200, true);
+}
+
+/* A PRIMEIRA TELA TEM DE DIZER O QUE O APP E. Sem isso, a apresentacao existe
+   e nao resolve o problema que ela existe para resolver. */
+Onboarding.passo = 0;
+const tela1 = Onboarding.telas[0].call(Onboarding);
+check('a primeira tela faz a pergunta do corredor', /pre[çc]o t[áa] bom/i.test(tela1), true);
+check('e diz que a comparacao e com o proprio historico', /voc[êe] mesmo/i.test(tela1), true);
+check('e que funciona sem internet', /sem internet/i.test(tela1), true);
+// O cifrao escrito por codigo de caractere: '$' numa string de substituicao do
+// replace() e padrao especial, e ja corrompeu este arquivo uma vez.
+check('e mostra um exemplo com numero de verdade', tela1.includes('R' + String.fromCharCode(36)), true);
+/* PULAVEL SEMPRE: quem ja entendeu nao pode ser obrigado a assistir. */
+check('da para pular', tela1.includes('data-ob="pular"'), true);
+
+/* ENSINAR FAZENDO: o que a pessoa escolhe na apresentacao VIRA a lista dela. */
+Onboarding.escolhidos = new Set(['Arroz', 'Leite', 'Detergente']);
+Onboarding.aplicarEscolhas();
+const listaNova = DB.listasPlanejadas()[0] || DB.listaEmCurso();
+check('a apresentacao cria uma lista de verdade', !!listaNova, true);
+check('com os itens escolhidos', DB.itensDaLista(listaNova.id).length, 3);
+check('e os itens entram no catalogo', DB.all('items').length, 3);
+/* O item nasce com a unidade do catalogo: sem isso o app acumularia meses de
+   dados em unidade errada antes de alguem perceber. */
+const arrozOb = DB.all('items').find(i => i.nome === 'Arroz');
+check('o item nasce com a unidade certa', arrozOb.unidade, 'kg');
+check('e no corredor certo', arrozOb.categoria, 'mercearia');
+/* Aplicar duas vezes NAO duplica: a pessoa pode voltar e avancar na apresentacao. */
+Onboarding.aplicarEscolhas();
+check('voltar e avancar nao duplica os itens', DB.itensDaLista(listaNova.id).length, 3);
+
+/* ============================================= SEGURANCA === */
+
+console.log('\n=== PIN e criptografia ===');
+
+eval(fs.readFileSync(BASE + 'js/auth.js', 'utf8') + '; global.Auth = Auth;');
+
+localStorage.removeItem('cesta.auth');
+Auth.load();
+check('a protecao nasce desligada', Auth.ligado(), false);
+check('e a digital tambem', Auth.bioAtiva(), false);
+
+/* O BLOQUEIO PROGRESSIVO existe porque um PIN de 4 digitos tem 10 mil
+   combinacoes: sem ele, quem tem o aparelho na mao tenta todas em minutos. */
+check('sem erros, nada esta bloqueado', Auth.bloqueadoPor(), 0);
+for (let i = 0; i < 4; i++) Auth.registrarErro();
+check('quatro erros ainda nao bloqueiam', Auth.bloqueadoPor(), 0);
+Auth.registrarErro();
+check('o quinto bloqueia', Auth.bloqueadoPor() > 0, true);
+/* E dobra: se a espera fosse fixa, bastaria esperar sempre o mesmo tanto. */
+const primeiraEspera = Auth.bloqueadoPor();
+for (let i = 0; i < 5; i++) Auth.registrarErro();
+check('e a espera aumenta a cada rodada', Auth.bloqueadoPor() > primeiraEspera, true);
+Auth.registrarAcerto();
+check('acertar limpa o bloqueio', Auth.bloqueadoPor(), 0);
+check('e zera a contagem', Auth.cfg.erros, 0);
+
+/* A CRIPTOGRAFIA DE VERDADE, com o WebCrypto do node. Testar isto com um
+   simulacro provaria que o simulacro funciona, nao o app. */
+{
+  const salt = Auth.b64(crypto.getRandomValues(new Uint8Array(16)));
+  const chave = await Auth.derivar('1234', salt, true);
+  const outra = await Auth.derivar('4321', salt, true);
+
+  DB.apagarTudo();
+  DB.upsert('items', { nome: 'Segredo', unidade: 'kg' });
+  DB.setChave(chave);
+  await new Promise(r => setTimeout(r, 60));   // a gravacao cifrada e assincrona
+
+  const cru = localStorage.getItem('cesta.v1');
+  check('o que fica gravado esta cifrado', JSON.parse(cru).cifrado, true);
+  /* O TESTE QUE IMPORTA: o nome do item NAO PODE aparecer no texto gravado.
+     Um "cifrado: true" com o conteudo legivel ao lado seria o pior desfecho —
+     a tela dizendo que protege, sem proteger. */
+  check('e o conteudo nao aparece em claro', cru.includes('Segredo'), false);
+
+  DB.data = null; DB.chave = null;
+  DB.load();
+  check('sem a chave, a base abre TRANCADA', DB.trancado, true);
+  /* E nao pode abrir vazia: criar uma base nova aqui apagaria por cima do que
+     esta cifrado na primeira gravacao — perda total e silenciosa. */
+  check('e nao inventa uma base vazia', DB.data, null);
+
+  let recusou = false;
+  try { await DB.abrirCom(outra); } catch (_) { recusou = true; }
+  check('o PIN errado nao abre', recusou, true);
+  check('e a base continua trancada', DB.trancado, true);
+
+  await DB.abrirCom(chave);
+  check('o PIN certo abre', DB.trancado, false);
+  check('com os dados intactos', DB.all('items')[0].nome, 'Segredo');
+
+  DB.setChave(null);
+  await new Promise(r => setTimeout(r, 60));
+  check('desligar a protecao volta a gravar em claro',
+    localStorage.getItem('cesta.v1').includes('Segredo'), true);
+}
+
+/* ============================================== FAMILIA === */
+
+console.log('\n=== Familia e lista compartilhada ===');
+
+/* O CODIGO E DITADO POR TELEFONE. Letras e numeros ambiguos (O/0, I/1/L, S/5)
+   viram suporte tecnico: "e o e ou o zero?". */
+Sync.cfg = { url: 'https://x.supabase.co', anonKey: 'k', user_id: 'u1', access_token: 't' };
+const codigos = Array.from({ length: 40 }, () => Sync.gerarCodigo());
+check('o codigo tem seis caracteres', codigos[0].length, 6);
+check('e nao repete facil', new Set(codigos).size > 35, true);
+check('sem caracteres que se confundem ao ditar',
+  codigos.every(c => !/[O0I1LS5U]/.test(c)), true);
+check('e sempre em maiuscula', codigos.every(c => c === c.toUpperCase()), true);
+
+check('sem familia, nao ha o que compartilhar', Sync.temFamilia(), false);
+/* SINCRONIZAR SEM FAMILIA NAO PODE ACONTECER: todo registro subiria sem dono e
+   o RLS recusaria o lote inteiro — sem erro visivel na tela. */
+/* SEM FAMILIA, O SYNC NAO PODE NEM TOCAR A REDE.
+
+   Todo registro subiria sem dono e o RLS recusaria o lote inteiro — sem erro
+   visivel na tela, e com a pessoa achando que sincronizou.
+
+   O que se mede aqui e se o FETCH ACONTECEU, nao o valor devolvido: com
+   navigator.onLine false o sync devolve null antes de olhar a familia, e o
+   teste passaria sem exercitar a regra. Foi assim que a sabotagem escapou. */
+{
+  let tocouARede = 0;
+  const fetchAntes = global.fetch;
+  global.fetch = async () => { tocouARede++; return { ok: true, json: async () => [], text: async () => '' }; };
+  navigator.onLine = true;
+  try { await Sync.sincronizar(); } catch (_) { /* sem familia nao deveria nem chegar aqui */ }
+  global.fetch = fetchAntes;
+  navigator.onLine = false;
+  check('e a sincronizacao nao toca a rede', tocouARede, 0);
+}
+
+Sync.cfg.family_id = 'f1';
+check('com familia, ela existe', Sync.temFamilia(), true);
+check('e o nome de quem esta usando tem um padrao', Sync.meuNome(), 'Eu');
+Sync.cfg.nome = 'Ana';
+check('e passa a ser o nome de verdade', Sync.meuNome(), 'Ana');
+
+/* QUEM PEGOU O ITEM e o ganho pratico de compartilhar: duas pessoas no mesmo
+   mercado nao pegam a mesma coisa duas vezes. */
+check('a coluna de quem pegou vai para o banco',
+  SYNC_TABELAS.list_items.includes('pegou_por'), true);
+check('e o schema tem essa coluna', sql.includes('pegou_por'), true);
+
+/* ======================================== A LISTA POR CORREDOR === */
+
+console.log('\n=== A lista na ordem do mercado ===');
+
+DB.apagarTudo();
+const listaOrd = DB.novaLista({ nome: 'Ordem' });
+// De proposito fora de ordem, como alguem digitaria
+for (const nome of ['Detergente', 'Banana', 'Leite', 'Arroz', 'Pão francês']) {
+  const def = ITENS_COMUNS.find(i => i[0] === nome);
+  const item = DB.itemPorNome(nome, { categoria: def[1], unidade: def[2], qtd_habitual: def[3] });
+  DB.addNaLista(listaOrd.id, { item_id: item.id, qtd: def[3], unidade: def[2] });
+}
+Mercado.listaId = listaOrd.id;
+Mercado.focoId = null;
+const htmlOrd = Mercado.render();
+
+const posDe = nome => htmlOrd.indexOf(nome);
+check('o hortifruti vem antes da mercearia', posDe('Banana') < posDe('Arroz'), true);
+check('a mercearia antes dos frios... na ordem da loja',
+  posDe('Pão francês') < posDe('Leite'), true);
+check('e a limpeza fica por ultimo', posDe('Detergente') > posDe('Leite'), true);
+/* O cabecalho do corredor so aparece quando MUDA: repeti-lo a cada item viraria
+   ruido numa lista de quarenta. */
+check('o corredor aparece como divisoria', htmlOrd.includes('corredor-titulo'), true);
+check('uma vez por corredor, nao por item',
+  (htmlOrd.match(/corredor-titulo/g) || []).length <= 5, true);
+
+/* ==================================== O SHELL COM AS TELAS NOVAS === */
+
+console.log('\n=== Desktop e shell ===');
+
+/* A SIDEBAR e a barra de baixo sao a MESMA navegacao: uma aba que exista so num
+   dos dois some para metade dos usuarios, dependendo do aparelho. */
+const abasDock = [...shell.matchAll(/class="dock-item"[^>]*data-aba="([a-z]+)"/g)].map(m => m[1]);
+const abasSide = [...shell.matchAll(/class="side-item"[^>]*data-aba="([a-z]+)"/g)].map(m => m[1]);
+check('a barra de baixo tem abas', abasDock.length >= 3, true);
+check('e a sidebar tambem', abasSide.length >= 3, true);
+check('toda aba da barra existe na sidebar',
+  abasDock.every(a => abasSide.includes(a)), true);
+
+check('a sidebar so aparece no desktop', /@media \(min-width: 900px\)[\s\S]*?\.dock \{ display: none/.test(css), true);
+check('e a barra de baixo some junto', css.includes('.sidebar { display: none; }'), true);
+
+/* A tela de bloqueio vive FORA do #app: desenhar o app e so depois pedir o PIN
+   mostraria os dados por um quadro — e um quadro basta para uma foto. */
+check('a tela de bloqueio existe no shell', shell.includes('id="lock"'), true);
+check('e fica fora do app', shell.indexOf('id="lock"') < shell.indexOf('id="app"'), true);
+check('nasce escondida', /<div id="lock" hidden>/.test(shell), true);
+
+/* A ajuda precisa estar alcancavel dos DOIS lugares: quem esta no celular nao
+   ve a sidebar, e quem esta no desktop nao ve a barra de baixo. */
+check('a ajuda esta no topo', shell.includes('id="btn-ajuda"'), true);
+check('e na sidebar', shell.includes('id="side-ajuda"'), true);
 
   console.log(`
 ${ok} passaram, ${fail} falharam`);
