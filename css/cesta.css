@@ -652,3 +652,103 @@ body.em-abertura .ajuda summary::-webkit-details-marker { display: none; }
   padding: 10px 2px 0; margin: 0;
 }
 .sync-status.err { color: var(--red-ink); }
+
+/* O X DA FOLHA. Fica no canto superior direito — onde a mão procura — e tem
+   alvo confortável: quem quer sair de uma tela já está impaciente, e errar o
+   toque duas vezes transforma impaciência em desistência.
+
+   Ele existe porque tocar no fundo escuro e apertar Esc são saídas que ninguém
+   descobre sozinho num celular. */
+/* Especialização, não redefinição: o .sheet do DOMI continua mandando em tudo
+   o mais, e aqui só se acrescenta o ancoradouro do X. */
+.sheet:has(.sheet-fechar) { position: relative; }
+.sheet-fechar {
+  position: absolute; top: 12px; right: 12px;
+  width: 34px; height: 34px;
+  display: grid; place-items: center;
+  border-radius: var(--radius-pill);
+  background: var(--ink-3);
+  border: 1px solid var(--line);
+  color: var(--paper-dim);
+  font-size: 15px; line-height: 1;
+  cursor: pointer;
+  transition: color .15s ease, background .15s ease, transform .12s ease;
+  z-index: 2;
+}
+.sheet-fechar:hover { background: var(--line); color: var(--paper); }
+.sheet-fechar:active { transform: scale(.92); }
+
+/* O título da folha não pode passar por baixo do X. */
+.sheet > .titulo:first-of-type,
+.sheet > h2 { padding-right: 44px; }
+
+/* ============================================== CAMPOS DE DATA E HORA ===
+
+   O ícone de calendário que o navegador desenha é ESCURO por padrão, e o app é
+   escuro por padrão: o resultado é um campo de data que parece um campo de
+   texto vazio, sem nenhum sinal de que abre um seletor. Foi relatado como "o
+   campo de data não tem datepicker" — ele tinha, e estava invisível.
+
+   `filter: invert(1)` clareia o ícone no tema escuro. No claro ele já aparece,
+   e por isso a inversão é desfeita nas duas camadas claras — como manda o
+   sistema de três camadas. */
+
+input[type="date"] { position: relative; cursor: pointer; }
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) opacity(.65);
+  cursor: pointer;
+  /* Alvo maior que o ícone: mirar um quadradinho de 12px com o polegar é o tipo
+     de coisa que faz a pessoa achar que o campo não funciona. */
+  padding: 6px;
+  margin-right: -4px;
+}
+input[type="date"]::-webkit-calendar-picker-indicator:hover { filter: invert(1) opacity(1); }
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-tema="dark"]) input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: opacity(.6);
+  }
+}
+:root[data-tema="light"] input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: opacity(.6);
+}
+
+/* ==================================================== O PRÓXIMO PASSO ===
+
+   A faixa que responde "e agora?" — a pergunta de quem abre o app e não sabe
+   onde tocar. Ela mostra UM passo, o mais valioso para a situação, e some
+   quando não há mais o que conduzir.
+
+   Cor de destaque porque ela é a ação principal da tela; e ela é um botão
+   inteiro, não um texto com link, porque no celular o alvo tem de ser óbvio. */
+
+.proximo-passo {
+  display: flex; align-items: center; gap: 12px;
+  width: 100%; text-align: left;
+  padding: 14px;
+  border-radius: var(--radius);
+  background: var(--gold-soft);
+  border: 1px solid var(--gold-borda);
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: transform .12s ease, border-color .15s ease;
+}
+.proximo-passo:hover { border-color: var(--gold); }
+.proximo-passo:active { transform: scale(.99); }
+
+.pp-texto { flex: 1; min-width: 0; }
+.pp-texto b {
+  display: block; font-size: 14px; font-weight: 700;
+  color: var(--gold-ink); margin-bottom: 2px;
+}
+.pp-texto span { font-size: 12.5px; color: var(--paper-dim); line-height: 1.4; }
+
+.pp-botao {
+  flex: none;
+  font-size: 12.5px; font-weight: 700;
+  color: var(--gold-contraste);
+  background: var(--gold);
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+}

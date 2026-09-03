@@ -22,11 +22,72 @@ const ViewHoje = {
         <p class="sub">${this.resumoDaCasa()}</p>
       </div>
 
+      ${this.proximoPasso()}
       ${this.blocoProximaCompra()}
       ${this.blocoConselhos()}
       ${this.blocoAcabando()}
       ${this.blocoMes()}
       ${this.blocoAtalhos()}`;
+  },
+
+  /* ================================ O PRÓXIMO PASSO ===
+
+     A pergunta de quem abre o app não é "como está a casa?" — é "e agora?".
+     Estado é resposta para quem já usa; quem chegou precisa saber onde tocar.
+
+     A faixa mostra UM passo por vez, o mais valioso para a situação atual, e
+     desaparece quando o app já tem o que precisa. Mostrar três "próximos
+     passos" ao mesmo tempo seria não ter nenhum. */
+  proximoPasso() {
+    const temPreco = DB.all('price_obs').length > 0;
+    const temPlano = DB.planosAbertos().length > 0;
+    const emCurso = DB.listaEmCurso();
+    const listaSolta = DB.listasPlanejadas()[0];
+
+    const faixa = (titulo, texto, botao, acao) => `
+      <button class="proximo-passo" data-acao="${acao}">
+        <div class="pp-texto">
+          <b>${titulo}</b>
+          <span>${texto}</span>
+        </div>
+        <span class="pp-botao">${botao}</span>
+      </button>`;
+
+    /* 1. NO MEIO DE UMA COMPRA. Nada mais importa: a pessoa está no corredor,
+          e qualquer outra sugestão é distração. */
+    if (emCurso) {
+      const t = DB.totalDoCarrinho(emCurso.id, () => null);
+      return faixa('Você está comprando',
+        `${t.comprados} de ${t.itens} itens · ${UI.fmt(t.firme)} no carrinho`,
+        'Voltar ao mercado', 'ir-mercado');
+    }
+
+    /* 2. TEM LISTA, FALTA MARCAR A COMPRA. */
+    if (!temPlano && listaSolta && DB.itensDaLista(listaSolta.id).length) {
+      return faixa('Sua lista está pronta',
+        'Marque o dia da compra e o app organiza o resto',
+        'Marcar', 'novo-plano');
+    }
+
+    /* 3. APP NOVO, SEM PREÇO NENHUM. É aqui que a pessoa mais se perde: o app
+          fala de histórico, e ela não tem nenhum. O atalho da nota fiscal é a
+          diferença entre "volte em três meses" e "é útil hoje à tarde". */
+    if (!temPreco) {
+      return faixa('Comece pelo mais rápido',
+        'Uma nota fiscal traz dezenas de preços de uma vez — e o app já passa a comparar',
+        'Importar', 'importar');
+    }
+
+    /* 4. TEM PREÇO, NÃO TEM COMPRA MARCADA. */
+    if (!temPlano) {
+      return faixa('Quando é a próxima compra?',
+        'Com a data marcada, o app monta a lista sozinho e avisa quando chegar perto',
+        'Marcar', 'novo-plano');
+    }
+
+    /* 5. ESTÁ TUDO ENCAMINHADO. A faixa some: quem já sabe o que está fazendo
+          não precisa ser conduzido, e insistir vira ruído. */
+    return '';
   },
 
   resumoDaCasa() {

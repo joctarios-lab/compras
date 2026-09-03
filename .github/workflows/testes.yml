@@ -35,6 +35,12 @@ jobs:
       - name: Ligacoes entre telas e codigo
         run: node tests/ligacoes.js
 
+      # O PERCURSO: anda pelo app como uma pessoa anda, do primeiro toque ate
+      # o primeiro preco. As outras suites provam que as pecas funcionam; esta
+      # prova que o CAMINHO entre elas existe.
+      - name: O percurso do primeiro uso
+        run: node tests/percurso.js
+
       - name: A suite em 9 datas de calendario
         run: node tests/tempo.js
 

@@ -80,8 +80,18 @@ const UI = {
   folha(html, { aoFechar } = {}) {
     const fundo = document.createElement('div');
     fundo.className = 'sheet-backdrop';
+    /* O X NO CANTO É OBRIGATÓRIO, e não um enfeite.
+
+       Antes dava para sair tocando no fundo escuro ou no Esc — duas coisas que
+       ninguém descobre sozinho num celular. A alça sozinha era pior: ela parece
+       arrastável, não é, e quem tenta puxar conclui que a tela travou.
+
+       O botão fica no canto superior direito porque é onde a mão procura, e é
+       grande o bastante para ser acertado sem mirar. */
     fundo.innerHTML = `<div class="sheet" role="dialog" aria-modal="true">
-      <div class="sheet-handle"></div>${html}</div>`;
+      <div class="sheet-handle"></div>
+      <button class="sheet-fechar" type="button" aria-label="Fechar">✕</button>
+      ${html}</div>`;
     const fechar = () => {
       if (!fundo.parentNode) return;
       fundo.remove();
@@ -90,8 +100,13 @@ const UI = {
     };
     const naTecla = e => { if (e.key === 'Escape') fechar(); };
     fundo.addEventListener('click', e => { if (e.target === fundo) fechar(); });
+    const botaoX = fundo.querySelector('.sheet-fechar');
+    if (botaoX) botaoX.addEventListener('click', fechar);
     document.addEventListener('keydown', naTecla);
     document.body.appendChild(fundo);
+    /* Todo campo de data da folha ganha o seletor ao ser criado — em UM lugar,
+       porque ligar isso folha a folha garante que alguma fique de fora. */
+    this.ligarDatas(fundo);
     return fechar;
   },
 
@@ -111,6 +126,30 @@ const UI = {
     this._toast = el;
     setTimeout(() => { if (el.parentNode) el.remove(); }, ms);
     return el;
+  },
+
+  /* ------------------------------------------------------------ datas --- */
+
+  /* O CAMPO INTEIRO ABRE O SELETOR, não só o iconezinho.
+
+     No celular tocar em qualquer parte do campo já abre; no computador, o
+     navegador exige acertar um quadradinho de 12px no canto — e quem não acerta
+     conclui que o campo é só de digitação.  iguala os dois.
+
+     O try/catch não é zelo: o navegador RECUSA showPicker fora de um gesto do
+     usuário, e alguns não o têm. Nos dois casos o campo continua funcionando
+     como sempre — digitável. */
+  ligarSeletorDeData(el) {
+    if (!el) return;
+    el.addEventListener('click', () => {
+      try { if (el.showPicker) el.showPicker(); } catch (_) {}
+    });
+  },
+
+  /* Liga o seletor em todos os campos de data de uma tela de uma vez. */
+  ligarDatas(raiz) {
+    const onde = raiz || document;
+    for (const el of onde.querySelectorAll('input[type="date"]')) this.ligarSeletorDeData(el);
   },
 
   /* --------------------------------------------------------- diversos --- */

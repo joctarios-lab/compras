@@ -101,7 +101,7 @@ const casos = [
    'a camada do CESTA nao introduz gradiente'],
 
   ['a versao do sw anda sozinha, sem as tags do index', 'sw.js',
-   `const VERSAO = '6';`,
+   `const VERSAO = '7';`,
    `const VERSAO = '9';`,
    'TODAS batem com a versao do sw.js'],
 
@@ -305,7 +305,7 @@ const casos = [
    'a primeira tela faz a pergunta do corredor'],
 
   ['a apresentacao deixa de ser pulavel', 'js/onboarding.js',
-   `<button class="btn-texto" data-ob="pular">Já entendi, quero usar</button>`,
+   `<button class="btn-texto" data-ob="pular">Já conheço — ir direto para a configuração</button>`,
    ``,
    'da para pular'],
 
@@ -446,7 +446,7 @@ const casos = [
   // ---------------- a sincronizacao ----------------
   ["a edicao feita durante o envio volta a ser perdida", "js/sync.js",
    `          if (atual && (atual.rev || 0) === rev) atual.dirty = false;`,
-   `          registro.dirty = false;`,
+   `          if (atual) atual.dirty = false;`,
    "e continua marcada para enviar"],
   ["o envio deixa de ir em lotes", "js/sync.js",
    `const TAMANHO_DO_LOTE = 200;`,

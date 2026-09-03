@@ -156,7 +156,7 @@ const Onboarding = {
 
         ${this.pontos()}
         <button class="btn" data-ob="avancar">Como funciona</button>
-        <button class="btn-texto" data-ob="pular">Já entendi, quero usar</button>
+        <button class="btn-texto" data-ob="pular">Já conheço — ir direto para a configuração</button>
       </div>`;
     },
 
@@ -435,13 +435,16 @@ const Onboarding = {
           this.avancar();
         }
         else if (acao === 'nuvem') {
+          /* CONFIGURA E VOLTA. Antes isto fechava a apresentação e mandava a
+             pessoa para a tela inicial com uma folha aberta por cima — se ela
+             fechasse a folha, tinha "caído" no app no meio do cadastro, sem
+             entender o que aconteceu.
+
+             Agora a apresentação FICA no lugar por baixo: terminar a
+             sincronização continua o fluxo, e desistir devolve para esta mesma
+             tela, com as duas opções ainda ali. */
           this.guardarRespostas();
-          this.marcarFeito();
-          document.body.classList.remove('em-abertura');
-          /* Manda para a configuração real, com o app já montado por trás: se a
-             pessoa desistir no meio, ela cai num app funcionando, não num vazio. */
-          irPara('hoje');
-          abrirSync();
+          abrirSync({ aoTerminar: () => { this.avancar(); } });
         }
         else if (acao === 'sem-pin') {
           /* Recusar é legítimo, e fica REGISTRADO: um app que repete a mesma
@@ -453,16 +456,26 @@ const Onboarding = {
         }
         else if (acao === 'pin') {
           this.guardarRespostas();
-          const seguir = () => { this.avancar(); };
           Bloqueio.criarPin({ aoTerminar: async pin => {
             await Auth.ativar(pin);
             UI.toast('Pronto. Seus dados estão criptografados neste aparelho.', 5000);
+            /* A classe volta porque o teclado de PIN a removeu ao cobrir a tela:
+               sem ela, a navegação reaparece no meio da apresentação. */
             document.body.classList.add('em-abertura');
-            seguir();
+            this.avancar();
           } });
         }
         else if (acao === 'voltar') this.voltar();
-        else if (acao === 'pular') { this.aplicarEscolhas(); this.fechar(true); }
+        else if (acao === 'pular') {
+          /* PULA A EXPLICAÇÃO, NÃO A CONFIGURAÇÃO. Quem já entendeu o app não
+             precisa das duas primeiras telas — mas continua precisando dizer
+             quem é, onde os dados ficam e se quer proteção. Sair aqui deixava o
+             app sem identidade, sem nuvem e sem PIN, e era o que fazia a pessoa
+             cair na tela inicial "sem passar por nada". */
+          this.guardarRespostas();
+          this.passo = this.telas.findIndex(t => t.name === 'suaCasa');
+          this.desenhar();
+        }
         else if (acao === 'importar') { this.aplicarEscolhas(); this.marcarFeito(); this.fechar(true); abrirImportacao(); }
       });
     }

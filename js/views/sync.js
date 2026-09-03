@@ -1,7 +1,10 @@
 /* CESTA — a tela de sincronização. */
 'use strict';
 
-function abrirSync() {
+/* `aoTerminar` existe para a apresentação: ela precisa CONTINUAR quando a
+   sincronização fica pronta, em vez de largar a pessoa na tela onde estava.
+   Sem ele, configurar a nuvem no meio do cadastro parecia um beco. */
+function abrirSync(opcoes = {}) {
   Sync.load();
   const cfg = Sync.cfg;
 
@@ -35,7 +38,8 @@ function abrirSync() {
       Sync.cfg.anonKey = String(document.querySelector('#sy-key').value || '').trim();
       Sync.saveCfg();
       fechar();
-      abrirSync();
+      // Leva a continuação adiante: o próximo passo é a conta
+      abrirSync(opcoes);
     });
     return;
   }
@@ -61,16 +65,22 @@ function abrirSync() {
       try {
         await Sync.entrar(mail, senha, criar);
         fechar();
-        UI.toast('Conectado. Sincronizando…');
-        const r = await Sync.sincronizar();
-        if (r) UI.toast(`${r.enviados} enviados · ${r.recebidos} recebidos`);
-        irPara('lista');
+        /* A CASA É O PASSO QUE FALTAVA. Sem família não há o que sincronizar —
+           o RLS do banco filtra por ela — e terminar aqui deixava a pessoa com
+           a conta criada, o app mudo, e nenhuma pista do que faltava. */
+        if (!Sync.temFamilia()) { abrirFamilia(opcoes); return; }
+        const r = await Sync.sincronizar({ agora: true });
+        if (opcoes.aoTerminar) opcoes.aoTerminar();
+        else irPara('hoje');
       } catch (e) { erro.textContent = e.message; }
     };
     document.querySelector('#sy-entrar').addEventListener('click', () => tentar(false));
     document.querySelector('#sy-criar').addEventListener('click', () => tentar(true));
     return;
   }
+
+  /* Já configurado e vindo da apresentação: não há o que perguntar, segue. */
+  if (opcoes.aoTerminar && Sync.temFamilia()) { opcoes.aoTerminar(); return; }
 
   const fechar = UI.folha(`
     <h2 class="titulo">Sincronização</h2>
@@ -85,10 +95,10 @@ function abrirSync() {
 
   document.querySelector('#sy-agora').addEventListener('click', async () => {
     try {
-      const r = await Sync.sincronizar();
-      UI.toast(r ? `${r.enviados} enviados · ${r.recebidos} recebidos` : 'Sem conexão');
+      await Sync.sincronizar({ agora: true });
       fechar();
-    } catch (e) { UI.toast('Falhou: ' + e.message, 6000); }
+      if (opcoes.aoTerminar) opcoes.aoTerminar();
+    } catch (_) { /* a linha de status já disse o que houve */ }
   });
   document.querySelector('#sy-sair').addEventListener('click', () => {
     Sync.sair(); fechar(); UI.toast('Desconectado deste aparelho');

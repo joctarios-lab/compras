@@ -96,11 +96,38 @@ function abrirRevisaoDeSugestoes(planoId) {
   const sugestoes = Planejar.sugerirPara(DB, plano);
 
   if (!sugestoes.length) {
-    UI.folha(`<h2 class="titulo">${UI.esc(plano.nome)}</h2>
-      <p class="sub">Nada a sugerir por enquanto — o app ainda está aprendendo o
-        ritmo da casa, ou já está tudo na lista.</p>
-      <p class="sub">Depois de duas compras do mesmo item, ele passa a prever
-        quando aquilo vai acabar.</p>`);
+    /* SEM SUGESTÃO NÃO É BECO SEM SAÍDA. Dizer "não tenho o que te dizer" e
+       parar ali é o pior desfecho possível: a pessoa fica sem saber se o app
+       quebrou, se ela fez algo errado, ou o que fazer em seguida. */
+    const temHistorico = DB.all('price_obs').length > 0;
+    const f = UI.folha(`
+      <h2 class="titulo">${UI.esc(plano.nome)}</h2>
+      <p class="sub">A lista está pronta para você montar.</p>
+
+      <div class="ob-exemplo" style="margin-top:var(--e3)">
+        <b>Por que não sugeri nada</b>
+        <p class="sub">${temHistorico
+          ? 'Ainda não sei o seu ritmo: preciso ver você comprar o mesmo item duas vezes para prever quando ele acaba.'
+          : 'Ainda não há nenhuma compra registrada — é do seu histórico que saem as sugestões.'}</p>
+      </div>
+
+      <p class="section-title">O jeito mais rápido de resolver</p>
+      <p class="sub">Importar uma nota fiscal traz dezenas de preços de uma vez,
+        e o app já passa a sugerir na próxima compra.</p>
+
+      <button class="btn" id="ns-importar" style="margin-top:var(--e3)">
+        Importar nota fiscal
+      </button>
+      <button class="btn btn-vazado" id="ns-lista" style="margin-top:var(--e2)">
+        Montar a lista à mão
+      </button>`);
+
+    document.querySelector('#ns-importar').addEventListener('click', () => { f(); abrirImportacao(); });
+    document.querySelector('#ns-lista').addEventListener('click', () => {
+      f();
+      ViewLista.listaId = plano.list_id;
+      irPara('lista');
+    });
     return;
   }
 

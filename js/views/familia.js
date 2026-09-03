@@ -10,7 +10,7 @@
    deixaria metade da casa sem o veredito que o app existe para dar. */
 'use strict';
 
-function abrirFamilia() {
+function abrirFamilia(opcoes = {}) {
   Sync.load();
 
   if (!Sync.configurado() || !Sync.logado()) {
@@ -30,14 +30,15 @@ function abrirFamilia() {
     return;
   }
 
-  if (!Sync.temFamilia()) { telaCriarOuEntrar(); return; }
+  if (!Sync.temFamilia()) { telaCriarOuEntrar(opcoes); return; }
+  if (opcoes.aoTerminar) { opcoes.aoTerminar(); return; }
   telaDaFamilia();
 }
 
 /* Primeira vez: criar a casa ou entrar na de alguém. As duas opções aparecem
    lado a lado porque quem recebeu um código não pode ter de procurar onde
    digitá-lo. */
-function telaCriarOuEntrar() {
+function telaCriarOuEntrar(opcoes = {}) {
   const fechar = UI.folha(`
     <h2 class="titulo">Compartilhar a lista</h2>
     <p class="sub">Quem divide as compras vê a mesma lista, e o histórico de
@@ -77,7 +78,8 @@ function telaCriarOuEntrar() {
       fechar();
       pintarIdentidade();
       UI.toast('Casa criada. Agora é só convidar.');
-      abrirFamilia();
+      if (opcoes.aoTerminar) opcoes.aoTerminar();
+      else abrirFamilia();
     } catch (e) { erro.textContent = e.message; }
   });
 
@@ -89,11 +91,12 @@ function telaCriarOuEntrar() {
     erro.textContent = '';
     try {
       await Sync.entrarPorCodigo(codigo, eu);
-      const r = await Sync.sincronizar();
+      const r = await Sync.sincronizar({ agora: true });
       fechar();
       pintarIdentidade();
       UI.toast(r ? `Entrou na casa · ${r.recebidos} itens recebidos` : 'Entrou na casa');
-      irPara('lista');
+      if (opcoes.aoTerminar) opcoes.aoTerminar();
+      else irPara('hoje');
     } catch (e) { erro.textContent = e.message; }
   });
 }
