@@ -45,12 +45,12 @@ const ViewHistorico = {
     return daCompra + daNota;
   },
 
-  render() {
+  render(dentro) {
     const compras = DB.listasFechadas();
     const obs = DB.all('price_obs');
 
     if (!compras.length && !obs.length) {
-      return `<h1 class="titulo">Histórico</h1>
+      return `${dentro ? '' : `<h1 class="titulo">Histórico</h1>`}
         <p class="sub">O que subiu, o que caiu e quanto a sua cesta variou.</p>
         <div class="card"><div class="vazio">
           <b>Ainda não há nada registrado</b>
@@ -65,7 +65,7 @@ const ViewHistorico = {
     const mes = DB.mesDe(DB.hojeISO());
     const anterior = this.mesAnterior(mes);
 
-    return `<h1 class="titulo">Histórico</h1>
+    return `${dentro ? '' : `<h1 class="titulo">Histórico</h1>`}
       <p class="sub">${obs.length} ${obs.length === 1 ? 'preço registrado' : 'preços registrados'} ·
         ${compras.length} ${compras.length === 1 ? 'compra' : 'compras'}</p>
 

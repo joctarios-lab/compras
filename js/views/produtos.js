@@ -22,7 +22,7 @@ const ViewProdutos = {
     return { item, ref, cad, vezes: obs.length };
   },
 
-  render() {
+  render(dentro) {
     const itens = DB.all('items')
       .map(i => this.resumoDoItem(i))
       .filter(r => !this.busca || r.item.nome.toLowerCase().includes(this.busca.toLowerCase()))
@@ -31,7 +31,7 @@ const ViewProdutos = {
     const comHistorico = itens.filter(r => r.vezes > 0);
 
     if (!DB.all('items').length) {
-      return `<h1 class="titulo">Meus produtos</h1>
+      return `${dentro ? '' : `<h1 class="titulo">Meus produtos</h1>`}
         <p class="sub">Tudo o que você já comprou, e quanto costuma custar.</p>
         <div class="card"><div class="vazio">
           <b>Ainda não há produtos</b>
@@ -43,7 +43,7 @@ const ViewProdutos = {
         </button></div>`;
     }
 
-    return `<h1 class="titulo">Meus produtos</h1>
+    return `${dentro ? '' : `<h1 class="titulo">Meus produtos</h1>`}
       <p class="sub">${comHistorico.length} com histórico de preço · ${DB.all('items').length} no catálogo</p>
 
       <div class="card">
@@ -173,7 +173,7 @@ const ViewProdutos = {
       busca.addEventListener('input', () => {
         this.busca = busca.value;
         const foco = busca.selectionStart;
-        irPara('produtos');
+        irPara('analise');
         const novo = document.querySelector('#busca-prod');
         if (novo) { novo.focus(); novo.setSelectionRange(foco, foco); }
       });

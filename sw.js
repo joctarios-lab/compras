@@ -9,7 +9,7 @@
    isso aparece como defeito onde não há nenhum. */
 'use strict';
 
-const VERSAO = '3';
+const VERSAO = '4';
 const CACHE = 'cesta-' + VERSAO;
 const SHELL = [
   './',
@@ -21,6 +21,9 @@ const SHELL = [
   'js/catalogo.js?v=' + VERSAO,
   'js/db.js?v=' + VERSAO,
   'js/precos.js?v=' + VERSAO,
+  'js/despensa.js?v=' + VERSAO,
+  'js/decisoes.js?v=' + VERSAO,
+  'js/cozinha.js?v=' + VERSAO,
   'js/nfce.js?v=' + VERSAO,
   'js/importar.js?v=' + VERSAO,
   'js/fotos.js?v=' + VERSAO,
@@ -29,11 +32,17 @@ const SHELL = [
   'js/bloqueio.js?v=' + VERSAO,
   'js/sync.js?v=' + VERSAO,
   'js/onboarding.js?v=' + VERSAO,
+  'js/views/historico.js?v=' + VERSAO,
+  'js/views/produtos.js?v=' + VERSAO,
+  'js/planejar.js?v=' + VERSAO,
+  'js/views/hoje.js?v=' + VERSAO,
+  'js/views/planejar.js?v=' + VERSAO,
+  'js/views/despensa.js?v=' + VERSAO,
+  'js/views/analise.js?v=' + VERSAO,
+  'js/views/dialogos.js?v=' + VERSAO,
   'js/views/lista.js?v=' + VERSAO,
   'js/views/mercado.js?v=' + VERSAO,
   'js/views/ferramentas.js?v=' + VERSAO,
-  'js/views/historico.js?v=' + VERSAO,
-  'js/views/produtos.js?v=' + VERSAO,
   'js/views/importar.js?v=' + VERSAO,
   'js/views/ajustes.js?v=' + VERSAO,
   'js/views/sync.js?v=' + VERSAO,

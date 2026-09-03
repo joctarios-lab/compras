@@ -992,3 +992,161 @@ body.em-abertura .topbar-acao { display: none; }
   border-top: 1px solid var(--line);
 }
 .lista-mercado .corredor-titulo:first-child { border-top: 0; margin-top: 0; padding-top: 0; }
+
+/* ==========================================================================
+   O ASSISTENTE — página HOJE, sub-abas, conselhos, ciclos e cardápio
+
+   A regra de cor segue valendo: verde/âmbar/vermelho pertencem ao diagnóstico
+   e à situação do orçamento, nunca a enfeite. O azul-violeta é informação que
+   não julga — encolhimento, conselho, quem pegou.
+   ========================================================================== */
+
+.hoje-topo { margin-bottom: var(--e4); }
+
+/* ------------------------------------------------------- a próxima compra --- */
+
+.plano-cabeca { display: flex; align-items: center; gap: var(--e3); margin-bottom: var(--e2); }
+.plano-ico { font-size: 26px; flex: 0 0 auto; }
+.plano-nome { display: block; font-size: 17px; font-weight: 800; }
+
+/* ------------------------------------------------------------ conselhos --- */
+
+/* No máximo três. Um painel que avisa de tudo não avisa de nada: a pessoa
+   aprende a passar os olhos e o aviso importante morre junto com os outros. */
+.conselhos { display: flex; flex-direction: column; gap: var(--e2); margin: var(--e3) 0; }
+
+.conselho {
+  display: flex; align-items: flex-start; gap: var(--e3);
+  width: 100%; text-align: left;
+  padding: var(--e3);
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--ink-2);
+}
+.conselho b { display: block; font-size: 14px; margin-bottom: 2px; }
+.conselho span:not(.conselho-ico) { font-size: 13px; color: var(--paper-dim); line-height: 1.4; }
+.conselho-ico { width: 22px; height: 22px; flex: 0 0 auto; margin-top: 2px; }
+
+.conselho.s-red { background: var(--red-soft); border-color: var(--red-borda); }
+.conselho.s-red b, .conselho.s-red .conselho-ico { color: var(--red-ink); }
+.conselho.s-amber { background: var(--amber-soft); border-color: var(--amber-borda); }
+.conselho.s-amber b, .conselho.s-amber .conselho-ico { color: var(--amber-ink); }
+.conselho.s-blue { background: var(--blue-soft); border-color: var(--blue-borda); }
+.conselho.s-blue b, .conselho.s-blue .conselho-ico { color: var(--blue-ink); }
+
+/* -------------------------------------------------------------- atalhos --- */
+
+.atalhos { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--e2); margin-top: var(--e4); }
+.atalho {
+  display: flex; flex-direction: column; align-items: center; gap: var(--e1);
+  padding: var(--e3) var(--e2);
+  border-radius: var(--radius);
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+  text-align: center;
+  min-height: 88px;
+  justify-content: center;
+}
+.atalho:hover { background: var(--ink-3); }
+.atalho span[data-ico] { width: 22px; height: 22px; color: var(--gold-ink); }
+.atalho b { font-size: 13px; font-weight: 700; }
+.atalho .sub { font-size: 11px; }
+
+/* ------------------------------------------------------------ sub-abas --- */
+
+.sub-abas {
+  display: flex; gap: var(--e1);
+  padding: var(--e1);
+  background: var(--ink-3);
+  border-radius: var(--radius-sm);
+  margin: var(--e3) 0;
+}
+.sub-abas.rolavel { overflow-x: auto; scrollbar-width: none; }
+.sub-abas.rolavel::-webkit-scrollbar { display: none; }
+.sub-aba {
+  flex: 1;
+  min-height: 38px;
+  padding: 0 var(--e3);
+  border-radius: calc(var(--radius-sm) - 2px);
+  font-size: 13px; font-weight: 700;
+  color: var(--paper-dim);
+  white-space: nowrap;
+}
+.sub-aba.ativa { background: var(--ink-2); color: var(--paper); box-shadow: var(--shadow); }
+
+/* --------------------------------------------------------------- ciclos --- */
+
+.ciclos { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--e2); margin-top: var(--e2); }
+.ciclo-card {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+  padding: var(--e3);
+  border-radius: var(--radius);
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+  text-align: left;
+  min-height: 84px;
+}
+.ciclo-card:hover { background: var(--ink-3); }
+.ciclo-card.ativo { background: var(--gold-soft); border-color: var(--gold-borda); }
+.ciclo-card.ativo b { color: var(--gold-ink); }
+.ciclo-ico { font-size: 22px; }
+.ciclo-card b { font-size: 14px; }
+
+/* ------------------------------------------------------------- cardápio --- */
+
+.dia-chip {
+  flex: 0 0 auto;
+  width: 42px; text-align: center;
+  font-size: 10px; text-transform: uppercase; letter-spacing: .5px;
+  color: var(--paper-faint); font-weight: 700;
+}
+.dia-chip b {
+  display: block; font-size: 17px; font-weight: 800;
+  color: var(--paper); font-family: var(--font-num);
+}
+.fraco { color: var(--paper-faint); font-weight: 600; }
+
+/* ---------------------------------------------------------- despensa --- */
+
+.marca-mini {
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px;
+  color: var(--blue-ink); background: var(--blue-soft);
+  border: 1px solid var(--blue-borda);
+  padding: 1px 6px; border-radius: var(--radius-pill);
+  vertical-align: middle;
+}
+
+.btn-mini {
+  font-size: 11px; font-weight: 700;
+  color: var(--gold-ink);
+  padding: 4px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--gold-soft);
+  display: block; margin-top: 2px;
+}
+
+/* ------------------------------------------------------------- análise --- */
+
+.barra-fina { height: 5px; background: var(--ink-3); border-radius: var(--radius-pill); margin-top: 6px; overflow: hidden; }
+.barra-fina > div { height: 100%; background: var(--gold-fraco); border-radius: var(--radius-pill); }
+
+/* No desktop, HOJE ganha duas colunas: o painel cabe numa tela só, sem rolar. */
+@media (min-width: 900px) {
+  .atalhos { grid-template-columns: repeat(3, 1fr); }
+  .ciclos { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* As duas opcoes da tela da nuvem: cartoes grandes, lado a lado, porque as
+   duas sao legitimas. "So neste aparelho" nao e a opcao do preguicoso — e a
+   escolha certa para quem usa um celular so. */
+.escolha {
+  display: block; width: 100%; text-align: left;
+  padding: var(--e4);
+  margin-bottom: var(--e2);
+  border-radius: var(--radius);
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+}
+.escolha:hover { background: var(--ink-3); border-color: var(--gold-borda); }
+.escolha b { display: block; font-size: 16px; margin-bottom: var(--e1); }
+.escolha span { font-size: 13px; color: var(--paper-dim); line-height: 1.45; }

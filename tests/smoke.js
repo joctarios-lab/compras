@@ -94,11 +94,14 @@ global.addEventListener = () => {};
 global.setTimeout = global.setTimeout;
 
 /* ---- carrega os modulos reais ---- */
-eval(fs.readFileSync(BASE + 'js/db.js', 'utf8') + '; global.DB = DB; global.STORES = STORES;');
+eval(fs.readFileSync(BASE + 'js/db.js', 'utf8') + '; global.DB = DB; global.STORES = STORES; global.CICLOS = CICLOS;');
 eval(fs.readFileSync(BASE + 'js/ui.js', 'utf8') + '; global.UI = UI;');
 eval(fs.readFileSync(BASE + 'js/icons.js', 'utf8') + '; global.ICONES = ICONES; global.pintarIcones = pintarIcones;');
 eval(fs.readFileSync(BASE + 'js/catalogo.js', 'utf8') + '; global.Catalogo = Catalogo; global.CORREDORES = CORREDORES; global.ITENS_COMUNS = ITENS_COMUNS;');
 eval(fs.readFileSync(BASE + 'js/precos.js', 'utf8') + '; global.Precos = Precos;');
+eval(fs.readFileSync(BASE + 'js/despensa.js', 'utf8') + '; global.Despensa = Despensa;');
+eval(fs.readFileSync(BASE + 'js/decisoes.js', 'utf8') + '; global.Decisoes = Decisoes;');
+eval(fs.readFileSync(BASE + 'js/cozinha.js', 'utf8') + '; global.Cozinha = Cozinha; global.PRATOS = PRATOS; global.EVENTOS = EVENTOS;');
 eval(fs.readFileSync(BASE + 'js/nfce.js', 'utf8') + '; global.NFCe = NFCe;');
 eval(fs.readFileSync(BASE + 'js/importar.js', 'utf8') + '; global.Importar = Importar;');
 eval(fs.readFileSync(BASE + 'js/sync.js', 'utf8') + '; global.Sync = Sync; global.SYNC_TABELAS = SYNC_TABELAS;');
@@ -107,6 +110,18 @@ eval(fs.readFileSync(BASE + 'js/leitura.js', 'utf8') + '; global.Leitura = Leitu
 // ---- assercoes ----
 let ok = 0, fail = 0;
 const check = (nome, real, esperado) => {
+  /* NULL NAO E ZERO, e a distincao e o coracao deste app: "nao sei quanto ha em
+     casa" e "acabou" sao afirmacoes diferentes, e mostrar zero onde nao se sabe
+     seria mentir. Number(null) === 0, entao a comparacao numerica dava toda
+     assercao check(0, null) como verde — foi assim que a sabotagem do saldo de
+     perecivel passou batido. */
+  const vazio = v => v === null || v === undefined;
+  if (vazio(esperado) || vazio(real)) {
+    const bateuVazio = vazio(esperado) && vazio(real);
+    console.log(`${bateuVazio ? '  OK  ' : ' FALHA'} | ${nome.padEnd(58)} ${bateuVazio ? real : `obtido ${real}, esperado ${esperado}`}`);
+    bateuVazio ? ok++ : fail++;
+    return;
+  }
   const bateu = Math.abs(Number(real) - Number(esperado)) < 0.001 || real === esperado;
   console.log(`${bateu ? '  OK  ' : ' FALHA'} | ${nome.padEnd(58)} ${bateu ? real : `obtido ${real}, esperado ${esperado}`}`);
   bateu ? ok++ : fail++;
@@ -455,6 +470,26 @@ const prodArroz = DB.upsert('products', { item_id: itemArroz.id, marca: 'Tio Joa
 
 /* AS DATAS SAO RELACOES, nunca absolutas: "faz 30 dias", "faz 60 dias". Assim o
    teste vale no dia 31, em fevereiro e na virada do ano. */
+const emDias = n => {
+  const d = new Date(new Date().getTime() + n * 864e5);
+  const p = x => String(x).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+};
+/* Uma data futura DENTRO do mes corrente: min(hoje + n, ultimo dia do mes).
+
+   Sem isto, emDias(3) cai no MES SEGUINTE quando hoje e dia 29 — e a compra
+   deixa de contar na projecao do mes, corretamente. O teste reprovava por
+   herdar a relacao do acaso, nao por defeito do app: e exatamente a regra
+   "escreva a RELACAO, nunca a data" que o rodizio de datas existe para cobrar.
+   Medido: 5 reprovacoes em 5 das 9 datas do rodizio. */
+const emDiasNoMes = n => {
+  const hoje = new Date();
+  const ultimo = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).getDate();
+  const dia = Math.min(hoje.getDate() + n, ultimo);
+  const p = x => String(x).padStart(2, '0');
+  return `${hoje.getFullYear()}-${p(hoje.getMonth() + 1)}-${p(dia)}`;
+};
+
 const diasAtras = n => {
   const d = new Date(new Date().getTime() - n * 864e5);
   const p = x => String(x).padStart(2, '0');
@@ -1073,6 +1108,7 @@ console.log('\n=== As telas montam ===');
 eval(fs.readFileSync(BASE + 'js/views/lista.js', 'utf8') + '; global.ViewLista = ViewLista;');
 eval(fs.readFileSync(BASE + 'js/views/mercado.js', 'utf8') + '; global.Mercado = Mercado;');
 eval(fs.readFileSync(BASE + 'js/views/historico.js', 'utf8') + '; global.ViewHistorico = ViewHistorico;');
+eval(fs.readFileSync(BASE + 'js/planejar.js', 'utf8') + '; global.Planejar = Planejar;');
 
 DB.apagarTudo();
 
@@ -1475,6 +1511,528 @@ check('nasce escondida', /<div id="lock" hidden>/.test(shell), true);
    ve a sidebar, e quem esta no desktop nao ve a barra de baixo. */
 check('a ajuda esta no topo', shell.includes('id="btn-ajuda"'), true);
 check('e na sidebar', shell.includes('id="side-ajuda"'), true);
+
+
+/* ================================= A DESPENSA DERIVADA === */
+
+console.log('\n=== Despensa: derivada, nunca digitada ===');
+
+DB.apagarTudo();
+const lojaD = DB.upsert('stores', { nome: 'Mercado D' });
+const arrozD = DB.itemPorNome('Arroz', { categoria: 'mercearia', unidade: 'kg', qtd_habitual: 5 });
+
+check('sem compra nenhuma, a despensa esta vazia', Despensa.tudo(DB).length, 0);
+check('e nao inventa saldo', Despensa.saldoDe(DB, arrozD.id), null);
+
+/* Uma compra so: entra em casa, mas NAO da para estimar consumo — e o app diz
+   isso em vez de chutar. E a mesma regra do circulo branco do diagnostico. */
+Precos.registrar(DB, { item_id: arrozD.id, store_id: lojaD.id, data: diasAtras(10),
+  preco_total: 25, qtd: 5, unidade: 'kg' });
+const s1 = Despensa.saldoDe(DB, arrozD.id);
+check('com uma compra, o item existe na despensa', !!s1, true);
+check('mas o saldo e desconhecido', s1.saldo, null);
+check('e a explicacao diz o porque', /duas compras/.test(s1.explicacao), true);
+
+/* Duas compras: nasce a cadencia, e com ela o consumo estimado. */
+Precos.registrar(DB, { item_id: arrozD.id, store_id: lojaD.id, data: diasAtras(40),
+  preco_total: 25, qtd: 5, unidade: 'kg' });
+const s2 = Despensa.saldoDe(DB, arrozD.id);
+check('com duas compras, o consumo passa a ser estimavel', s2.consumoDia > 0, true);
+check('e o saldo tambem', s2.saldo != null, true);
+/* 5 kg a cada 30 dias = 1/6 kg por dia. Comprou 5 kg ha 10 dias, com 5 kg
+   anteriores: 10 kg menos 40 dias de consumo. */
+check('a conta bate com o ritmo', Math.round(s2.consumoDia * 1000) / 1000, 0.167);
+check('e a explicacao mostra a conta', /consome cerca de/.test(s2.explicacao), true);
+
+/* A CORRECAO E UM MARCO: a pessoa olhou o armario, e o que veio antes nao
+   conta mais. Sem isso, corrigir nao adiantaria nada. */
+Despensa.corrigir(DB, arrozD.id, 2, 'kg');
+const s3 = Despensa.saldoDe(DB, arrozD.id);
+check('corrigir vira o novo ponto de partida', s3.corrigido, true);
+check('e o saldo passa a partir dali', s3.saldo <= 2, true);
+check('a explicacao cita a correcao', /corrigiu/.test(s3.explicacao), true);
+
+/* PERECIVEL NAO TEM SALDO. Dizer que voce "tem alface" tres semanas depois de
+   comprar seria mentira com cara de dado. */
+const alface = DB.itemPorNome('Alface', { categoria: 'hortifruti', unidade: 'un' });
+for (const d of [30, 15]) {
+  Precos.registrar(DB, { item_id: alface.id, data: diasAtras(d), preco_total: 4, qtd: 1, unidade: 'un' });
+}
+const sAlf = Despensa.saldoDe(DB, alface.id);
+check('perecivel e marcado como tal', sAlf.perecivel, true);
+check('e nao tem saldo estimado', sAlf.saldo, null);
+check('nem previsao de quando acaba', sAlf.diasParaAcabar, null);
+check('mas sabe ha quantos dias foi comprado', sAlf.diasDesdeUltima, 15);
+check('e acusa que provavelmente estragou', sAlf.vencido, true);
+
+/* DEDUPLICACAO: fechar a compra no app e importar o cupom da MESMA ida sao o
+   mesmo evento. Contar duas vezes faria o app dizer que ha 10 kg onde ha 5 —
+   e mandaria a pessoa NAO comprar arroz. */
+const feijao = DB.itemPorNome('Feijão', { categoria: 'mercearia', unidade: 'kg' });
+Precos.registrar(DB, { item_id: feijao.id, store_id: lojaD.id, data: diasAtras(5),
+  preco_total: 8, qtd: 1, unidade: 'kg', origem: 'digitado' });
+Precos.registrar(DB, { item_id: feijao.id, store_id: lojaD.id, data: diasAtras(5),
+  preco_total: 8, qtd: 1, unidade: 'kg', origem: 'nfce' });
+check('a mesma compra registrada duas vezes conta uma', Despensa.entradasDe(DB, feijao.id).length, 1);
+// Mas duas compras de verdade no mesmo dia, em lojas diferentes, contam as duas
+Precos.registrar(DB, { item_id: feijao.id, store_id: DB.upsert('stores', { nome: 'Outro' }).id,
+  data: diasAtras(5), preco_total: 9, qtd: 1, unidade: 'kg' });
+check('mas compras diferentes no mesmo dia contam as duas', Despensa.entradasDe(DB, feijao.id).length, 2);
+
+/* A DESPENSA E RECALCULAVEL DO ZERO: nao existe estado a manter. */
+const antes = Despensa.saldoDe(DB, arrozD.id).saldo;
+const depois = Despensa.saldoDe(DB, arrozD.id).saldo;
+check('o calculo e estavel entre chamadas', antes, depois);
+
+/* O QUE ESTA ACABANDO — o bloco que faz o app antecipar. */
+DB.apagarTudo();
+const cafe = DB.itemPorNome('Café', { categoria: 'mercearia', unidade: 'g', qtd_habitual: 500 });
+for (const d of [60, 30]) {
+  Precos.registrar(DB, { item_id: cafe.id, data: diasAtras(d), preco_total: 20, qtd: 500, unidade: 'g' });
+}
+const acabando = Despensa.acabando(DB, { ateDias: 7 });
+check('o cafe comprado ha 30 dias, com ritmo de 30, aparece', acabando.length >= 1, true);
+check('e diz por que', !!acabando[0].explicacao, true);
+/* A JANELA IMPORTA: numa compra que acontece em 10 dias, interessa o que falta
+   ate la, e nao o que falta hoje. */
+check('janela zero e mais restrita que janela de 30 dias',
+  Despensa.acabando(DB, { ateDias: 0 }).length <= Despensa.acabando(DB, { ateDias: 30 }).length, true);
+
+/* ============================= A LISTA QUE SE MONTA SOZINHA === */
+
+console.log('\n=== Planejamento ===');
+
+DB.apagarTudo();
+const lojaP2 = DB.upsert('stores', { nome: 'Atacado P' });
+const arrozP = DB.itemPorNome('Arroz', { categoria: 'mercearia', unidade: 'kg', qtd_habitual: 5 });
+const papelP = DB.itemPorNome('Papel higiênico', { categoria: 'higiene', unidade: 'un', qtd_habitual: 12 });
+for (const d of [60, 30]) {
+  Precos.registrar(DB, { item_id: arrozP.id, store_id: lojaP2.id, data: diasAtras(d), preco_total: 25, qtd: 5, unidade: 'kg' });
+}
+DB.marcarRecorrente(papelP.id, 'mensal', true);
+check('o recorrente foi marcado', DB.recorrentesDo('mensal').length, 1);
+
+const planoP = DB.novoPlano({ ciclo: 'mensal', data: DB.hojeISO(), store_id: lojaP2.id, orcamento: 500 });
+check('o plano nasce com uma lista junto', !!planoP.list_id, true);
+check('e a lista guarda o ciclo', DB.get('lists', planoP.list_id).ciclo, 'mensal');
+
+const sug = Planejar.sugerirPara(DB, planoP);
+check('o app sugere o que esta acabando e o recorrente', sug.length >= 2, true);
+check('e cada sugestao diz o motivo', sug.every(s => !!s.texto && !!s.motivo), true);
+check('o recorrente esta entre elas', sug.some(s => s.item_id === papelP.id), true);
+
+/* PROPOE, NUNCA APLICA. Aplicar sozinho e o erro que custou 19 lancamentos e
+   R$ 5.322 no DOMI — aqui custaria mandar comprar o que ja se tem. */
+check('sugerir NAO poe nada na lista', DB.itensDaLista(planoP.list_id).length, 0);
+Planejar.aplicarSugestoes(DB, planoP, [sug[0].item_id]);
+check('so entra o que foi confirmado', DB.itensDaLista(planoP.list_id).length, 1);
+/* O que ja esta na lista nao e sugerido de novo. */
+check('e o que ja entrou nao volta a ser sugerido',
+  Planejar.sugerirPara(DB, planoP).some(s => s.item_id === sug[0].item_id), false);
+
+/* O PROXIMO PLANO: o mais proximo que ainda nao passou. Uma compra ATRASADA
+   continua sendo a proxima coisa a fazer — esconde-la seria fingir que ela
+   nao existe. */
+DB.apagarTudo();
+const atrasado = DB.novoPlano({ ciclo: 'mensal', data: diasAtras(3) });
+check('sem plano futuro, o atrasado e o proximo', DB.proximoPlano().id, atrasado.id);
+check('e o app sabe que ele atrasou', DB.diasAte(atrasado.data), -3);
+const futuro = DB.novoPlano({ ciclo: 'semanal', data: emDias(5) });
+check('com um futuro, ele passa a ser o proximo', DB.proximoPlano().id, futuro.id);
+
+/* ================================== A PROJECAO DO MES === */
+
+console.log('\n=== Projeção do mês ===');
+
+DB.apagarTudo();
+const mesP = DB.mesDe(DB.hojeISO());
+DB.setOrcamentoDoMes(mesP, 1000);
+check('o orcamento do mes fica gravado', DB.orcamentoDoMes(mesP), 1000);
+
+const proj0 = Planejar.projecaoDoMes(DB);
+check('sem gasto, a projecao e zero', proj0.projetado, 0);
+check('e a situacao e tranquila', proj0.situacao, 'tranquilo');
+
+/* Uma compra planejada de R$ 900 entra na projecao — e e isso que permite
+   avisar ANTES, em vez de a pessoa descobrir no extrato. */
+DB.novoPlano({ ciclo: 'mensal', data: emDiasNoMes(3), orcamento: 900 });
+const proj1 = Planejar.projecaoDoMes(DB);
+check('a compra marcada entra na projecao', proj1.planejado, 900);
+check('e o mes segue dentro do orcamento', proj1.estoura, false);
+
+DB.novoPlano({ ciclo: 'semanal', data: emDiasNoMes(5), orcamento: 300 });
+const proj2 = Planejar.projecaoDoMes(DB);
+check('duas compras somam', proj2.planejado, 1200);
+check('e agora o mes estoura', proj2.estoura, true);
+check('dizendo em quanto', Math.round(proj2.sobra), -200);
+
+/* SEM ORCAMENTO, O APP NAO OPINA. Inventar uma situacao seria opinar sobre o
+   dinheiro de alguem sem ter sido convidado. */
+DB.apagarTudo();
+const projSem = Planejar.projecaoDoMes(DB);
+check('sem orcamento nao ha situacao a declarar', projSem.situacao, 'sem_orcamento');
+check('nem folga a mostrar', projSem.sobra, null);
+
+/* ==================================== O CONSELHEIRO === */
+
+console.log('\n=== Conselheiro ===');
+
+DB.apagarTudo();
+check('sem dados, nao ha o que aconselhar', Planejar.conselhos(DB).length, 0);
+
+DB.setOrcamentoDoMes(DB.mesDe(DB.hojeISO()), 100);
+DB.novoPlano({ ciclo: 'mensal', data: emDiasNoMes(2), orcamento: 900 });
+const cons = Planejar.conselhos(DB);
+check('o estouro do mes vira conselho', cons.some(c => /fechar em/.test(c.titulo)), true);
+check('e todo conselho tem acao', cons.every(c => !!c.acao), true);
+check('e texto explicando', cons.every(c => !!c.texto), true);
+/* NO MAXIMO TRES. Um painel que avisa de tudo nao avisa de nada. */
+check('nunca passa de tres', Planejar.conselhos(DB, { limite: 3 }).length <= 3, true);
+
+/* ==================================== ONDE COMPRAR === */
+
+console.log('\n=== Onde comprar ===');
+
+DB.apagarTudo();
+const lojaA = DB.upsert('stores', { nome: 'Atacadão' });
+const lojaB = DB.upsert('stores', { nome: 'Assaí' });
+const listaOC = DB.novaLista({ nome: 'Teste' });
+
+const itensOC = [
+  ['Arroz', 'kg', 5, 25, 27],
+  ['Feijão', 'kg', 1, 8, 9],
+  ['Leite', 'l', 1, 5, 5.5],
+];
+for (const [nome, un, qtd, pa, pb] of itensOC) {
+  const it = DB.itemPorNome(nome, { unidade: un, qtd_habitual: qtd });
+  DB.addNaLista(listaOC.id, { item_id: it.id, qtd, unidade: un });
+  Precos.registrar(DB, { item_id: it.id, store_id: lojaA.id, data: diasAtras(10), preco_total: pa, qtd, unidade: un });
+  Precos.registrar(DB, { item_id: it.id, store_id: lojaB.id, data: diasAtras(8), preco_total: pb, qtd, unidade: un });
+}
+
+const oc = Decisoes.ondeComprar(DB, listaOC.id);
+check('compara as duas lojas', oc.lojas.length, 2);
+check('e acha a mais barata', oc.lojas[0].loja.id, lojaA.id);
+check('com os tres itens comparaveis', oc.cobertos, 3);
+check('e diz quanto se economiza', Math.round(oc.economia * 100) / 100, 3.5);
+
+/* A REGRA QUE TORNA HONESTO: um item comprado em uma loja so NAO entra. Somar
+   onde se tem historico e ignorar o resto compararia cestas diferentes — o
+   mesmo erro que a cesta comparavel evita na inflacao. */
+const soNumaLoja = DB.itemPorNome('Azeite', { unidade: 'ml', qtd_habitual: 500 });
+DB.addNaLista(listaOC.id, { item_id: soNumaLoja.id, qtd: 500, unidade: 'ml' });
+Precos.registrar(DB, { item_id: soNumaLoja.id, store_id: lojaA.id, data: diasAtras(5), preco_total: 30, qtd: 500, unidade: 'ml' });
+const oc2 = Decisoes.ondeComprar(DB, listaOC.id);
+check('item comprado numa loja so fica de fora', oc2.cobertos, 3);
+check('e o total da lista continua sendo dito', oc2.total, 4);
+
+/* Com uma loja so, nao ha comparacao a fazer — e o app diz isso. */
+DB.apagarTudo();
+const l1 = DB.upsert('stores', { nome: 'Unica' });
+const listaU = DB.novaLista({});
+const itU = DB.itemPorNome('Arroz', { unidade: 'kg' });
+DB.addNaLista(listaU.id, { item_id: itU.id, qtd: 5, unidade: 'kg' });
+Precos.registrar(DB, { item_id: itU.id, store_id: l1.id, data: diasAtras(5), preco_total: 25, qtd: 5, unidade: 'kg' });
+check('com uma loja so, o app explica em vez de comparar',
+  Decisoes.ondeComprar(DB, listaU.id).motivo, 'menos de dois mercados');
+
+/* ================================ VALE A PENA O ATACADO === */
+
+console.log('\n=== Vale a pena o atacado ===');
+
+DB.apagarTudo();
+const arrozV = DB.itemPorNome('Arroz', { categoria: 'mercearia', unidade: 'kg', qtd_habitual: 5 });
+for (const d of [60, 30]) {
+  Precos.registrar(DB, { item_id: arrozV.id, data: diasAtras(d), preco_total: 25, qtd: 5, unidade: 'kg' });
+}
+const vale = Decisoes.valeAPena(DB, arrozV.id, { preco: 45, qtd: 10, unidade: 'kg' });
+check('10 kg de arroz duram cerca de 60 dias', Math.round(vale.duracaoDias), 60);
+check('e cabem na validade da mercearia', vale.vale, true);
+check('com o motivo escrito', vale.porque.length >= 1, true);
+
+/* O CASO QUE O "MAIS POR MENOS" NAO PEGA: sai mais barato por quilo e mesmo
+   assim nao compensa, porque estraga antes de acabar. */
+const alfaceV = DB.itemPorNome('Alface', { categoria: 'hortifruti', unidade: 'un' });
+for (const d of [21, 14, 7]) {
+  Precos.registrar(DB, { item_id: alfaceV.id, data: diasAtras(d), preco_total: 4, qtd: 1, unidade: 'un' });
+}
+const valeAlf = Decisoes.valeAPena(DB, alfaceV.id, { preco: 20, qtd: 10, unidade: 'un' });
+check('dez alfaces nao compensam', valeAlf.vale, false);
+check('e o motivo e o estrago', /estraga|lixo/.test(valeAlf.porque.join(' ')), true);
+
+/* SEM RITMO CONHECIDO, O APP NAO OPINA — devolve null, que e diferente de nao. */
+const novoV = DB.itemPorNome('Quinoa', { categoria: 'mercearia', unidade: 'kg' });
+check('sem historico, nao ha veredito', Decisoes.valeAPena(DB, novoV.id, { preco: 40, qtd: 2, unidade: 'kg' }).vale, null);
+
+/* ==================================== PRECOS-ALVO === */
+
+console.log('\n=== Preços-alvo ===');
+
+DB.apagarTudo();
+const cafeA = DB.itemPorNome('Café', { unidade: 'g', qtd_habitual: 500 });
+Precos.registrar(DB, { item_id: cafeA.id, data: diasAtras(5), preco_total: 20, qtd: 500, unidade: 'g' });
+check('sem alvo, conferir devolve nulo',
+  Decisoes.conferirAlvo(DB, { item_id: cafeA.id, precoBase: 30, unidade: 'kg' }), null);
+
+Decisoes.definirAlvo(DB, { item_id: cafeA.id, valor: 35, unidade: 'kg' });
+const c1 = Decisoes.conferirAlvo(DB, { item_id: cafeA.id, precoBase: 30, unidade: 'kg' });
+check('preco abaixo do alvo bate', c1.bateu, true);
+const c2 = Decisoes.conferirAlvo(DB, { item_id: cafeA.id, precoBase: 40, unidade: 'kg' });
+check('e acima nao bate', c2.bateu, false);
+/* Unidade diferente NAO se compara: daria um numero, e o numero estaria errado. */
+check('alvo em kg nao se compara com preco em un',
+  Decisoes.conferirAlvo(DB, { item_id: cafeA.id, precoBase: 5, unidade: 'un' }), null);
+check('definir de novo nao duplica o alvo',
+  (Decisoes.definirAlvo(DB, { item_id: cafeA.id, valor: 30, unidade: 'kg' }), DB.all('price_targets').length), 1);
+check('o cafe a R$ 40/kg esta batendo o alvo de 30?', Decisoes.alvosBatidos(DB).length, 0);
+
+/* =============================== PARA ONDE VAI O DINHEIRO === */
+
+console.log('\n=== Curva ABC ===');
+
+DB.apagarTudo();
+const caro = DB.itemPorNome('Carne', { categoria: 'acougue', unidade: 'kg' });
+const barato = DB.itemPorNome('Sal', { categoria: 'mercearia', unidade: 'kg' });
+for (let i = 0; i < 4; i++) {
+  Precos.registrar(DB, { item_id: caro.id, data: diasAtras(i * 15), preco_total: 100, qtd: 2, unidade: 'kg' });
+  Precos.registrar(DB, { item_id: barato.id, data: diasAtras(i * 15), preco_total: 3, qtd: 1, unidade: 'kg' });
+}
+const abc = Decisoes.ondeVaiODinheiro(DB, { meses: 6 });
+check('a carne lidera o gasto', abc.itens[0].item.id, caro.id);
+check('e e classe A', abc.itens[0].classe, 'A');
+check('o sal nao e classe A', abc.itens.find(i => i.item.id === barato.id).classe !== 'A', true);
+check('e o app diz quantos fazem 80%', abc.quantosFazem80, 1);
+check('agrupando tambem por corredor', abc.porCategoria.length, 2);
+
+/* ========================================== COZINHA === */
+
+console.log('\n=== Cardápio e eventos ===');
+
+DB.apagarTudo();
+const nPratos = Cozinha.semearPratos(DB);
+check('o catalogo de pratos vem pronto', nPratos >= 10, true);
+check('e nao duplica ao rodar de novo', Cozinha.semearPratos(DB), 0);
+check('todo prato tem ingredientes',
+  DB.all('recipes').every(r => Cozinha.ingredientesDe(DB, r.id).length > 0), true);
+/* Todo ingrediente precisa de unidade que o motor entenda, senao o custo do
+   prato nunca fecha e a lista do cardapio sai errada. */
+check('e toda unidade de ingrediente e conversivel',
+  DB.all('recipe_items').every(r => !!Precos.normalizarUnidade(r.unidade)), true);
+
+const macarrao = DB.all('recipes').find(r => /Macarronada/.test(r.nome));
+check('o custo do prato nasce sem preco', Cozinha.custoDoPrato(DB, macarrao.id).custo, 0);
+
+const itMac = DB.all('items').find(i => i.nome === 'Macarrão');
+Precos.registrar(DB, { item_id: itMac.id, data: diasAtras(5), preco_total: 5, qtd: 500, unidade: 'g' });
+check('com preco, o custo aparece', Cozinha.custoDoPrato(DB, macarrao.id).custo > 0, true);
+
+/* O CARDAPIO VIRA LISTA, DESCONTANDO O QUE HA EM CASA — senao mandaria comprar
+   o macarrao que esta no armario, que e o erro que o app existe para evitar. */
+Cozinha.marcarNoCardapio(DB, DB.hojeISO(), macarrao.id, 2);
+const listaCard = Cozinha.listaDoCardapio(DB, DB.hojeISO(), DB.hojeISO());
+check('o cardapio vira lista de ingredientes', listaCard.length >= 4, true);
+check('e diz quanto precisa de cada um', listaCard.every(l => l.precisa > 0), true);
+/* Sem saber o que ha em casa, conta como zero: e melhor comprar de novo do que
+   ficar sem o ingrediente na hora de cozinhar. Os dois erros nao custam igual. */
+check('o que nao se sabe conta como zero em casa', listaCard.every(l => l.emCasa === 0), true);
+check('e a incerteza fica marcada', listaCard.some(l => l.incerto), true);
+
+/* EVENTOS: churrasco para 12 com as quantidades calculadas. */
+const churrasco = Cozinha.listaDeEvento(DB, 'churrasco', 12);
+check('o churrasco calcula as quantidades', churrasco.linhas.length >= 8, true);
+const carne = churrasco.linhas.find(l => l.item.nome === 'Bife');
+check('400 g de carne por pessoa da 4,8 kg', carne.qtd, 4.8);
+check('e dobrar as pessoas dobra a carne',
+  Cozinha.listaDeEvento(DB, 'churrasco', 24).linhas.find(l => l.item.nome === 'Bife').qtd, 9.6);
+/* Os fixos NAO escalam com as pessoas: gelo e agua sao por festa, nao por
+   cabeca. Escalar tudo seria comprar 60 litros de agua para 12 pessoas. */
+check('os itens fixos nao escalam',
+  Cozinha.listaDeEvento(DB, 'churrasco', 24).linhas.find(l => l.item.nome === 'Água mineral').qtd,
+  Cozinha.listaDeEvento(DB, 'churrasco', 12).linhas.find(l => l.item.nome === 'Água mineral').qtd);
+check('evento que nao existe devolve nulo', Cozinha.listaDeEvento(DB, 'inexistente', 5), null);
+
+const planoEv = Cozinha.criarListaDeEvento(DB, 'churrasco', 10, DB.hojeISO());
+check('o evento vira um plano com lista', !!planoEv && !!planoEv.list_id, true);
+check('com todos os itens dentro', DB.itensDaLista(planoEv.list_id).length, churrasco.linhas.length);
+check('e o ciclo e evento', planoEv.ciclo, 'evento');
+
+/* ========================================== RATEIO === */
+
+console.log('\n=== Rateio ===');
+
+DB.apagarTudo();
+const listaR = DB.novaLista({ nome: 'Dividida' });
+DB.upsert('lists', { id: listaR.id, status: 'fechada', data_fechamento: DB.hojeISO(), total_cupom: 300 });
+const ana = DB.upsert('members', { nome: 'Ana' });
+const bruno = DB.upsert('members', { nome: 'Bruno' });
+
+const rateio = Cozinha.ratear(DB, listaR.id, [ana.id, bruno.id]);
+check('divide o total entre os membros', rateio.quota, 150);
+check('e todos comecam devendo', rateio.membros.every(m => m.saldo === -150), true);
+
+Cozinha.registrarPagamento(DB, listaR.id, ana.id, 300);
+const rateio2 = Cozinha.ratear(DB, listaR.id, [ana.id, bruno.id]);
+const daAna = rateio2.membros.find(m => m.membro.id === ana.id);
+const doBruno = rateio2.membros.find(m => m.membro.id === bruno.id);
+check('quem pagou tudo fica credor de metade', daAna.saldo, 150);
+check('e o outro segue devendo a parte dele', doBruno.saldo, -150);
+check('os saldos se anulam', Math.round(daAna.saldo + doBruno.saldo), 0);
+
+/* ============================== AS TELAS DO ASSISTENTE === */
+
+console.log('\n=== As telas novas montam ===');
+
+eval(fs.readFileSync(BASE + 'js/views/hoje.js', 'utf8') + '; global.ViewHoje = ViewHoje;');
+eval(fs.readFileSync(BASE + 'js/views/planejar.js', 'utf8') + '; global.ViewPlanejar = ViewPlanejar;');
+eval(fs.readFileSync(BASE + 'js/views/despensa.js', 'utf8') + '; global.ViewDespensa = ViewDespensa;');
+eval(fs.readFileSync(BASE + 'js/views/analise.js', 'utf8') + '; global.ViewAnalise = ViewAnalise;');
+
+DB.apagarTudo();
+const hojeVazio = ViewHoje.render();
+check('HOJE monta com o app vazio', hojeVazio.length > 300, true);
+/* O ESTADO VAZIO ENSINA. "Sem dados" so informa o que a pessoa ja ve. */
+check('e convida a marcar a primeira compra', /Marcar uma compra/.test(hojeVazio), true);
+check('sem inventar numero nenhum', /R\$ 0,00/.test(hojeVazio), false);
+
+DB.novoPlano({ ciclo: 'mensal', data: emDias(3), orcamento: 800 });
+const hojeCheio = ViewHoje.render();
+check('com plano, HOJE mostra a proxima compra', /Próxima compra/.test(hojeCheio), true);
+check('e quantos dias faltam', /em 3 dias/.test(hojeCheio), true);
+
+check('PLANEJAR monta', ViewPlanejar.render().length > 300, true);
+check('DESPENSA monta vazia explicando como se enche',
+  /se enche sozinha/.test(ViewDespensa.render()), true);
+check('ANALISE monta', ViewAnalise.render().length > 200, true);
+
+/* As cinco abas existem nos DOIS modos de navegacao: uma aba que so aparece
+   num deles some para metade dos usuarios. */
+const abasDock2 = [...shell.matchAll(/class="dock-item"[^>]*data-aba="([a-z]+)"/g)].map(m => m[1]);
+const abasSide2 = [...shell.matchAll(/class="side-item"[^>]*data-aba="([a-z]+)"/g)].map(m => m[1]);
+check('a barra de baixo tem as cinco abas', abasDock2.length, 5);
+check('a sidebar tambem', abasSide2.length, 5);
+check('e sao as mesmas', abasDock2.every(a => abasSide2.includes(a)), true);
+check('HOJE e a primeira', abasDock2[0], 'hoje');
+
+
+/* ============== AS LACUNAS QUE AS SABOTAGENS DAS ONDAS REVELARAM ===
+
+   Cinco sabotagens passaram na primeira rodada. Uma delas nao era teste vazio:
+   era um defeito no PROPRIO HELPER de assercao — Number(null) e 0, entao todo
+   check(0, null) passava. Num app cujo coracao e distinguir "nao sei" de
+   "acabou", isso invalidava silenciosamente uma familia inteira de testes.
+
+   As outras quatro sao os cenarios que faltavam. */
+
+console.log('\n=== As lacunas das ondas ===');
+
+/* 1. O HELPER: null nao e zero. A prova de que a correcao pega. */
+{
+  const antes = fail;
+  // Estas DEVEM reprovar se o helper voltar a confundir os dois
+  const ehVazio = v => v === null || v === undefined;
+  check('null e null', ehVazio(null), true);
+  check('zero nao e vazio', ehVazio(0), false);
+  check('e o helper distingue os dois', antes, fail);
+}
+
+/* 2. PERECIVEL NAO TEM SALDO — com um cenario em que o saldo calculado seria
+   ZERO, que e onde a confusao entre null e 0 escondia o defeito. */
+DB.apagarTudo();
+const alfaceL = DB.itemPorNome('Alface', { categoria: 'hortifruti', unidade: 'un' });
+for (const d of [30, 15]) {
+  Precos.registrar(DB, { item_id: alfaceL.id, data: diasAtras(d), preco_total: 4, qtd: 1, unidade: 'un' });
+}
+const sAlfL = Despensa.saldoDe(DB, alfaceL.id);
+check('o saldo de perecivel e desconhecido, nao zero', sAlfL.saldo === null, true);
+check('e nao e o numero zero', sAlfL.saldo === 0, false);
+/* O nao-perecivel do mesmo cenario TEM saldo — senao o teste acima passaria
+   com a funcao inteira quebrada. */
+const arrozL = DB.itemPorNome('Arroz', { categoria: 'mercearia', unidade: 'kg' });
+for (const d of [30, 15]) {
+  Precos.registrar(DB, { item_id: arrozL.id, data: diasAtras(d), preco_total: 25, qtd: 5, unidade: 'kg' });
+}
+check('mas o que se estoca tem saldo em numero', typeof Despensa.saldoDe(DB, arrozL.id).saldo, 'number');
+
+/* 3. O CONSELHEIRO NUNCA PASSA DE TRES — com mais de tres candidatos, que e a
+   unica situacao em que o corte significa alguma coisa. */
+DB.apagarTudo();
+const mesL = DB.mesDe(DB.hojeISO());
+DB.setOrcamentoDoMes(mesL, 50);                       // 1: o mes estoura
+DB.novoPlano({ ciclo: 'mensal', data: emDiasNoMes(1), orcamento: 900 });  // 2: compra chegando
+for (const nome of ['Café', 'Feijão', 'Leite', 'Açúcar']) {              // 3: itens acabando
+  const it = DB.itemPorNome(nome, { categoria: 'mercearia', unidade: 'kg' });
+  for (const d of [60, 30]) {
+    Precos.registrar(DB, { item_id: it.id, data: diasAtras(d), preco_total: 10, qtd: 1, unidade: 'kg' });
+  }
+}
+for (const nome of ['Alface', 'Tomate']) {                               // 4: perecivel vencido
+  const it = DB.itemPorNome(nome, { categoria: 'hortifruti', unidade: 'kg' });
+  for (const d of [40, 20]) {
+    Precos.registrar(DB, { item_id: it.id, data: diasAtras(d), preco_total: 5, qtd: 1, unidade: 'kg' });
+  }
+}
+const todos = Planejar.conselhos(DB, { limite: 99 });
+check('o cenario produz mais de tres candidatos', todos.length > 3, true);
+check('mas o conselheiro corta em tres', Planejar.conselhos(DB, { limite: 3 }).length, 3);
+/* E corta pelos MAIS GRAVES, nao pelos primeiros que aparecerem. */
+const tres = Planejar.conselhos(DB, { limite: 3 });
+check('e ficam os de maior peso', tres[0].peso >= tres[2].peso, true);
+
+/* 4. VALE-A-PENA E A VALIDADE, no caso NAO PERECIVEL — que e onde a regra da
+   validade tipica atua, e onde o teste anterior nao chegava. */
+DB.apagarTudo();
+const arrozV2 = DB.itemPorNome('Arroz', { categoria: 'mercearia', unidade: 'kg', qtd_habitual: 5 });
+for (const d of [60, 30]) {
+  Precos.registrar(DB, { item_id: arrozV2.id, data: diasAtras(d), preco_total: 25, qtd: 5, unidade: 'kg' });
+}
+// 5 kg/30 dias. 50 kg durariam 300 dias, e a mercearia dura ~180.
+const exagero = Decisoes.valeAPena(DB, arrozV2.id, { preco: 200, qtd: 50, unidade: 'kg' });
+check('50 kg de arroz duram mais que a validade', Math.round(exagero.duracaoDias), 300);
+check('e por isso nao compensam', exagero.vale, false);
+check('com o motivo dito em palavras', /lixo|durar/.test(exagero.porque.join(' ')), true);
+// E a quantidade que cabe na validade continua valendo a pena
+const cabe = Decisoes.valeAPena(DB, arrozV2.id, { preco: 45, qtd: 10, unidade: 'kg' });
+check('mas 10 kg cabem e compensam', cabe.vale, true);
+
+/* 5. O CARDAPIO DESCONTA O QUE HA EM CASA — com um item que de fato existe na
+   despensa, que e o unico caso em que o desconto acontece. */
+DB.apagarTudo();
+Cozinha.semearPratos(DB);
+const macL = DB.all('recipes').find(r => /Macarronada/.test(r.nome));
+const itMacL = DB.all('items').find(i => i.nome === 'Macarrão');
+// Duas compras: nasce a cadencia, e com ela o saldo estimavel
+for (const d of [40, 5]) {
+  Precos.registrar(DB, { item_id: itMacL.id, data: diasAtras(d), preco_total: 5, qtd: 2, unidade: 'kg' });
+}
+const saldoMac = Despensa.saldoDe(DB, itMacL.id);
+check('o macarrao tem saldo estimado em casa', saldoMac.saldo > 0, true);
+
+Cozinha.marcarNoCardapio(DB, DB.hojeISO(), macL.id, 2);
+const linhaMac = Cozinha.listaDoCardapio(DB, DB.hojeISO(), DB.hojeISO())
+  .find(l => l.item_id === itMacL.id);
+check('o cardapio conta o que ja existe em casa', linhaMac.emCasa > 0, true);
+/* A CONTA QUE IMPORTA: faltam = precisa − emCasa. Sem o desconto, a lista
+   mandaria comprar o macarrao que esta no armario — o erro que este app existe
+   para evitar. */
+/* faltam = max(0, precisa − emCasa). O max importa: com bastante em casa a
+   conta da negativo, e "faltam −1,5 kg" nao significa nada para ninguem. */
+check('e desconta na hora de dizer o que falta',
+  Math.round(Math.max(0, linhaMac.precisa - linhaMac.emCasa) * 1000) / 1000,
+  Math.round(linhaMac.faltam * 1000) / 1000);
+check('e o que falta nunca e negativo', linhaMac.faltam >= 0, true);
+check('com bastante em casa, nao falta nada', linhaMac.faltam, 0);
+check('e a linha se marca como "ja tem"', linhaMac.temEmCasa, true);
+
+/* 6. HOJE NAO INVENTA VALOR — com um plano SEM historico de preco, que e onde
+   o "—" precisa aparecer no lugar de R$ 0,00. */
+DB.apagarTudo();
+const planoSemPreco = DB.novoPlano({ ciclo: 'mensal', data: emDiasNoMes(2) });
+const itemNovo = DB.itemPorNome('Coisa nova', { unidade: 'un' });
+DB.addNaLista(planoSemPreco.list_id, { item_id: itemNovo.id, qtd: 1, unidade: 'un' });
+const htmlHoje = ViewHoje.render();
+check('o plano aparece na tela', /Próxima compra/.test(htmlHoje), true);
+check('mas sem historico o previsto e um traco', /<b class="valor grande">—<\/b>/.test(htmlHoje), true);
+check('e nunca R$ 0,00', /R\$ 0,00/.test(htmlHoje), false);
 
   console.log(`
 ${ok} passaram, ${fail} falharam`);

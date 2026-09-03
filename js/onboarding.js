@@ -46,8 +46,27 @@ const Onboarding = {
 
   fechar(concluiu) {
     document.body.classList.remove('em-abertura');
-    if (concluiu) this.marcarFeito();
-    irPara('lista');
+    if (concluiu) {
+      this.marcarFeito();
+      /* A PRIMEIRA COMPRA JÁ NASCE MARCADA quando a pessoa disse o dia. É o que
+         faz a página HOJE abrir com algo a dizer em vez de um convite vazio —
+         ninguém deve terminar a apresentação e encontrar um app sem nada. */
+      const cfg = DB.cfg() || {};
+      if (!DB.planosAbertos().length && cfg.dia_da_compra_grande) {
+        const hoje = new Date(DB.hojeISO() + 'T12:00:00');
+        const dia = Number(cfg.dia_da_compra_grande);
+        if (hoje.getDate() >= dia) hoje.setMonth(hoje.getMonth() + 1);
+        const ultimo = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).getDate();
+        hoje.setDate(Math.min(dia, ultimo));
+        const p = n => String(n).padStart(2, '0');
+        DB.novoPlano({
+          ciclo: 'mensal',
+          data: `${hoje.getFullYear()}-${p(hoje.getMonth() + 1)}-${p(hoje.getDate())}`,
+          orcamento: cfg.gasto_mensal_esperado || null,
+        });
+      }
+    }
+    irPara('hoje');
   },
 
   desenhar() {
@@ -158,6 +177,91 @@ const Onboarding = {
       </div>`;
     },
 
+    /* TELA 3 — QUEM É VOCÊ, E COMO A CASA SE CHAMA.
+
+       Perguntado agora porque o passo seguinte (a nuvem) precisa do nome, e
+       porque o app passa a te chamar pelo nome na página HOJE. Só o primeiro
+       nome é obrigatório — e mesmo ele é pulável. */
+    function suaCasa() {
+      const cfg = DB.cfg() || {};
+      return `<div class="ob">
+        <h1 class="ob-titulo">Como te chamamos?</h1>
+        <p class="ob-texto">O app fala com você, e fica melhor sabendo o seu nome.</p>
+
+        <input class="campo" id="ob-nome" placeholder="Seu nome" autocomplete="given-name"
+               value="${UI.esc((Sync.cfg && Sync.cfg.nome) || '')}">
+        <input class="campo" id="ob-casa" placeholder="Nome da casa (ex.: Casa da Ana)"
+               autocomplete="off" style="margin-top:var(--e2)"
+               value="${UI.esc(cfg.familia_nome || '')}">
+        <p class="ob-texto pequeno">O nome da casa aparece quando você dividir a
+          lista com outra pessoa. Dá para mudar depois.</p>
+
+        ${this.pontos()}
+        <button class="btn btn-principal btn-largo btn-grande" data-ob="avancar">Continuar</button>
+        <button class="btn-texto" data-ob="voltar">Voltar</button>
+      </div>`;
+    },
+
+    /* TELA 4 — A NUVEM.
+
+       É AQUI QUE O APP ANTIGO FALHAVA: a sincronização existia, mas escondida
+       nos ajustes, e quem instalava no segundo aparelho não descobria que era
+       possível. Perguntar na abertura é o que transforma "recurso que existe"
+       em "recurso que se usa".
+
+       As duas opções são legítimas e ficam lado a lado. "Só neste aparelho"
+       não é a opção do preguiçoso: é a escolha certa para quem usa um celular
+       só, e o app funciona inteiro assim. */
+    function aNuvem() {
+      return `<div class="ob">
+        <h1 class="ob-titulo">Usar em quantos aparelhos?</h1>
+        <p class="ob-texto">Dá para usar só aqui, ou dividir a lista e o
+          histórico com quem faz as compras com você.</p>
+
+        <button class="escolha" data-ob="local">
+          <b>📱 Só neste aparelho</b>
+          <span>Tudo fica guardado aqui. Funciona sem internet e sem conta —
+            é a escolha certa para quem usa um celular só.</span>
+        </button>
+
+        <button class="escolha" data-ob="nuvem">
+          <b>☁️ Sincronizar entre aparelhos</b>
+          <span>A mesma lista no seu celular e no de casa. Precisa de uma conta
+            gratuita no Supabase — leva uns 10 minutos, uma vez só.</span>
+        </button>
+
+        <p class="ob-texto pequeno">Escolher agora não fecha porta nenhuma: dá
+          para ligar a sincronização depois, em Ajustes.</p>
+
+        ${this.pontos()}
+        <button class="btn-texto" data-ob="voltar">Voltar</button>
+      </div>`;
+    },
+
+    /* TELA 5 — PROTEÇÃO. Pulável, e com o aviso que precisa ser lido ANTES:
+       o PIN deriva a chave, então esquecê-lo custa os dados do aparelho. */
+    function protecao() {
+      return `<div class="ob">
+        <h1 class="ob-titulo">Proteger o aparelho?</h1>
+        <p class="ob-texto">O histórico diz onde você faz mercado, quanto gasta
+          e o que consome. Um PIN <b>criptografa tudo isso</b> aqui dentro.</p>
+
+        <div class="ob-exemplo">
+          <b>Antes de decidir:</b>
+          <p class="sub">O PIN não fica guardado em lugar nenhum — ele
+            <b>gera a chave</b> que abre os dados. Por isso não há recuperação:
+            esquecer o PIN significa perder o histórico deste aparelho.</p>
+        </div>
+
+        <button class="btn btn-principal btn-largo btn-grande" data-ob="pin">Criar um PIN</button>
+        <button class="btn btn-largo btn-grande" data-ob="avancar" style="margin-top:var(--e2)">
+          Agora não
+        </button>
+        ${this.pontos()}
+        <button class="btn-texto" data-ob="voltar">Voltar</button>
+      </div>`;
+    },
+
     /* TELA 3 — MONTAR A PRIMEIRA LISTA TOCANDO.
 
        Aqui o tutorial vira trabalho de verdade: o que a pessoa escolher fica.
@@ -189,6 +293,38 @@ const Onboarding = {
           <button class="btn btn-principal btn-largo btn-grande" data-ob="avancar">Continuar</button>
           <button class="btn-texto" data-ob="voltar">Voltar</button>
         </div>
+      </div>`;
+    },
+
+    /* TELA — A ROTINA DA CASA.
+
+       Não é burocracia: as duas respostas alimentam o calendário de compras e
+       a projeção do mês. Sem elas, a página HOJE abre sem nada a dizer no
+       primeiro dia — e um assistente que não tem o que dizer não parece um
+       assistente. */
+    function aRotina() {
+      const cfg = DB.cfg() || {};
+      return `<div class="ob">
+        <h1 class="ob-titulo">Como é a rotina da casa?</h1>
+        <p class="ob-texto">Duas respostas rápidas, e o app já consegue se
+          organizar com você.</p>
+
+        <p class="secao">Que dia costuma ser a compra grande?</p>
+        <select class="campo" id="ob-dia">
+          <option value="">Não tenho dia fixo</option>
+          ${Array.from({ length: 28 }, (_, i) => i + 1).map(d =>
+            `<option value="${d}" ${cfg.dia_da_compra_grande == d ? 'selected' : ''}>dia ${d}</option>`).join('')}
+        </select>
+
+        <p class="secao">Quanto costuma gastar por mês com mercado?</p>
+        <input class="campo campo-preco" id="ob-gasto" inputmode="decimal"
+               placeholder="R$ 0,00" value="${cfg.gasto_mensal_esperado ? UI.fmt(cfg.gasto_mensal_esperado) : ''}">
+        <p class="ob-texto pequeno">Serve para o app avisar <b>antes</b> de
+          estourar, não para cobrar você. Pode ser um chute — dá para mudar depois.</p>
+
+        ${this.pontos()}
+        <button class="btn btn-principal btn-largo btn-grande" data-ob="avancar">Continuar</button>
+        <button class="btn-texto" data-ob="voltar">Voltar</button>
       </div>`;
     },
 
@@ -264,7 +400,33 @@ const Onboarding = {
     for (const b of tela.querySelectorAll('[data-ob]')) {
       b.addEventListener('click', () => {
         const acao = b.dataset.ob;
-        if (acao === 'avancar') { this.aplicarEscolhas(); this.avancar(); }
+        if (acao === 'avancar') { this.guardarRespostas(); this.aplicarEscolhas(); this.avancar(); }
+        else if (acao === 'local') {
+          /* "Só neste aparelho" é uma escolha, não uma desistência: fica
+             registrada para o app não voltar a perguntar. */
+          this.guardarRespostas();
+          try { localStorage.setItem('cesta.nuvem', 'local'); } catch (_) {}
+          this.avancar();
+        }
+        else if (acao === 'nuvem') {
+          this.guardarRespostas();
+          this.marcarFeito();
+          document.body.classList.remove('em-abertura');
+          /* Manda para a configuração real, com o app já montado por trás: se a
+             pessoa desistir no meio, ela cai num app funcionando, não num vazio. */
+          irPara('hoje');
+          abrirSync();
+        }
+        else if (acao === 'pin') {
+          this.guardarRespostas();
+          const seguir = () => { this.avancar(); };
+          Bloqueio.criarPin({ aoTerminar: async pin => {
+            await Auth.ativar(pin);
+            UI.toast('Pronto. Seus dados estão criptografados neste aparelho.', 5000);
+            document.body.classList.add('em-abertura');
+            seguir();
+          } });
+        }
         else if (acao === 'voltar') this.voltar();
         else if (acao === 'pular') { this.aplicarEscolhas(); this.fechar(true); }
         else if (acao === 'importar') { this.aplicarEscolhas(); this.marcarFeito(); this.fechar(true); abrirImportacao(); }
@@ -285,6 +447,30 @@ const Onboarding = {
             : n === 1 ? '1 item escolhido' : `${n} itens escolhidos`;
         }
       });
+    }
+  },
+
+  /* Grava as respostas das telas de texto a cada transição. Sem isto, voltar
+     uma tela apagaria o que a pessoa acabou de escrever — e ela não voltaria a
+     escrever de novo. */
+  guardarRespostas() {
+    const nome = document.querySelector('#ob-nome');
+    if (nome && nome.value.trim()) {
+      Sync.load();
+      Sync.cfg.nome = nome.value.trim();
+      Sync.saveCfg();
+    }
+    const casa = document.querySelector('#ob-casa');
+    if (casa && casa.value.trim()) DB.setCfg({ familia_nome: casa.value.trim() });
+
+    const dia = document.querySelector('#ob-dia');
+    if (dia) DB.setCfg({ dia_da_compra_grande: dia.value ? Number(dia.value) : null });
+
+    const gasto = document.querySelector('#ob-gasto');
+    if (gasto && gasto.value) {
+      const v = UI.lerMoeda(gasto);
+      DB.setCfg({ gasto_mensal_esperado: v || null });
+      if (v) DB.setOrcamentoDoMes(DB.mesDe(DB.hojeISO()), v);
     }
   },
 

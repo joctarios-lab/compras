@@ -24,10 +24,36 @@ const STORES = [
   'lists',       // as compras, planejadas ou fechadas
   'list_items',  // as linhas de cada compra
   'price_obs',   // A FONTE ÚNICA de toda comparação
-  'nfce_docs',   // notas importadas — dedupe pela chave de 44 dígitos (F3)
-  'aliases',     // (loja, texto do PDV) → produto: o vínculo aprendido (F3)
+  'nfce_docs',   // notas importadas — dedupe pela chave de 44 dígitos
+  'aliases',     // (loja, texto do PDV) → produto: o vínculo aprendido
+
+  /* ---- o assistente (ondas 1 a 3) ----
+     Tudo aqui é DERIVADO ou PLANEJADO; nada disto é fonte de preço. price_obs
+     continua sendo a única verdade sobre quanto as coisas custam. */
+  'plans',        // compras planejadas: data, ciclo, loja, orçamento
+  'pantry_fix',   // correções da despensa feitas à mão (a despensa em si é derivada)
+  'budgets',      // orçamento do mês, por ciclo
+  'recurring',    // o que entra em toda compra de um ciclo
+  'price_targets',// "me avise quando o café cair de R$ 18/kg"
+  'recipes',      // receitas da casa
+  'recipe_items', // ingredientes de cada receita
+  'menu',         // cardápio: data + refeição + receita
+  'events',       // churrasco para 12, Natal, volta às aulas
+  'members',      // quem mora na casa: nome, restrições, cor
+  'splits',       // rateio de uma compra entre membros
+
   'settings',
 ];
+
+/* Os ciclos de compra da família. Não é enfeite: cada um tem gatilho, lugar e
+   comportamento diferentes, e o app se comporta de acordo — o rancho pede
+   planejamento e orçamento, a emergência pede três toques. */
+const CICLOS = {
+  mensal:  { nome: 'Compra do mês', icone: '📦', dias: 30, planeja: true },
+  semanal: { nome: 'Compra da semana', icone: '🛒', dias: 7, planeja: true },
+  dia:     { nome: 'Do dia a dia', icone: '⚡', dias: 1, planeja: false },
+  evento:  { nome: 'Evento', icone: '🎉', dias: null, planeja: true },
+};
 
 /* Criptografia em repouso: AES-256-GCM com a chave derivada do PIN.
    Quem manda no ciclo é js/auth.js; aqui ficam só a leitura e a escrita. */
@@ -201,6 +227,11 @@ const DB = {
     this.data.settings = [{
       id: this.uid(),
       categorias,
+      // A rotina da casa, perguntada na abertura: é o que faz a página HOJE ter
+      // o que dizer no primeiro dia, em vez de esperar meses de uso.
+      dia_da_compra_grande: null,
+      gasto_mensal_esperado: null,
+      ciclo_padrao: 'mensal',
       orcamento_padrao: null,
       tema: 'auto',
       loja_favorita: null,
@@ -260,8 +291,9 @@ const DB = {
 
   /* ----------------------------------------------------- listas (F1) --- */
 
-  novaLista({ nome, store_id, orcamento } = {}) {
+  novaLista({ nome, store_id, orcamento, ciclo } = {}) {
     return this.upsert('lists', {
+      ciclo: ciclo || 'mensal',
       nome: nome || 'Compra de ' + this.hojeISO().split('-').reverse().slice(0, 2).join('/'),
       status: 'planejada',
       store_id: store_id || null,
@@ -324,6 +356,106 @@ const DB = {
     };
   },
 
+  /* ------------------------------------------------- planos (onda 1) --- */
+
+  /* Um plano é uma compra AGENDADA: "rancho do mês, sábado 05/10, Atacadão,
+     R$ 1.200". É o que transforma "algum dia eu vou" em um compromisso com
+     data e orçamento — e o que dá ao app um motivo para ser aberto fora do
+     mercado. */
+  novoPlano({ ciclo = 'mensal', data, store_id, orcamento, nome } = {}) {
+    const c = CICLOS[ciclo] || CICLOS.mensal;
+    const plano = this.upsert('plans', {
+      ciclo,
+      nome: nome || c.nome,
+      data: data || this.hojeISO(),
+      store_id: store_id || null,
+      orcamento: orcamento == null ? null : Number(orcamento),
+      status: 'planejado',
+      list_id: null,
+    });
+    // A lista nasce junto: um plano sem lista seria um lembrete, não um plano.
+    const lista = this.novaLista({ nome: plano.nome, store_id, orcamento, ciclo });
+    this.upsert('plans', { id: plano.id, list_id: lista.id });
+    return this.get('plans', plano.id);
+  },
+
+  planosAbertos() {
+    return this.all('plans')
+      .filter(p => p.status !== 'fechado')
+      .sort((a, b) => String(a.data).localeCompare(String(b.data)));
+  },
+
+  /* O próximo plano é o mais próximo que ainda não passou; se todos passaram,
+     é o atrasado mais recente — porque uma compra atrasada continua sendo a
+     próxima coisa a fazer, e escondê-la seria fingir que ela não existe. */
+  proximoPlano() {
+    const hoje = this.hojeISO();
+    const abertos = this.planosAbertos();
+    return abertos.find(p => p.data >= hoje) || abertos[abertos.length - 1] || null;
+  },
+
+  diasAte(dataISO) {
+    const a = new Date(this.hojeISO() + 'T12:00:00');
+    const b = new Date(String(dataISO) + 'T12:00:00');
+    return Math.round((b - a) / 864e5);
+  },
+
+  /* ---------------------------------------------- recorrentes (onda 1) --- */
+
+  /* O que entra em TODA compra de um ciclo: papel higiênico no rancho, pão na
+     semanal. Sem isso a pessoa remonta a mesma lista todo mês. */
+  recorrentesDo(ciclo) {
+    return this.all('recurring').filter(r => r.ciclo === ciclo);
+  },
+
+  marcarRecorrente(item_id, ciclo, ligado) {
+    const ja = this.all('recurring').find(r => r.item_id === item_id && r.ciclo === ciclo);
+    if (ligado && !ja) return this.upsert('recurring', { item_id, ciclo });
+    if (!ligado && ja) this.remove('recurring', ja.id);
+    return null;
+  },
+
+  /* ----------------------------------------------- orçamento (onda 1) --- */
+
+  /* O orçamento do MÊS é diferente do orçamento da COMPRA, e os dois aparecem
+     no app. Quem estoura não estoura numa compra — estoura no mês, e só
+     descobre no extrato. Dois números, dois nomes: a mesma regra de
+     "cesta comparável ≠ total gasto". */
+  orcamentoDoMes(mes) {
+    const m = mes || this.mesDe(this.hojeISO());
+    const gravado = this.all('budgets').find(b => b.mes === m && !b.ciclo);
+    if (gravado) return gravado.valor;
+    const cfg = this.cfg();
+    return cfg && cfg.gasto_mensal_esperado ? cfg.gasto_mensal_esperado : null;
+  },
+
+  setOrcamentoDoMes(mes, valor) {
+    const m = mes || this.mesDe(this.hojeISO());
+    const ja = this.all('budgets').find(b => b.mes === m && !b.ciclo);
+    if (ja) return this.upsert('budgets', { id: ja.id, valor: Number(valor) || null });
+    return this.upsert('budgets', { mes: m, ciclo: null, valor: Number(valor) || null });
+  },
+
+  /* --------------------------------------------- preço-alvo (onda 2) --- */
+
+  alvoDe(item_id, product_id) {
+    return this.all('price_targets').find(a =>
+      (product_id && a.product_id === product_id) || (!a.product_id && a.item_id === item_id)) || null;
+  },
+
+  /* ------------------------------------------------ membros (onda 3) --- */
+
+  membrosDaCasa() { return this.all('members'); },
+
+  /* Restrições alimentares filtram sugestões e cardápio. Elas existem no
+     modelo desde já porque acrescentá-las depois obrigaria a revisitar toda
+     tela que sugere comida. */
+  restricoesDaCasa() {
+    const todas = [];
+    for (const m of this.membrosDaCasa()) for (const r of m.restricoes || []) todas.push(r);
+    return [...new Set(todas)];
+  },
+
   /* --------------------------------------------------------- backup --- */
 
   exportJSON() { return JSON.stringify(this.data, null, 2); },
@@ -344,4 +476,4 @@ const DB = {
   },
 };
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { DB, STORES, DB_KEY };
+if (typeof module !== 'undefined' && module.exports) module.exports = { DB, STORES, DB_KEY, CICLOS };

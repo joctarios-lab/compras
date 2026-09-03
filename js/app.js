@@ -6,7 +6,7 @@
 'use strict';
 
 const state = {
-  aba: 'lista',
+  aba: 'hoje',
 };
 
 /* ----------------------------------------------------------------- tema --- */
@@ -27,10 +27,14 @@ function temaAtual() {
 
 /* ----------------------------------------------------------------- abas --- */
 
-const ABAS = ['lista', 'mercado', 'historico', 'produtos'];
+/* CINCO ABAS. Mercado não é aba fixa: ele só existe quando há compra em
+   curso, e ocupar o lugar mais valioso da tela com "você não está comprando"
+   seria desperdiçá-lo. Lista vive dentro de PLANEJAR; histórico e produtos,
+   dentro de ANÁLISE. */
+const ABAS = ['hoje', 'planejar', 'mercado', 'despensa', 'analise', 'lista'];
 
 function irPara(aba) {
-  if (!ABAS.includes(aba)) aba = 'lista';
+  if (!ABAS.includes(aba)) aba = 'hoje';
 
   /* Sair do Modo Mercado por outra aba tem de DESLIGAR o modo: senão a classe no
      body sobrevive, o alvo de toque continua grande na tela errada e o wakeLock
@@ -41,7 +45,19 @@ function irPara(aba) {
   const tela = document.getElementById('tela');
   const recarregar = () => irPara(aba);
 
-  if (aba === 'lista') {
+  if (aba === 'hoje') {
+    tela.innerHTML = ViewHoje.render();
+    ViewHoje.ligar(tela);
+  } else if (aba === 'planejar') {
+    tela.innerHTML = ViewPlanejar.render();
+    ViewPlanejar.ligar(tela);
+  } else if (aba === 'despensa') {
+    tela.innerHTML = ViewDespensa.render();
+    ViewDespensa.ligar(tela);
+  } else if (aba === 'analise') {
+    tela.innerHTML = ViewAnalise.render();
+    ViewAnalise.ligar(tela);
+  } else if (aba === 'lista') {
     tela.innerHTML = ViewLista.render();
     ViewLista.ligar(tela, recarregar);
   } else if (aba === 'mercado') {
@@ -63,12 +79,6 @@ function irPara(aba) {
       tela.innerHTML = Mercado.render();
       Mercado.ligar(tela, recarregar);
     }
-  } else if (aba === 'produtos') {
-    tela.innerHTML = ViewProdutos.render();
-    ViewProdutos.ligar(tela);
-  } else {
-    tela.innerHTML = ViewHistorico.render();
-    ViewHistorico.ligar(tela);
   }
 
   pintarIcones(tela);
@@ -81,8 +91,8 @@ function irPara(aba) {
 
 /* Entrar no Modo Mercado: escolhe a loja antes, porque preço sem loja é um
    número que não se consegue explicar depois. */
-function abrirMercado() {
-  const lista = DB.listaEmCurso() || DB.listasPlanejadas()[0];
+function abrirMercado(listaId) {
+  const lista = (listaId && DB.get('lists', listaId)) || DB.listaEmCurso() || DB.listasPlanejadas()[0];
   if (!lista) { UI.toast('Monte a lista primeiro'); return; }
   if (lista.store_id) { entrarNoMercado(lista); return; }
 
@@ -178,7 +188,7 @@ function abrirApp() {
     Onboarding.abrir();
   } else {
     // Abre onde a pessoa parou: quem está no meio de uma compra volta ao corredor
-    irPara(DB.listaEmCurso() ? 'mercado' : 'lista');
+    irPara(DB.listaEmCurso() ? 'mercado' : 'hoje');
   }
 
   /* Sincroniza ao abrir e ao voltar do bolso, sem nunca segurar a tela: o app

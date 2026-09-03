@@ -19,7 +19,7 @@
 <!-- Figtree nos títulos e na marca; Inter nos valores, onde dígito de largura
      fixa importa mais que personalidade. As mesmas do DOMI. -->
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css?v=3">
+<link rel="stylesheet" href="css/styles.css?v=4">
 <script>
   /* TEMA ANTES DA PRIMEIRA PINTURA.
 
@@ -51,12 +51,13 @@
     </div>
 
     <nav class="sidebar-menu">
-      <p class="sidebar-secao">Comprar</p>
-      <button class="side-item" data-aba="lista"><span class="tab-ico" data-ico="lista"></span>Minha lista</button>
+      <p class="sidebar-secao">Dia a dia</p>
+      <button class="side-item" data-aba="hoje"><span class="tab-ico" data-ico="casa"></span>Hoje</button>
+      <button class="side-item" data-aba="planejar"><span class="tab-ico" data-ico="lista"></span>Planejar</button>
       <button class="side-item" data-aba="mercado"><span class="tab-ico" data-ico="carrinho"></span>Modo Mercado</button>
-      <p class="sidebar-secao">Acompanhar</p>
-      <button class="side-item" data-aba="historico"><span class="tab-ico" data-ico="historico"></span>Histórico</button>
-      <button class="side-item" data-aba="produtos"><span class="tab-ico" data-ico="etiqueta"></span>Meus produtos</button>
+      <p class="sidebar-secao">A casa</p>
+      <button class="side-item" data-aba="despensa"><span class="tab-ico" data-ico="despensa"></span>Despensa</button>
+      <button class="side-item" data-aba="analise"><span class="tab-ico" data-ico="historico"></span>Análise</button>
     </nav>
 
     <div class="sidebar-rodape">
@@ -93,43 +94,58 @@
   <!-- BARRA INFERIOR (celular). Fica na zona do polegar, a única parte da tela
        alcançável com uma mão enquanto a outra segura o carrinho. -->
   <nav class="dock" aria-label="Navegação principal">
-    <button class="dock-item" data-aba="lista" aria-current="page">
-      <span class="dock-ico" data-ico="lista"></span>Lista
+    <button class="dock-item" data-aba="hoje" aria-current="page">
+      <span class="dock-ico" data-ico="casa"></span>Hoje
+    </button>
+    <button class="dock-item" data-aba="planejar">
+      <span class="dock-ico" data-ico="lista"></span>Planejar
     </button>
     <button class="dock-item" data-aba="mercado">
       <span class="dock-ico" data-ico="carrinho"></span>Mercado
     </button>
-    <button class="dock-item" data-aba="historico">
-      <span class="dock-ico" data-ico="historico"></span>Histórico
+    <button class="dock-item" data-aba="despensa">
+      <span class="dock-ico" data-ico="despensa"></span>Despensa
+    </button>
+    <button class="dock-item" data-aba="analise">
+      <span class="dock-ico" data-ico="historico"></span>Análise
     </button>
   </nav>
 
 </div>
 
-<script src="js/config.js?v=3"></script>
-<script src="js/icons.js?v=3"></script>
-<script src="js/ui.js?v=3"></script>
-<script src="js/catalogo.js?v=3"></script>
-<script src="js/db.js?v=3"></script>
-<script src="js/precos.js?v=3"></script>
-<script src="js/nfce.js?v=3"></script>
-<script src="js/importar.js?v=3"></script>
-<script src="js/fotos.js?v=3"></script>
-<script src="js/leitura.js?v=3"></script>
-<script src="js/auth.js?v=3"></script>
-<script src="js/bloqueio.js?v=3"></script>
-<script src="js/sync.js?v=3"></script>
-<script src="js/onboarding.js?v=3"></script>
-<script src="js/views/lista.js?v=3"></script>
-<script src="js/views/mercado.js?v=3"></script>
-<script src="js/views/ferramentas.js?v=3"></script>
-<script src="js/views/historico.js?v=3"></script>
-<script src="js/views/produtos.js?v=3"></script>
-<script src="js/views/importar.js?v=3"></script>
-<script src="js/views/ajustes.js?v=3"></script>
-<script src="js/views/sync.js?v=3"></script>
-<script src="js/views/familia.js?v=3"></script>
-<script src="js/views/camera.js?v=3"></script>
-<script src="js/app.js?v=3"></script>
+<script src="js/config.js?v=4"></script>
+<script src="js/icons.js?v=4"></script>
+<script src="js/ui.js?v=4"></script>
+<script src="js/catalogo.js?v=4"></script>
+<script src="js/db.js?v=4"></script>
+<script src="js/precos.js?v=4"></script>
+<script src="js/despensa.js?v=4"></script>
+<script src="js/decisoes.js?v=4"></script>
+<script src="js/cozinha.js?v=4"></script>
+<script src="js/nfce.js?v=4"></script>
+<script src="js/importar.js?v=4"></script>
+<script src="js/fotos.js?v=4"></script>
+<script src="js/leitura.js?v=4"></script>
+<script src="js/auth.js?v=4"></script>
+<script src="js/bloqueio.js?v=4"></script>
+<script src="js/sync.js?v=4"></script>
+<script src="js/onboarding.js?v=4"></script>
+<script src="js/views/historico.js?v=4"></script>
+<script src="js/views/produtos.js?v=4"></script>
+<script src="js/planejar.js?v=4"></script>
+<script src="js/views/hoje.js?v=4"></script>
+<script src="js/views/planejar.js?v=4"></script>
+<script src="js/views/despensa.js?v=4"></script>
+<script src="js/views/analise.js?v=4"></script>
+<script src="js/views/dialogos.js?v=4"></script>
+<script src="js/views/lista.js?v=4"></script>
+<script src="js/views/mercado.js?v=4"></script>
+<script src="js/views/ferramentas.js?v=4"></script>
+<script src="js/views/importar.js?v=4"></script>
+<script src="js/views/ajustes.js?v=4"></script>
+<script src="js/views/sync.js?v=4"></script>
+<script src="js/views/familia.js?v=4"></script>
+<script src="js/views/camera.js?v=4"></script>
+<script src="js/app.js?v=4"></script>
 </body>
 </html>
