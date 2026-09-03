@@ -182,3 +182,49 @@ por uma ida ao mercado com o app na mão. Estão anotadas para não se perderem:
 caso aparece como **ERRO — sabotagem a reescrever**, e isso NÃO é defeito do app:
 é a sabotagem envelhecendo. Reescreva-a apontando para o novo trecho, nunca
 apague o caso.
+
+---
+
+## v3 — o app passou a se apresentar (setembro/2026)
+
+O retorno do primeiro uso real foi: *"acessei pela primeira vez e não entendi
+nada do que tem que ser feito"*. Estava certo. O que mudou:
+
+- **`js/onboarding.js`** — cinco telas que ensinam FAZENDO: o que a pessoa
+  escolhe vira a lista dela. Pulável sempre. Mais a Ajuda, com as perguntas que
+  as pessoas fazem de verdade.
+- **`js/catalogo.js`** — ~55 itens de casa brasileira com a unidade da etiqueta,
+  e os corredores em **ordem de mercado**. A lista se organiza como a loja.
+- **Desktop** — sidebar acima de 900px. Teste exige que toda aba exista nos dois
+  modos.
+- **`js/views/produtos.js`** — "Meus produtos": o que faz alguém abrir o app
+  fora do mercado.
+- **`js/auth.js` + `js/bloqueio.js`** — PIN que deriva a chave, AES-256-GCM,
+  digital por WebAuthn/PRF, bloqueio progressivo.
+- **`js/views/familia.js`** — código de seis caracteres, `pegou_por` em cada
+  item, e o **escopo do banco virou familiar** (`family_id`).
+
+### A mudança de escopo, e por quê
+
+Era pessoal (`auth.uid()`), virou familiar (`family_id`). **Não reverta sem
+conversa:** se a lista é compartilhada, o histórico de preços também precisa
+ser — senão quem está no mercado não vê o diagnóstico construído pelas compras
+da outra pessoa da casa, e o app perde metade do valor para quem divide as
+compras.
+
+### Pendente: o banco
+
+O projeto **domi-compras** foi criado no Supabase, mas o `schema.sql` ainda
+**não foi executado** e as credenciais ainda não estão no `.env` local. Sem
+isso, o app funciona inteiro offline — só não sincroniza. Ver
+[`supabase/README.md`](../supabase/README.md).
+
+### Armadilhas que voltaram a morder nesta rodada
+
+- **`$` no `replace()`**: `'R$'` numa string de substituição corrompeu
+  `tests/smoke.js` no meio do caminho. Use `split`/`join`, sempre.
+- **Bash comendo template literal**: `${...}` dentro de `node -e` no shell vira
+  expansão. Escreva o script num arquivo — como o RETOMADA já mandava.
+- **Teste vazio, de novo**: com `navigator.onLine = false`, o sync devolvia null
+  antes de checar a família, e a asserção passava sem exercitar a guarda. Mede-se
+  se o **fetch aconteceu**, não o valor devolvido.
